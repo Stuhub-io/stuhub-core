@@ -1,6 +1,7 @@
 version: "3.9"
 services:
   pgsql:
+    container_name: postgres-db
     image: "postgres:16"
     environment:
       POSTGRES_USER: postgres
