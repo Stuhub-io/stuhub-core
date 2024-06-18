@@ -1,8 +1,5 @@
-# Load environment variables from .env file
-ifneq (,$(wildcard ./.env))
-    include .env
-    export
-endif
+# --- Tooling & Variables ----------------------------------------------------------------
+include ./misc/make/tools.Makefile
 
 POSTGRESQL_USER ?= postgres
 POSTGRESQL_PASSWORD ?= password
@@ -11,12 +8,17 @@ POSTGRESQL_DATABASE ?= stuhub
 POSTGRESQL_CONTAINER_NAME ?= postgres-db
 
 # ~~~ Development Environment ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-up: dev-env dev-air   			## Startup / Spinup Docker Compose and air
+up: dev-env  			## Startup / Spinup Docker Compose and air
 down: docker-stop               ## Stop Docker
 destroy: docker-teardown clean  ## Teardown (removes volumes, tmp files, etc...)
 
+install-deps: install-golangci-lint install-air install-golang-migrate
+
+deps:
+	@echo "Required Tools Are Available"
+
 dev-env:
-	@ docker-compose up -d --build pgsql
+	@ docker-compose up -d --build
 
 dev-air: 
 	@ air

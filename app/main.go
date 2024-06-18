@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"github.com/Stuhub-io/config"
+	"github.com/Stuhub-io/core/services/user"
 	"github.com/Stuhub-io/internal/repository/postgres"
 	"github.com/Stuhub-io/internal/rest"
 	"github.com/Stuhub-io/internal/rest/middleware"
 	"github.com/Stuhub-io/logger"
-	"github.com/Stuhub-io/services/user"
 	"github.com/gin-gonic/gin"
 )
 
