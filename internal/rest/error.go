@@ -3,7 +3,7 @@ package rest
 import (
 	"net/http"
 
-	"github.com/Stuhub-io/domain"
+	"github.com/Stuhub-io/core/domain"
 	"github.com/sirupsen/logrus"
 )
 

@@ -3,7 +3,7 @@ package postgres
 import (
 	"context"
 
-	"github.com/Stuhub-io/domain"
+	"github.com/Stuhub-io/core/domain"
 	"github.com/uptrace/bun"
 )
 

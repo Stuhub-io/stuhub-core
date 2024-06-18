@@ -1,6 +1,6 @@
 package user
 
-import "github.com/Stuhub-io/domain"
+import "github.com/Stuhub-io/core/domain"
 
 type LoginDto struct {
 	Username string `json:"username"`

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Stuhub-io/domain"
+	"github.com/Stuhub-io/core/domain"
 )
 
 type UserRepository interface {
@@ -29,7 +29,7 @@ func (s *Service) Login(loginDto LoginDto) (*LoginResponse, error) {
 	return &LoginResponse{
 		User: domain.User{
 			ID:        1,
-			Username:  "Khoa 2",
+			Username:  "Khoa",
 			CreatedAt: time.DateTime,
 			UpdatedAt: time.DateTime,
 		},

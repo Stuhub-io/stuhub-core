@@ -3,7 +3,7 @@ package rest
 import (
 	"net/http"
 
-	"github.com/Stuhub-io/services/user"
+	"github.com/Stuhub-io/core/services/user"
 	"github.com/gin-gonic/gin"
 )
 
