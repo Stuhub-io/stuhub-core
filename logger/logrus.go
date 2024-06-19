@@ -20,7 +20,7 @@ func NewLogrusLogger() Logger {
 		hostname = "unknown"
 	}
 	defaultFields := Fields{
-		"service":  "mochi-api",
+		"service":  "stuhub-api",
 		"hostname": hostname,
 	}
 
