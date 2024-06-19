@@ -19,20 +19,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// var interruptSignals = []os.Signal{
-// 	os.Interrupt,
-// 	syscall.SIGTERM,
-// 	syscall.SIGINT,
-// }
-
 func main() {
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
 	logger := logger.NewLogrusLogger()
 
-	// ctx, stop := signal.NotifyContext(context.Background(), interruptSignals...)
-	// defer stop()
-
-	postgresDb := postgres.Must("postgresql://postgres:password@localhost:5432/stuhub?sslmode=disable")
+	postgresDb := postgres.Must("postgresql://postgres:password@pgsql:5432/stuhub?sslmode=disable")
 
 	r := gin.Default()
 

@@ -11,12 +11,7 @@ services:
     env_file:
       - .env
     ports:
-      - target: 8080
-        published: 8080
-        protocol: TCP
-        mode: host
-    stdin_open: true
-    tty: true
+      - 8080:8080
     volumes:
       - ./:/go/src
 
@@ -38,11 +33,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - type: volume
-        source: db-data
-        target: /var/lib/pgsql
-        volume:
-          nocopy: true
+      - local_postgres_data:/var/lib/postgresql/data
 
 volumes:
-  db-data:
+  local_postgres_data:

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -19,7 +20,13 @@ func open(dsn string) *bun.DB {
 func Must(dsn string) *bun.DB {
 	db := open(dsn)
 
-	//run migration
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		panic("could not connect to DB")
+	}
+
+	fmt.Println("Connected to DB successfully!")
 
 	return db
 }
