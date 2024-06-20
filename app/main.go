@@ -38,10 +38,11 @@ func main() {
 	})
 
 	//handlers
-	rest.NewUserHandler(rest.NewUserHandlerParams{
+	rest.UseUserHandler(rest.NewUserHandlerParams{
 		Router:      r,
 		UserService: userService,
 	})
+	
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Port),

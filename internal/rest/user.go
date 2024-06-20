@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Stuhub-io/core/services/user"
+	"github.com/Stuhub-io/internal/rest/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,7 +21,7 @@ type NewUserHandlerParams struct {
 	UserService
 }
 
-func NewUserHandler(params NewUserHandlerParams) {
+func UseUserHandler(params NewUserHandlerParams) {
 	handler := &UserHandler{
 		userService: params.UserService,
 	}
@@ -56,13 +57,13 @@ func (h *UserHandler) Me(c *gin.Context) {
 	}
 	err := c.Bind(&loginDto)
 	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, err.Error())
+		response.BindError(c, err.Error())
 	}
 
-	resp, err := h.userService.Login(loginDto)
+	_, err = h.userService.Login(loginDto)
 	if err != nil {
 		c.JSON(getStatusCode(err), err.Error())
 	}
 
-	c.JSON(http.StatusOK, resp)
+	response.Unauthorized(c)
 }

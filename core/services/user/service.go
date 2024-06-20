@@ -29,7 +29,7 @@ func (s *Service) Login(loginDto LoginDto) (*LoginResponse, error) {
 	return &LoginResponse{
 		User: domain.User{
 			ID:        1,
-			Username:  "Khoa 2 updated",
+			Username:  "Khoa 2",
 			CreatedAt: time.DateTime,
 			UpdatedAt: time.DateTime,
 		},
