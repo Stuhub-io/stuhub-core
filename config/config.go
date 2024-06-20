@@ -77,7 +77,7 @@ func generateConfigFromViper(v *viper.Viper) Config {
 
 func LoadConfig(loaders []Loader) Config {
 	v := viper.New()
-	v.SetDefault("PORT", "8080")
+	v.SetDefault("PORT", "5000")
 	v.SetDefault("ENV", "local")
 	v.SetDefault("DEBUG", true)
 

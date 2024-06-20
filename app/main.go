@@ -23,14 +23,14 @@ func main() {
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
 	logger := logger.NewLogrusLogger()
 
-	postgresDb := postgres.Must("postgresql://postgres:password@pgsql:5432/stuhub?sslmode=disable")
+	// postgresDb := postgres.Must("postgresql://postgres:password@pgsql:5432/stuhub?sslmode=disable")
 
 	r := gin.Default()
 
 	r.Use(middleware.CORS())
 
 	//repositories
-	userRepository := postgres.NewUserRepository(postgresDb)
+	userRepository := postgres.NewUserRepository(nil)
 
 	//services
 	userService := user.NewService(user.NewServiceParams{
