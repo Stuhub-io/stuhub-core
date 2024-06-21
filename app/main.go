@@ -29,10 +29,10 @@ func main() {
 
 	r.Use(middleware.CORS())
 
-	//repositories
+	// repositories
 	userRepository := postgres.NewUserRepository(nil)
 
-	//services
+	// services
 	userService := user.NewService(user.NewServiceParams{
 		UserRepository: userRepository,
 	})
@@ -42,7 +42,6 @@ func main() {
 		Router:      r,
 		UserService: userService,
 	})
-	
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Port),

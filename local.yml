@@ -1,0 +1,48 @@
+version: "3.9"
+services:
+  api:
+    build:
+      context: .
+      dockerfile: build/local/api/Dockerfile
+    container_name: api
+    depends_on:
+      pgsql:
+        condition: service_healthy
+    env_file:
+      - build/local/api/.env
+    ports: # Define port in .env
+      - 5000:5000
+    volumes:
+      - .:/app:z
+    command: /start.sh
+    networks:
+      - stuhub-api
+
+  pgsql:
+    hostname: postgres
+    build:
+      context: .
+      dockerfile: build/local/postgres/Dockerfile
+    container_name: postgres-db
+    env_file:
+      - build/local/postgres/.env
+    ports: # Define port in .env
+      - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - local_postgres_data:/var/lib/postgresql/data # This is the default path to postgres data storage
+      - local_postgres_data_backups:/backups
+    networks:
+      - stuhub-api
+  
+networks:
+  stuhub-api:
+    driver: bridge
+
+volumes:
+  local_postgres_data: {}
+  local_postgres_data_backups: {}

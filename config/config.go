@@ -25,7 +25,7 @@ type Config struct {
 	DBName         string
 	DBPass         string
 	DBSslMode      bool
-	DBReadHosts    []string
+	// DBReadHosts    []string
 
 	Kafka KafkaConfig
 }
@@ -50,8 +50,8 @@ func (c *Config) GetCORS() []string {
 
 func GetDefaultConfigLoaders() []Loader {
 	loaders := []Loader{
-		NewEnvReader(),
-		NewFileLoader(".env", "."),
+		NewEnvReader(),             // Load envs
+		NewFileLoader(".env", "."), // Load env from file
 	}
 	return loaders
 }
@@ -65,13 +65,13 @@ func generateConfigFromViper(v *viper.Viper) Config {
 		Debug:          v.GetBool("DEBUG"),
 		AllowedOrigins: v.GetString("ALLOWED_ORIGINS"),
 
-		DBHost:      v.GetString("DB_HOST"),
-		DBPort:      v.GetString("DB_PORT"),
-		DBUser:      v.GetString("DB_USER"),
-		DBName:      v.GetString("DB_NAME"),
-		DBPass:      v.GetString("DB_PASS"),
-		DBSslMode:   v.GetBool("DB_SSL_MODE"),
-		DBReadHosts: strings.Split(v.GetString("DB_READ_HOSTS"), ";"),
+		DBHost:    v.GetString("DB_HOST"),
+		DBPort:    v.GetString("DB_PORT"),
+		DBUser:    v.GetString("DB_USER"),
+		DBName:    v.GetString("DB_NAME"),
+		DBPass:    v.GetString("DB_PASS"),
+		DBSslMode: v.GetBool("DB_SSL_MODE"),
+		// DBReadHosts: strings.Split(v.GetString("DB_READ_HOSTS"), ";"),
 	}
 }
 
