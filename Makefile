@@ -1,14 +1,24 @@
 # --- Tooling & Variables ----------------------------------------------------------------
 include ./misc/make/tools.Makefile
 
-POSTGRESQL_USER ?= postgres
-POSTGRESQL_PASSWORD ?= password
-POSTGRESQL_ADDRESS ?= 127.0.0.1:5432
-POSTGRESQL_DATABASE ?= stuhub
-POSTGRESQL_CONTAINER_NAME ?= postgres-db
+# --- ENVS - DATABASE ENVs -----------------------------------------------------------------------
+ifneq (,$(wildcard build/local/postgres/.env))
+    include build/local/postgres/.env
+    export
+endif
 
 # ~~~ Development Environment ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-up: dev-env  			## Startup / Spinup Docker Compose and air
+setup:
+	@ echo "Setting up the project dependencies ..."
+	@ make install-deps
+	@ make deps
+	@ make down
+	@ make up
+	@ make migrate-up
+
+up: # Startup / Spinup Docker Compose and air
+	@ make dev-env  			
+
 down: docker-stop               ## Stop Docker
 destroy: docker-teardown clean  ## Teardown (removes volumes, tmp files, etc...)
 
@@ -21,11 +31,28 @@ dev-env:
 	@ docker compose -f local.yml up --build -d --remove-orphans
 
 docker-stop:
-	@ docker-compose -f local.yml down
+	@ docker compose -f local.yml down
 
 docker-teardown:
-	@ docker-compose -f local.yml down --remove-orphans -v
+	@ docker compose -f local.yml down --remove-orphans -v
 
+# ~~~ Database ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+POSTGRESQL_DSN = postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0.0.1:$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable
+migrate-up:
+	@ migrate  -database $(POSTGRESQL_DSN) -path=misc/migrations --verbose up
+
+migrate-down:
+	@ migrate  -database $(POSTGRESQL_DSN) -path=misc/migrations --verbose down
+
+migrate-create: 
+	@ read -p "Please provide name for the migration: " Name; \
+    migrate create -ext sql -dir misc/migrations $${Name}
+
+migrate-drop:
+	@ migrate  -database $(POSTGRESQL_DSN) -path=misc/migrations drop
+
+open-db: # CLI for open db using tablePlus only
+	@ open $(POSTGRESQL_DSN)
 
 # ~~~ Modules support ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 tidy:
@@ -47,28 +74,6 @@ deps-cleancache:
 lint:
 	@echo Starting linters
 	golangci-lint run ./...
-
-# ~~~ Database ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-createdb:
-	docker exec -it =$(POSTGRESQL_CONTAINER_NAME) createdb --username=$(POSTGRESQL_USER) --owner=$(POSTGRESQL_USER) $(POSTGRESQL_DATABASE)
-
-dropdb:
-	docker exec -it =$(POSTGRESQL_CONTAINER_NAME) dropdb --username==$(POSTGRESQL_USER) $(POSTGRESQL_DATABASE)
-
-POSTGRESQL_DSN := "postgresql://$(POSTGRESQL_USER):$(POSTGRESQL_PASSWORD)@$(POSTGRESQL_ADDRESS)/$(POSTGRESQL_DATABASE)?sslmode=disable"
-
-migrate-up:
-	migrate  -database $(POSTGRESQL_DSN) -path=misc/migrations --verbose up
-
-migrate-down:
-	migrate  -database $(POSTGRESQL_DSN) -path=misc/migrations --verbose down
-
-migrate-create: 
-	@ read -p "Please provide name for the migration: " Name; \
-    migrate create -ext sql -dir misc/migrations $${Name}
-
-migrate-drop:
-	migrate  -database $(POSTGRESQL_DSN) -path=misc/migrations drop
 	
 
 # ~~~ Testing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
