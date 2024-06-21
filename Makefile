@@ -15,19 +15,16 @@ destroy: docker-teardown clean  ## Teardown (removes volumes, tmp files, etc...)
 install-deps: install-golangci-lint install-air install-golang-migrate
 
 deps:
-	@echo "Required Tools Are Available"
+	@ echo "Required Tools Are Available"
 
 dev-env:
-	@ docker-compose up -d --build
-
-dev-air: 
-	@ air
+	@ docker compose -f local.yml up --build -d --remove-orphans
 
 docker-stop:
-	@ docker-compose down
+	@ docker-compose -f local.yml down
 
 docker-teardown:
-	@ docker-compose down --remove-orphans -v
+	@ docker-compose -f local.yml down --remove-orphans -v
 
 
 # ~~~ Modules support ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -50,7 +47,6 @@ deps-cleancache:
 lint:
 	@echo Starting linters
 	golangci-lint run ./...
-
 
 # ~~~ Database ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 createdb:

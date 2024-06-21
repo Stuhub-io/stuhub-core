@@ -2,8 +2,7 @@ package config
 
 import "github.com/spf13/viper"
 
-type EnvReader struct {
-}
+type EnvReader struct{}
 
 func NewEnvReader() *EnvReader {
 	return &EnvReader{}
