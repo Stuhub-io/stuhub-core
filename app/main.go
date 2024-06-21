@@ -37,7 +37,7 @@ func main() {
 		UserRepository: userRepository,
 	})
 
-	//handlers
+	// handlers
 	rest.UseUserHandler(rest.NewUserHandlerParams{
 		Router:      r,
 		UserService: userService,
