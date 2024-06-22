@@ -23,7 +23,7 @@ func main() {
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
 	logger := logger.NewLogrusLogger()
 
-	// postgresDb := postgres.Must("postgresql://postgres:password@pgsql:5432/stuhub?sslmode=disable")
+	_ = postgres.Must(cfg.DBDsn)
 
 	r := gin.Default()
 

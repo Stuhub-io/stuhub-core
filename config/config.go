@@ -25,7 +25,7 @@ type Config struct {
 	DBName         string
 	DBPass         string
 	DBSslMode      bool
-	// DBReadHosts    []string
+	DBDsn          string
 
 	Kafka KafkaConfig
 }
@@ -71,7 +71,7 @@ func generateConfigFromViper(v *viper.Viper) Config {
 		DBName:    v.GetString("DB_NAME"),
 		DBPass:    v.GetString("DB_PASS"),
 		DBSslMode: v.GetBool("DB_SSL_MODE"),
-		// DBReadHosts: strings.Split(v.GetString("DB_READ_HOSTS"), ";"),
+		DBDsn:     v.GetString("DB_DSN"),
 	}
 }
 
