@@ -39,15 +39,15 @@ func (h *UserHandler) Login(c *gin.Context) {
 	}
 	err := c.Bind(&loginDto)
 	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, err.Error())
+		response.BindError(c, err.Error())
 	}
 
 	resp, err := h.userService.Login(loginDto)
 	if err != nil {
-		c.JSON(getStatusCode(err), err.Error())
+		response.BadRequest(c)
 	}
 
-	c.JSON(http.StatusOK, resp)
+	response.WithData(c, http.StatusOK, resp)
 }
 
 func (h *UserHandler) Me(c *gin.Context) {

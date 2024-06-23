@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/Stuhub-io/core/domain"
@@ -17,14 +18,15 @@ func getStatusCode(err error) int {
 	}
 
 	logrus.Error(err)
-	switch err {
-	case domain.ErrInternalServerError:
-		return http.StatusInternalServerError
-	case domain.ErrNotFound:
-		return http.StatusNotFound
-	case domain.ErrConflict:
-		return http.StatusConflict
-	default:
+	if errors.Is(err, domain.ErrInternalServerError) {
 		return http.StatusInternalServerError
 	}
+	if errors.Is(err, domain.ErrNotFound) {
+		return http.StatusNotFound
+	}
+	if errors.Is(err, domain.ErrConflict) {
+		return http.StatusConflict
+	}
+
+	return http.StatusInternalServerError
 }

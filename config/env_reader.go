@@ -10,5 +10,6 @@ func NewEnvReader() *EnvReader {
 
 func (e *EnvReader) LoadEnv(v viper.Viper) (*viper.Viper, error) {
 	v.AutomaticEnv()
+
 	return &v, nil
 }

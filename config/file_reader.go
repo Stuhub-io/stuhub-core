@@ -26,5 +26,6 @@ func (r *FileReader) LoadEnv(v viper.Viper) (*viper.Viper, error) {
 		return nil, err
 	}
 	v.AutomaticEnv()
+
 	return &v, nil
 }

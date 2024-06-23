@@ -81,6 +81,24 @@ func WithErrorMessage(c *gin.Context, code int, err string, message string) {
 	})
 }
 
+func OK(c *gin.Context, message ...string) {
+	msg := "the request is successfully done!"
+	if len(message) > 0 {
+		msg = message[0]
+	}
+
+	WithMessage(c, http.StatusOK, msg)
+}
+
+func Created(c *gin.Context, message ...string) {
+	msg := "the resource is successfully created!"
+	if len(message) > 0 {
+		msg = message[0]
+	}
+
+	WithMessage(c, http.StatusCreated, msg)
+}
+
 func ServerError(c *gin.Context) {
 	message := "the server encountered a problem and could not process your request"
 
@@ -93,7 +111,7 @@ func NotFound(c *gin.Context) {
 	WithErrorMessage(c, http.StatusNotFound, domain.ErrNotFound.Error(), message)
 }
 
-func BadRequest(c *gin.Context, err error, message ...string) {
+func BadRequest(c *gin.Context, message ...string) {
 	msg := "the server cannot understand or process correctly"
 	if len(message) > 0 {
 		msg = message[0]
@@ -108,8 +126,6 @@ func Unauthorized(c *gin.Context) {
 	WithErrorMessage(c, http.StatusUnauthorized, domain.ErrUnauthorized.Error(), message)
 }
 
-func BindError(c *gin.Context, error string) {
-	message := "please provide the correct body input"
-
-	WithErrorMessage(c, http.StatusBadRequest, domain.ErrBadParamInput.Error(), message)
+func BindError(c *gin.Context, err string) {
+	WithErrorMessage(c, http.StatusBadRequest, domain.ErrBadParamInput.Error(), err)
 }

@@ -27,7 +27,7 @@ type Config struct {
 	DBSslMode      bool
 	DBDsn          string
 
-	Kafka KafkaConfig
+	// Kafka KafkaConfig
 }
 
 type KafkaConfig struct {
@@ -45,6 +45,7 @@ func (c *Config) GetCORS() []string {
 			rs = append(rs, itm)
 		}
 	}
+
 	return rs
 }
 
@@ -53,6 +54,7 @@ func GetDefaultConfigLoaders() []Loader {
 		NewEnvReader(),             // Load envs
 		NewFileLoader(".env", "."), // Load env from file
 	}
+
 	return loaders
 }
 
@@ -88,6 +90,7 @@ func LoadConfig(loaders []Loader) Config {
 			v = newV
 		}
 	}
+
 	return generateConfigFromViper(v)
 }
 

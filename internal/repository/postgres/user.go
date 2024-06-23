@@ -17,5 +17,5 @@ func NewUserRepository(db *bun.DB) *UserRepository {
 
 func (r *UserRepository) GetByID(ctx context.Context, id int64) (*domain.User, error) {
 	// handle DB
-	return nil, nil
+	return &domain.User{}, nil
 }
