@@ -2,14 +2,16 @@ package rest
 
 import (
 	"net/http"
+	"strconv"
 
+	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/services/user"
 	"github.com/Stuhub-io/internal/rest/response"
 	"github.com/gin-gonic/gin"
 )
 
 type UserService interface {
-	Login(loginDto user.LoginDto) (*user.LoginResponse, error)
+	GetUserById(id int64) (*user.GetUserByIdResponse, *domain.Error)
 }
 
 type UserHandler struct {
@@ -17,7 +19,7 @@ type UserHandler struct {
 }
 
 type NewUserHandlerParams struct {
-	Router *gin.Engine
+	Router *gin.RouterGroup
 	UserService
 }
 
@@ -26,44 +28,18 @@ func UseUserHandler(params NewUserHandlerParams) {
 		userService: params.UserService,
 	}
 
-	router := params.Router
+	router := params.Router.Group("/users")
 
-	router.GET("/login", handler.Login)
-	router.GET("/me", handler.Me)
+	router.GET("/:id", handler.GetUserById)
 }
 
-func (h *UserHandler) Login(c *gin.Context) {
-	loginDto := user.LoginDto{
-		Username: "Khoa",
-		Password: "123",
-	}
-	err := c.Bind(&loginDto)
+func (h *UserHandler) GetUserById(c *gin.Context) {
+	userId, _ := strconv.Atoi(c.Param("id"))
+	resp, err := h.userService.GetUserById(int64(userId))
 	if err != nil {
-		response.BindError(c, err.Error())
-	}
-
-	resp, err := h.userService.Login(loginDto)
-	if err != nil {
-		response.BadRequest(c)
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
 	}
 
 	response.WithData(c, http.StatusOK, resp)
-}
-
-func (h *UserHandler) Me(c *gin.Context) {
-	loginDto := user.LoginDto{
-		Username: "Khoa",
-		Password: "123",
-	}
-	err := c.Bind(&loginDto)
-	if err != nil {
-		response.BindError(c, err.Error())
-	}
-
-	_, err = h.userService.Login(loginDto)
-	if err != nil {
-		c.JSON(getStatusCode(err), err.Error())
-	}
-
-	response.Unauthorized(c)
 }

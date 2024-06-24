@@ -82,7 +82,7 @@ var (
 )
 
 var (
-	ErrUserNotFoundById = func(id int) *Error {
+	ErrUserNotFoundById = func(id int64) *Error {
 		return &Error{
 			Code:    NotFoundCode,
 			Error:   NotFoundErr,

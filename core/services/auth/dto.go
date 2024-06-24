@@ -8,6 +8,15 @@ type LoginDto struct {
 }
 
 type LoginResponse struct {
-	User  domain.User `json:"user"`
-	Token string      `json:"token"`
+	User  *domain.User `json:"user"`
+	Token string       `json:"token"`
+}
+
+type RegisterByEmailDto struct {
+	Email string `json:"email"`
+}
+
+type RegisterByEmailResponse struct {
+	User  *domain.User `json:"user"`
+	Token string       `json:"token"`
 }

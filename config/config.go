@@ -27,6 +27,8 @@ type Config struct {
 	DBSslMode      bool
 	DBDsn          string
 
+	SecretKey string
+
 	// Kafka KafkaConfig
 }
 
@@ -74,6 +76,8 @@ func generateConfigFromViper(v *viper.Viper) Config {
 		DBPass:    v.GetString("DB_PASS"),
 		DBSslMode: v.GetBool("DB_SSL_MODE"),
 		DBDsn:     v.GetString("DB_DSN"),
+
+		SecretKey: v.GetString("SECRET_KEY"),
 	}
 }
 
