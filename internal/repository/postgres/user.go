@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Stuhub-io/core/domain"
 	"gorm.io/gorm"
@@ -19,7 +20,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id int64) (*domain.User, *
 	var user domain.User
 	err := r.db.Where("id = ?", id).First(&user).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrUserNotFoundById(id)
 		}
 
@@ -32,7 +33,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.
 	var user domain.User
 	err := r.db.Where("email = ?", email).First(&user).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrUserNotFoundByEmail(email)
 		}
 

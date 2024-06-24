@@ -6,7 +6,7 @@ run:
   modules-download-mode: readonly
   allow-parallel-runners: true
   allow-serial-runners: true
-  go: '1.21.6'
+  go: "1.21.6"
 
 linters:
   enable:
@@ -29,7 +29,6 @@ linters:
     - forcetypeassert
     - ginkgolinter
     - gocheckcompilerdirectives
-    - gochecknoglobals
     - gochecknoinits
     - gochecksumtype
     - goconst
