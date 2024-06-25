@@ -1,13 +1,13 @@
 package domain
 
 type User struct {
-	ID          int64  `json:"id" gorm:"primaryKey"`
+	ID          string `json:"id"`
 	Email       string `json:"email"`
 	Username    string `json:"username"`
 	Password    string `json:"password"`
 	Avatar      string `json:"avatar"`
 	IsOAuth     bool   `json:"is_oauth"`
-	IsActivated bool   `json:"is_activated"`
+	ActivatedAt string `json:"activated_at"`
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
 }

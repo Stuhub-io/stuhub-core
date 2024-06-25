@@ -16,7 +16,7 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{db}
 }
 
-func (r *UserRepository) GetByID(ctx context.Context, id int64) (*domain.User, *domain.Error) {
+func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, *domain.Error) {
 	var user domain.User
 	err := r.db.Where("id = ?", id).First(&user).Error
 	if err != nil {
@@ -37,6 +37,18 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.
 			return nil, domain.ErrUserNotFoundByEmail(email)
 		}
 
+		return nil, domain.ErrDatabaseQuery
+	}
+
+	return &user, nil
+}
+
+func (r *UserRepository) CreateNewUser(ctx context.Context, email string) (*domain.User, *domain.Error) {
+	user := domain.User{
+		Email: email,
+	}
+	err := r.db.Create(&user).Error
+	if err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
 

@@ -1,8 +1,11 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE IF NOT EXISTS "users" (
-  "id" bigserial PRIMARY KEY,
-  "username" varchar NOT NULL,
-  "email" varchar NOT NULL,
-  "password" varchar,
+  "pkid" bigserial PRIMARY KEY,
+  "id" UUID DEFAULT uuid_generate_v4() UNIQUE,
+  "username" varchar(255) NOT NULL,
+  "email" varchar(255) NOT NULL,
+  "password" varchar(128),
   "avatar"  varchar,
   "is_oauth" boolean DEFAULT false,
   "is_activated" boolean DEFAULT false,

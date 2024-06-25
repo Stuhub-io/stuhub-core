@@ -13,6 +13,7 @@ type Service struct {
 
 type NewServiceParams struct {
 	ports.UserRepository
+	// Add more repos
 }
 
 func NewService(params NewServiceParams) *Service {
@@ -21,13 +22,24 @@ func NewService(params NewServiceParams) *Service {
 	}
 }
 
-func (s *Service) GetUserById(id int64) (*GetUserByIdResponse, *domain.Error) {
+func (s *Service) GetUserById(id string) (*GetUserByIdResponse, *domain.Error) {
 	user, err := s.userRepository.GetByID(context.Background(), id)
 	if err != nil {
 		return nil, err
 	}
 
 	return &GetUserByIdResponse{
+		User: user,
+	}, nil
+}
+
+func (s *Service) GetUserByEmail(email string) (*GetUserByEmailResponse, *domain.Error) {
+	user, err := s.userRepository.GetByEmail(context.Background(), email)
+	if err != nil {
+		return nil, err
+	}
+
+	return &GetUserByEmailResponse{
 		User: user,
 	}, nil
 }

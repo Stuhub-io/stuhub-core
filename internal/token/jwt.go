@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Stuhub-io/core/ports"
+	"github.com/Stuhub-io/core/domain"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -42,7 +42,7 @@ func (m *JWTMaker) CreateToken(email string, duration time.Duration) (string, er
 	return jwtToken.SignedString([]byte(m.secretKey))
 }
 
-func (m *JWTMaker) VerifyToken(token string) (*ports.TokenPayload, error) {
+func (m *JWTMaker) VerifyToken(token string) (*domain.TokenPayload, error) {
 	keyFunc := func(token *jwt.Token) (any, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
@@ -62,7 +62,7 @@ func (m *JWTMaker) VerifyToken(token string) (*ports.TokenPayload, error) {
 		return nil, fmt.Errorf("invalid token: ")
 	}
 
-	return &ports.TokenPayload{
+	return &domain.TokenPayload{
 		ID:        claims.Subject,
 		Email:     claims.Issuer,
 		IssuedAt:  claims.IssuedAt.Local(),

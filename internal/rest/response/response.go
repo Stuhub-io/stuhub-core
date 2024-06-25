@@ -26,18 +26,11 @@ type DataResponse struct {
 }
 
 type PaginationResponse struct {
-	Status      string `json:"status"`
-	Code        int    `json:"code"`
-	Message     string `json:"message,omitempty"`
-	Data        any    `json:"data"`
-	HasNextPage bool   `json:"has_next"`
-	Count       int    `json:"count"`
-}
-
-type PaginationPayload struct {
-	Data        any  `json:"data"`
-	HasNextPage bool `json:"has_next"`
-	Count       int  `json:"count"`
+	Status     string            `json:"status"`
+	Code       int               `json:"code"`
+	Message    string            `json:"message,omitempty"`
+	Data       any               `json:"data"`
+	Pagination domain.Pagination `json:"pagination"`
 }
 
 const (
@@ -64,16 +57,15 @@ func WithData(c *gin.Context, code int, data any, message ...string) {
 	})
 }
 
-func WithPagination(c *gin.Context, code int, data PaginationPayload, message ...string) {
+func WithPagination(c *gin.Context, code int, data any, pagination domain.Pagination, message ...string) {
 	msg := getMessage("", message...)
 
 	c.JSON(code, &PaginationResponse{
-		Status:      StatusSuccess,
-		Code:        code,
-		Message:     msg,
-		Data:        data.Data,
-		HasNextPage: data.HasNextPage,
-		Count:       data.Count,
+		Status:     StatusSuccess,
+		Code:       code,
+		Message:    msg,
+		Data:       data,
+		Pagination: pagination,
 	})
 }
 

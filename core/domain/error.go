@@ -82,11 +82,11 @@ var (
 )
 
 var (
-	ErrUserNotFoundById = func(id int64) *Error {
+	ErrUserNotFoundById = func(id string) *Error {
 		return &Error{
 			Code:    NotFoundCode,
 			Error:   NotFoundErr,
-			Message: fmt.Sprintf("The user with the ID '%d' does not exist.", id),
+			Message: fmt.Sprintf("The user with the ID '%s' does not exist.", id),
 		}
 	}
 	ErrUserNotFoundByEmail = func(email string) *Error {
