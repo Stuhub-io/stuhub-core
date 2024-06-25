@@ -2,12 +2,10 @@ package user
 
 import "github.com/Stuhub-io/core/domain"
 
-type LoginDto struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+type GetUserByIdResponse struct {
+	User *domain.User `json:"user"`
 }
 
-type LoginResponse struct {
-	User  domain.User `json:"user"`
-	Token string      `json:"token"`
+type GetUserByEmailResponse struct {
+	User *domain.User `json:"user"`
 }

@@ -2,21 +2,18 @@ package user
 
 import (
 	"context"
-	"time"
 
 	"github.com/Stuhub-io/core/domain"
+	"github.com/Stuhub-io/core/ports"
 )
 
-type UserRepository interface {
-	GetByID(ctx context.Context, id int64) (*domain.User, error)
-}
-
 type Service struct {
-	userRepository UserRepository
+	userRepository ports.UserRepository
 }
 
 type NewServiceParams struct {
-	UserRepository
+	ports.UserRepository
+	// Add more repos
 }
 
 func NewService(params NewServiceParams) *Service {
@@ -25,14 +22,24 @@ func NewService(params NewServiceParams) *Service {
 	}
 }
 
-func (s *Service) Login(loginDto LoginDto) (*LoginResponse, error) {
-	return &LoginResponse{
-		User: domain.User{
-			ID:        1,
-			Username:  "Khoa 2",
-			CreatedAt: time.DateTime,
-			UpdatedAt: time.DateTime,
-		},
-		Token: "token",
+func (s *Service) GetUserById(id string) (*GetUserByIdResponse, *domain.Error) {
+	user, err := s.userRepository.GetByID(context.Background(), id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &GetUserByIdResponse{
+		User: user,
+	}, nil
+}
+
+func (s *Service) GetUserByEmail(email string) (*GetUserByEmailResponse, *domain.Error) {
+	user, err := s.userRepository.GetByEmail(context.Background(), email)
+	if err != nil {
+		return nil, err
+	}
+
+	return &GetUserByEmailResponse{
+		User: user,
 	}, nil
 }

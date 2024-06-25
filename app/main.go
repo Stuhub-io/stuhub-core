@@ -11,37 +11,62 @@ import (
 	"time"
 
 	"github.com/Stuhub-io/config"
+	"github.com/Stuhub-io/core/services/auth"
 	"github.com/Stuhub-io/core/services/user"
+	"github.com/Stuhub-io/internal/mailer"
 	"github.com/Stuhub-io/internal/repository/postgres"
 	"github.com/Stuhub-io/internal/rest"
 	"github.com/Stuhub-io/internal/rest/middleware"
+	"github.com/Stuhub-io/internal/token"
 	"github.com/Stuhub-io/logger"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
+
 	logger := logger.NewLogrusLogger()
 
-	_ = postgres.Must(cfg.DBDsn)
+	postgresDB := postgres.Must(cfg.DBDsn)
+
+	tokenMaker := token.Must(cfg.SecretKey)
+
+	// TODO: read from env
+	mailer := mailer.NewMailer(mailer.NewMailerParams{
+		Name:      "",
+		Address:   "",
+		ClientKey: "",
+	})
 
 	r := gin.Default()
 
 	r.Use(middleware.CORS())
 
 	// repositories
-	userRepository := postgres.NewUserRepository(nil)
+	userRepository := postgres.NewUserRepository(postgresDB)
 
 	// services
 	userService := user.NewService(user.NewServiceParams{
 		UserRepository: userRepository,
 	})
+	authService := auth.NewService(auth.NewServiceParams{
+		UserRepository: userRepository,
+		TokenMaker:     tokenMaker,
+		Mailer:         mailer,
+	})
 
 	// handlers
-	rest.UseUserHandler(rest.NewUserHandlerParams{
-		Router:      r,
-		UserService: userService,
-	})
+	v1 := r.Group("/v1")
+	{
+		rest.UseUserHandler(rest.NewUserHandlerParams{
+			Router:      v1,
+			UserService: userService,
+		})
+		rest.UseAuthHandler(rest.NewAuthHandlerParams{
+			Router:      v1,
+			AuthService: authService,
+		})
+	}
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Port),

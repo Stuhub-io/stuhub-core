@@ -1,13 +1,10 @@
 package auth
 
-import "github.com/Stuhub-io/core/domain"
-
-type LoginDto struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+type AuthenByEmailDto struct {
+	Email string `json:"email"`
 }
 
-type LoginResponse struct {
-	User  domain.User `json:"user"`
-	Token string      `json:"token"`
+type AuthenByEmailPassword struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }

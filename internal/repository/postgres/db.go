@@ -1,32 +1,24 @@
 package postgres
 
 import (
-	"database/sql"
-	"fmt"
-
-	"github.com/uptrace/bun"
-	"github.com/uptrace/bun/dialect/pgdialect"
-	"github.com/uptrace/bun/driver/pgdriver"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-func open(dsn string) *bun.DB {
-	sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
+func open(dsn string) (*gorm.DB, error) {
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN: dsn,
+	}), &gorm.Config{})
 
-	db := bun.NewDB(sqldb, pgdialect.New())
-
-	return db
+	return db, err
 }
 
-func Must(dsn string) *bun.DB {
-	db := open(dsn)
+func Must(dsn string) *gorm.DB {
+	db, err := open(dsn)
 
-	defer db.Close()
-
-	if err := db.Ping(); err != nil {
-		panic("could not connect to DB")
+	if err != nil {
+		panic(err)
 	}
-
-	fmt.Println("Connected to DB successfully!")
 
 	return db
 }
