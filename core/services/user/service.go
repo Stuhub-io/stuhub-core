@@ -3,22 +3,25 @@ package user
 import (
 	"context"
 
+	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
 )
 
 type Service struct {
 	userRepository ports.UserRepository
+	cfg            config.Config
 }
 
 type NewServiceParams struct {
 	ports.UserRepository
-	// Add more repos
+	config.Config
 }
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
 		userRepository: params.UserRepository,
+		cfg:            params.Config,
 	}
 }
 
@@ -34,7 +37,7 @@ func (s *Service) GetUserById(id string) (*GetUserByIdResponse, *domain.Error) {
 }
 
 func (s *Service) GetUserByEmail(email string) (*GetUserByEmailResponse, *domain.Error) {
-	user, err := s.userRepository.GetByEmail(context.Background(), email)
+	user, err := s.userRepository.GetUserByEmail(context.Background(), email)
 	if err != nil {
 		return nil, err
 	}

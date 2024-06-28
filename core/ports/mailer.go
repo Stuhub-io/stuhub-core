@@ -1,15 +1,16 @@
 package ports
 
-type SendMailPayload struct {
-	To          string
-	Address     string
+type SendSendGridMailPayload struct {
+	FromName    string
+	FromAddress string
+	ToName      string
+	ToAddress   string
+	TemplateId  string
+	Data        map[string]string
 	Subject     string
-	PlainText   string
-	HTMLContent string
+	Content     string
 }
 
 type Mailer interface {
-	SendMail(payload SendMailPayload) error
+	SendMail(payload SendSendGridMailPayload) error
 }
-
-//mailTempl := ""

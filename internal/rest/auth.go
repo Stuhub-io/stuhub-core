@@ -25,10 +25,10 @@ func UseAuthHandler(params NewAuthHandlerParams) {
 
 	router := params.Router.Group("/auth-services")
 
-	router.POST("/auth-email", handler.AuthenByEmail)
+	router.GET("/email-step-one", handler.AuthenByEmailStepOne)
 }
 
-func (h *AuthHandler) AuthenByEmail(c *gin.Context) {
+func (h *AuthHandler) AuthenByEmailStepOne(c *gin.Context) {
 	var body request.RegisterByEmailBody
 
 	if ok, vr := request.Validate(c, &body); !ok {
@@ -36,7 +36,7 @@ func (h *AuthHandler) AuthenByEmail(c *gin.Context) {
 		return
 	}
 
-	err := h.authService.AuthenWithEmail(auth.AuthenByEmailDto{
+	data, err := h.authService.AuthenByEmailStepOne(auth.AuthenByEmailStepOneDto{
 		Email: body.Email,
 	})
 
@@ -45,5 +45,5 @@ func (h *AuthHandler) AuthenByEmail(c *gin.Context) {
 		return
 	}
 
-	response.WithMessage(c, http.StatusOK, "Check your email for verification")
+	response.WithData(c, http.StatusOK, data, "Success")
 }

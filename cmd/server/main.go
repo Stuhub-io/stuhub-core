@@ -27,7 +27,10 @@ func main() {
 
 	logger := logger.NewLogrusLogger()
 
-	postgresDB := postgres.Must(cfg.DBDsn)
+	postgresDB, err := postgres.NewStore(cfg.DBDsn, cfg.Debug)
+	if err != nil {
+		panic(err)
+	}
 
 	tokenMaker := token.Must(cfg.SecretKey)
 
@@ -36,6 +39,7 @@ func main() {
 		Name:      "",
 		Address:   "",
 		ClientKey: "",
+		Config:    cfg,
 	})
 
 	r := gin.Default()
@@ -43,16 +47,21 @@ func main() {
 	r.Use(middleware.CORS())
 
 	// repositories
-	userRepository := postgres.NewUserRepository(postgresDB)
+	userRepository := postgres.NewUserRepository(postgres.NewUserRepositoryParams{
+		Store: postgresDB,
+		Cfg:   cfg,
+	})
 
 	// services
 	userService := user.NewService(user.NewServiceParams{
 		UserRepository: userRepository,
+		Config:         cfg,
 	})
 	authService := auth.NewService(auth.NewServiceParams{
 		UserRepository: userRepository,
 		TokenMaker:     tokenMaker,
 		Mailer:         mailer,
+		Config:         cfg,
 	})
 
 	// handlers

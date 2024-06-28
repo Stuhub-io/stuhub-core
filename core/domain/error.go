@@ -44,12 +44,12 @@ var (
 	ErrBadRequest = &Error{
 		Code:    BadRequestCode,
 		Error:   BadRequestErr,
-		Message: "You are not authorized",
+		Message: "The server cannot understand or process correctly",
 	}
 	ErrUnauthorized = &Error{
 		Code:    UnauthorizedCode,
 		Error:   UnauthorizedErr,
-		Message: "The server cannot understand or process correctly",
+		Message: "You are not authorized",
 	}
 	ErrConflict = &Error{
 		Code:    ConflictCode,

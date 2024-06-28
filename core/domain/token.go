@@ -2,6 +2,11 @@ package domain
 
 import "time"
 
+const (
+	AccessTokenDuration  = 24 * time.Hour
+	RefreshTokenDuration = 24 * 7 * time.Hour
+)
+
 type TokenPayload struct {
 	ID        string
 	Email     string    `json:"email"`

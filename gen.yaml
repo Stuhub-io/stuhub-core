@@ -1,0 +1,11 @@
+version: "0.1"
+database:
+  dsn: "postgresql://admin:stuhub@localhost:5432/stuhub?sslmode=disable"
+  db: "postgres"
+  tables: ["users"]
+  outPath: "./internal/repository/model"
+  withUnitTest: false
+  fieldNullable: true
+  fieldWithIndexTag: true
+  fieldWithTypeTag: true
+  onlyModel: true

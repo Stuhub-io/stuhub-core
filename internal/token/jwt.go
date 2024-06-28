@@ -32,7 +32,7 @@ func Must(secretKey string) *JWTMaker {
 	return jwtMaker
 }
 
-func (m *JWTMaker) CreateToken(email string, duration time.Duration) (string, error) {
+func (m *JWTMaker) CreateToken(id string, email string, duration time.Duration) (string, error) {
 	claims, err := newPayload(email, duration)
 	if err != nil {
 		return "", err
@@ -42,7 +42,7 @@ func (m *JWTMaker) CreateToken(email string, duration time.Duration) (string, er
 	return jwtToken.SignedString([]byte(m.secretKey))
 }
 
-func (m *JWTMaker) VerifyToken(token string) (*domain.TokenPayload, error) {
+func (m *JWTMaker) DecodeToken(token string) (*domain.TokenPayload, error) {
 	keyFunc := func(token *jwt.Token) (any, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
