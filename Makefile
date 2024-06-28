@@ -22,7 +22,7 @@ up: # Startup / Spinup Docker Compose and air
 down: docker-stop               ## Stop Docker
 destroy: docker-teardown clean  ## Teardown (removes volumes, tmp files, etc...)
 
-install-deps: install-golangci-lint install-air install-golang-migrate
+install-deps: install-golangci-lint install-air install-golang-migrate install-gorm-gentool
 
 deps:
 	@ echo "Required Tools Are Available"
