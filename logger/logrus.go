@@ -11,6 +11,8 @@ type LogrusLogger struct {
 	fields Fields
 }
 
+var L Logger
+
 func NewLogrusLogger() Logger {
 	l := logrus.New()
 	l.SetFormatter(&logrus.JSONFormatter{})
@@ -20,14 +22,16 @@ func NewLogrusLogger() Logger {
 		hostname = "unknown"
 	}
 	defaultFields := Fields{
-		"service":  "stuhub-api",
+		"service":  "fortress-api",
 		"hostname": hostname,
 	}
 
-	return &LogrusLogger{
+	L = &LogrusLogger{
 		logger: l,
 		fields: defaultFields,
 	}
+
+	return L
 }
 
 func (l *LogrusLogger) Fields(data Fields) Logger {

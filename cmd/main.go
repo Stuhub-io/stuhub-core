@@ -27,7 +27,10 @@ func main() {
 
 	logger := logger.NewLogrusLogger()
 
-	postgresDB := postgres.Must(cfg.DBDsn)
+	postgresDB, err := postgres.NewStore(cfg.DBDsn, cfg.Debug)
+	if err != nil {
+		panic(err)
+	}
 
 	tokenMaker := token.Must(cfg.SecretKey)
 

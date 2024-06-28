@@ -13,13 +13,13 @@ const TableNameUser = "users"
 // User mapped from table <users>
 type User struct {
 	Pkid        int64     `gorm:"column:pkid;type:bigint;primaryKey;autoIncrement:true" json:"pkid"`
-	ID          *string   `gorm:"column:id;type:uuid;default:uuid_generate_v4()" json:"id"`
+	ID          string    `gorm:"column:id;type:uuid;not null;default:uuid_generate_v4()" json:"id"`
 	Username    string    `gorm:"column:username;type:character varying(255);not null" json:"username"`
 	Email       string    `gorm:"column:email;type:character varying(255);not null" json:"email"`
 	Password    *string   `gorm:"column:password;type:character varying(128)" json:"password"`
-	Avatar      *string   `gorm:"column:avatar;type:character varying" json:"avatar"`
-	IsOauth     *bool     `gorm:"column:is_oauth;type:boolean" json:"is_oauth"`
-	IsActivated *bool     `gorm:"column:is_activated;type:boolean" json:"is_activated"`
+	Avatar      string    `gorm:"column:avatar;type:character varying;not null" json:"avatar"`
+	IsOauth     bool      `gorm:"column:is_oauth;type:boolean;not null" json:"is_oauth"`
+	IsActivated bool      `gorm:"column:is_activated;type:boolean;not null" json:"is_activated"`
 	CreatedAt   time.Time `gorm:"column:created_at;type:timestamp with time zone;not null;default:now()" json:"created_at"`
 	UpdatedAt   time.Time `gorm:"column:updated_at;type:timestamp with time zone;not null;default:now()" json:"updated_at"`
 }

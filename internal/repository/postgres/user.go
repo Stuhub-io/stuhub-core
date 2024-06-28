@@ -5,20 +5,21 @@ import (
 	"errors"
 
 	"github.com/Stuhub-io/core/domain"
+	store "github.com/Stuhub-io/internal/repository"
 	"gorm.io/gorm"
 )
 
 type UserRepository struct {
-	db *gorm.DB
+	store store.DBStore
 }
 
-func NewUserRepository(db *gorm.DB) *UserRepository {
+func NewUserRepository(db store.DBStore) *UserRepository {
 	return &UserRepository{db}
 }
 
 func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, *domain.Error) {
 	var user domain.User
-	err := r.db.Where("id = ?", id).First(&user).Error
+	err := r.store.DB().Where("id = ?", id).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrUserNotFoundById(id)
@@ -31,7 +32,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 
 func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*domain.User, *domain.Error) {
 	var user domain.User
-	err := r.db.Where("email = ?", email).First(&user).Error
+	err := r.store.DB().Where("email = ?", email).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrUserNotFoundByEmail(email)
@@ -47,7 +48,7 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 
 	var user domain.User
 	// Try to find the user by email
-	err := r.db.Where("email = ?", email).First(&user).Error
+	err := r.store.DB().Where("email = ?", email).First(&user).Error
 	if err == nil {
 		// User found, return the existing user
 		return &user, nil
@@ -62,7 +63,7 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 	user = domain.User{
 		Email: email,
 	}
-	err = r.db.Create(&user).Error
+	err = r.store.DB().Create(&user).Error
 	if err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
