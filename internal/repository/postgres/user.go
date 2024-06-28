@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	store "github.com/Stuhub-io/internal/repository"
 	"gorm.io/gorm"
@@ -11,10 +12,19 @@ import (
 
 type UserRepository struct {
 	store store.DBStore
+	cfg   config.Config
 }
 
-func NewUserRepository(db store.DBStore) *UserRepository {
-	return &UserRepository{db}
+type NewUserRepositoryParams struct {
+	Store store.DBStore
+	Cfg   config.Config
+}
+
+func NewUserRepository(params NewUserRepositoryParams) *UserRepository {
+	return &UserRepository{
+		store: params.Store,
+		cfg:   params.Cfg,
+	}
 }
 
 func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, *domain.Error) {

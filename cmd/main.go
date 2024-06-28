@@ -47,7 +47,10 @@ func main() {
 	r.Use(middleware.CORS())
 
 	// repositories
-	userRepository := postgres.NewUserRepository(postgresDB)
+	userRepository := postgres.NewUserRepository(postgres.NewUserRepositoryParams{
+		Store: postgresDB,
+		Cfg:   cfg,
+	})
 
 	// services
 	userService := user.NewService(user.NewServiceParams{
