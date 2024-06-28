@@ -25,7 +25,7 @@ func UseAuthHandler(params NewAuthHandlerParams) {
 
 	router := params.Router.Group("/auth-services")
 
-	router.GET("/email-step-one", handler.AuthenByEmailStepOne)
+	router.POST("/email-step-one", handler.AuthenByEmailStepOne)
 }
 
 func (h *AuthHandler) AuthenByEmailStepOne(c *gin.Context) {

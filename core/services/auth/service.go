@@ -44,7 +44,7 @@ func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEm
 	}
 
 	// User can auth with Password
-	if user.Password != "" {
+	if user.HavePassword {
 		return &AuthenByEmailStepOneResp{
 			Email:           user.Email,
 			IsRequiredEmail: false,

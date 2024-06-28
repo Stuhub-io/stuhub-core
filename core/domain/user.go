@@ -6,7 +6,8 @@ type User struct {
 	LastName  string `json:"last_name"`
 	Avatar    string `json:"avatar"`
 	Email     string `json:"email"`
-	Password  string `json:"password"`
+
+	HavePassword bool `json:"have_password"`
 
 	// Socials
 	OauthGmail string `json:"oauth_gmail"`

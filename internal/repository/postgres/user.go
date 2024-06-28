@@ -7,6 +7,7 @@ import (
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	store "github.com/Stuhub-io/internal/repository"
+	"github.com/Stuhub-io/internal/repository/model"
 	"gorm.io/gorm"
 )
 
@@ -29,9 +30,9 @@ func NewUserRepository(params NewUserRepositoryParams) *UserRepository {
 
 func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, *domain.Error) {
 	var user domain.User
-	err := r.store.DB().Where("id = ?", id).First(&user).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	tx := r.store.DB().Where("id = ?", id).First(&user)
+	if tx != nil && tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrUserNotFoundById(id)
 		}
 
@@ -56,27 +57,43 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 
 func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email string) (*domain.User, *domain.Error) {
 
-	var user domain.User
+	var user model.User
 	// Try to find the user by email
 	err := r.store.DB().Where("email = ?", email).First(&user).Error
-	if err == nil {
-		// User found, return the existing user
-		return &user, nil
-	}
-
-	// If the error is not "record not found", return the error
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, domain.ErrDatabaseQuery
-	}
-
-	// User not found, create a new user
-	user = domain.User{
-		Email: email,
-	}
-	err = r.store.DB().Create(&user).Error
 	if err != nil {
-		return nil, domain.ErrDatabaseQuery
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrDatabaseQuery
+		}
+		// If the user is not found, create a new user
+		user = model.User{
+			Email: email,
+		}
+
+		err = r.store.DB().Create(&user).Error
+		if err != nil {
+			return nil, domain.ErrDatabaseQuery
+		}
 	}
 
-	return &user, nil
+	var activatedAt string = ""
+	if user.ActivatedAt != nil {
+		activatedAt = user.ActivatedAt.String()
+	}
+	// User found, return the existing user
+	return &domain.User{
+		ID:    user.ID,
+		Email: user.Email,
+
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Avatar:    user.Avatar,
+
+		// Socials
+		OauthGmail:   user.OathGmail,
+		HavePassword: user.Password != nil && *user.Password != "",
+
+		ActivatedAt: activatedAt,
+		CreatedAt:   user.CreatedAt.String(),
+		UpdatedAt:   user.UpdatedAt.String(),
+	}, nil
 }

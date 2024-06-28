@@ -44,7 +44,8 @@ func main() {
 
 	r := gin.Default()
 
-	r.Use(middleware.CORS())
+	r.Use(middleware.CORS(&cfg))
+	r.Use(middleware.JSON(&cfg))
 
 	// repositories
 	userRepository := postgres.NewUserRepository(postgres.NewUserRepositoryParams{
