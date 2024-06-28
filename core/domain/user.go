@@ -1,6 +1,7 @@
 package domain
 
 type User struct {
+	PkID      int64  `json:"pk_id"`
 	ID        string `json:"id"`
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`

@@ -14,6 +14,11 @@ const minSecretKeySize = 5
 type JWTMaker struct {
 	secretKey string
 }
+type CustomClaims struct {
+	jwt.RegisteredClaims
+	UserPkID string `json:"user_pkid"`
+	Email    string `json:"email"`
+}
 
 func new(secretKey string) (*JWTMaker, error) {
 	if len(secretKey) < minSecretKeySize {
@@ -33,7 +38,7 @@ func Must(secretKey string) *JWTMaker {
 }
 
 func (m *JWTMaker) CreateToken(id string, email string, duration time.Duration) (string, error) {
-	claims, err := newPayload(email, duration)
+	claims, err := newPayload(id, email, duration)
 	if err != nil {
 		return "", err
 	}
@@ -52,36 +57,39 @@ func (m *JWTMaker) DecodeToken(token string) (*domain.TokenPayload, error) {
 		return []byte(m.secretKey), nil
 	}
 
-	jwtToken, err := jwt.ParseWithClaims(token, &jwt.RegisteredClaims{}, keyFunc)
+	jwtToken, err := jwt.ParseWithClaims(token, &CustomClaims{}, keyFunc)
 	if err != nil {
 		return nil, err
 	}
 
-	claims, ok := jwtToken.Claims.(*jwt.RegisteredClaims)
+	claims, ok := jwtToken.Claims.(*CustomClaims)
 	if !ok {
 		return nil, fmt.Errorf("invalid token: ")
 	}
 
 	return &domain.TokenPayload{
-		ID:        claims.Subject,
-		Email:     claims.Issuer,
-		IssuedAt:  claims.IssuedAt.Local(),
-		ExpiredAt: claims.ExpiresAt.Local(),
+		UserPkID:  claims.UserPkID,
+		Email:     claims.Email,
+		IssuedAt:  claims.RegisteredClaims.IssuedAt.Local(),
+		ExpiredAt: claims.RegisteredClaims.ExpiresAt.Local(),
 	}, nil
 }
 
-func newPayload(email string, duration time.Duration) (*jwt.RegisteredClaims, error) {
+func newPayload(pkid string, email string, duration time.Duration) (*CustomClaims, error) {
 	tokenID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
 	}
 
-	claims := &jwt.RegisteredClaims{
-		Subject:   tokenID.String(),
-		Issuer:    email,
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
+	claims := &CustomClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   tokenID.String(),
+			Issuer:    email,
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
+		},
+		UserPkID: pkid,
+		Email:    email,
 	}
-
 	return claims, nil
 }

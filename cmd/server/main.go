@@ -14,6 +14,7 @@ import (
 	"github.com/Stuhub-io/core/services/auth"
 	"github.com/Stuhub-io/core/services/user"
 	"github.com/Stuhub-io/internal/mailer"
+	"github.com/Stuhub-io/internal/remote"
 	"github.com/Stuhub-io/internal/repository/postgres"
 	"github.com/Stuhub-io/internal/rest"
 	"github.com/Stuhub-io/internal/rest/middleware"
@@ -47,6 +48,7 @@ func main() {
 	r.Use(middleware.CORS(&cfg))
 	r.Use(middleware.JSON(&cfg))
 
+	remoteRoute := remote.NewRemoteRoute()
 	// repositories
 	userRepository := postgres.NewUserRepository(postgres.NewUserRepositoryParams{
 		Store: postgresDB,
@@ -63,6 +65,7 @@ func main() {
 		TokenMaker:     tokenMaker,
 		Mailer:         mailer,
 		Config:         cfg,
+		RemoteRoute:    remoteRoute,
 	})
 
 	// handlers

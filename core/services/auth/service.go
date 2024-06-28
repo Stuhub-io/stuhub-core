@@ -56,15 +56,7 @@ func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEm
 		return nil, domain.ErrInternalServerError
 	}
 
-	var url string
-	if user.OauthGmail == "" {
-		// Send Magic Link For Validate Email and Set Password
-		url = s.MakeSetPasswordUrl(token)
-
-	} else {
-		// Send Magic Link For Validate Email and Redirect to Oauth
-		url = s.MakeValidateOauthUrl(token)
-	}
+	url := s.MakeValidateEmailAuth(token)
 	s.mailer.SendMail(ports.SendSendGridMailPayload{
 		FromName:    "Stuhub.IO",
 		FromAddress: s.config.SendgridEmailFrom,
@@ -72,7 +64,7 @@ func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEm
 		ToAddress:   user.Email,
 		TemplateId:  s.config.SendgridSetPasswordTemplateId,
 		Data: map[string]string{
-			"link": url,
+			"url": url,
 		},
 		Subject: "Authenticate your email",
 	})
@@ -83,17 +75,59 @@ func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEm
 	// Send Magic Link with Oauth redirect
 }
 
-func (s *Service) MakeValidateOauthUrl(token string) string {
-	baseUrl := s.config.BaseUrl + s.remoteRoute.ValidateEmailOauth
-	return baseUrl + "?token=" + token
-}
-
-func (s *Service) MakeSetPasswordUrl(token string) string {
-	baseUrl := s.config.BaseUrl + s.remoteRoute.SetPassword
+func (s *Service) MakeValidateEmailAuth(token string) string {
+	baseUrl := s.config.RemoteBaseURL + s.remoteRoute.ValidateEmailOauth
 	return baseUrl + "?token=" + token
 }
 
 // FIXME: return token
-func (s *Service) AuthenByEmailPassword(dto AuthenByEmailPassword) *domain.Error {
-	return nil
+func (s *Service) ValidateEmailAuth(token string) (*ValidateEmailTokenResp, *domain.Error) {
+	payload, err := s.tokenMaker.DecodeToken(token)
+	if err != nil {
+		return nil, domain.ErrBadRequest
+	}
+
+	user, uErr := s.userRepository.GetUserByPkID(context.Background(), payload.UserPkID)
+	if uErr != nil {
+		return nil, domain.ErrBadRequest
+	}
+
+	var providerName string = ""
+	if user.OauthGmail != "" {
+		providerName = domain.GoogleAuthProvider.Name
+	}
+
+	return &ValidateEmailTokenResp{
+		Email:        user.Email,
+		OAuthPvodier: providerName,
+	}, nil
+}
+
+func (s *Service) SetPasswordAndAuthUser(dto AuthenByEmailPassword) (*AuthenByEmailStepTwoResp, *domain.Error) {
+	user, err := s.userRepository.GetUserByEmail(context.Background(), dto.Email)
+
+	if err != nil {
+		return nil, domain.ErrUserNotFoundByEmail(dto.Email)
+	}
+
+	err = s.userRepository.SetUserPassword(context.Background(), user.PkID, dto.Password)
+	if err != nil {
+		return nil, domain.ErrInternalServerError
+	}
+	access, tErr := s.tokenMaker.CreateToken(dto.Email, dto.Email, domain.AccessTokenDuration)
+	if tErr != nil {
+		return nil, domain.ErrInternalServerError
+	}
+
+	refresh, tErr := s.tokenMaker.CreateToken(dto.Email, dto.Email, domain.RefreshTokenDuration)
+	if tErr != nil {
+		return nil, domain.ErrInternalServerError
+	}
+
+	return &AuthenByEmailStepTwoResp{
+		AuthToken: domain.AuthToken{
+			Access:  access,
+			Refresh: refresh,
+		},
+	}, nil
 }
