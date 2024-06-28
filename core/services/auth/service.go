@@ -57,7 +57,7 @@ func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEm
 	}
 
 	var url string
-	if !user.OauthGmail {
+	if user.OauthGmail == "" {
 		// Send Magic Link For Validate Email and Set Password
 		url = s.MakeSetPasswordUrl(token)
 
