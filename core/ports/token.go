@@ -7,6 +7,6 @@ import (
 )
 
 type TokenMaker interface {
-	CreateToken(email string, duration time.Duration) (string, error)
-	VerifyToken(token string) (*domain.TokenPayload, error)
+	CreateToken(id string, email string, duration time.Duration) (string, error)
+	DecodeToken(token string) (*domain.TokenPayload, error)
 }

@@ -2,22 +2,27 @@ package auth
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
+	"github.com/Stuhub-io/utils"
 )
 
 type Service struct {
 	userRepository ports.UserRepository
 	mailer         ports.Mailer
 	tokenMaker     ports.TokenMaker
+	remoteRoute    ports.RemoteRoute
+	config         config.Config
 }
 
 type NewServiceParams struct {
 	ports.UserRepository
 	ports.Mailer
 	ports.TokenMaker
+	ports.RemoteRoute
+	config.Config
 }
 
 func NewService(params NewServiceParams) *Service {
@@ -25,64 +30,70 @@ func NewService(params NewServiceParams) *Service {
 		userRepository: params.UserRepository,
 		mailer:         params.Mailer,
 		tokenMaker:     params.TokenMaker,
+		config:         params.Config,
+		remoteRoute:    params.RemoteRoute,
 	}
+}
+
+// Send Magic Link if User not set password
+func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEmailStepOneResp, *domain.Error) {
+	email := dto.Email
+	user, err := s.userRepository.GetOrCreateUserByEmail(context.Background(), email)
+	if err != nil {
+		return nil, domain.ErrInternalServerError
+	}
+
+	// User can auth with Password
+	if user.Password != "" {
+		return &AuthenByEmailStepOneResp{
+			Email:           user.Email,
+			IsRequiredEmail: false,
+		}, nil
+	}
+
+	token, errToken := s.tokenMaker.CreateToken(user.ID, user.Email, domain.AccessTokenDuration)
+	if errToken != nil {
+		return nil, domain.ErrInternalServerError
+	}
+
+	var url string
+	if !user.OauthGmail {
+		// Send Magic Link For Validate Email and Set Password
+		url = s.MakeSetPasswordUrl(token)
+
+	} else {
+		// Send Magic Link For Validate Email and Redirect to Oauth
+		url = s.MakeValidateOauthUrl(token)
+	}
+	s.mailer.SendMail(ports.SendSendGridMailPayload{
+		FromName:    "Stuhub.IO",
+		FromAddress: s.config.SendgridEmailFrom,
+		ToName:      utils.GetUserFullName(user.FirstName, user.LastName),
+		ToAddress:   user.Email,
+		TemplateId:  s.config.SendgridSetPasswordTemplateId,
+		Data: map[string]string{
+			"link": url,
+		},
+		Subject: "Authenticate your email",
+	})
+	return &AuthenByEmailStepOneResp{
+		Email:           user.Email,
+		IsRequiredEmail: true,
+	}, nil
+	// Send Magic Link with Oauth redirect
+}
+
+func (s *Service) MakeValidateOauthUrl(token string) string {
+	baseUrl := s.config.BaseUrl + s.remoteRoute.ValidateEmailOauth
+	return baseUrl + "?token=" + token
+}
+
+func (s *Service) MakeSetPasswordUrl(token string) string {
+	baseUrl := s.config.BaseUrl + s.remoteRoute.SetPassword
+	return baseUrl + "?token=" + token
 }
 
 // FIXME: return token
 func (s *Service) AuthenByEmailPassword(dto AuthenByEmailPassword) *domain.Error {
 	return nil
 }
-
-func (s *Service) AuthenWithEmail(dto AuthenByEmailDto) *domain.Error {
-	// NOTE Send Magic Link to Email if user passowrd not set
-	email := dto.Email
-	var user *domain.User
-	u, err := s.userRepository.GetByEmail(context.Background(), email)
-	if err != nil {
-		return err
-	}
-	if u != nil {
-		user = u
-	} else {
-		u, err := s.userRepository.CreateNewUser(context.Background(), email)
-		if err != nil {
-			return err
-		}
-		user = u
-	}
-	fmt.Print(user)
-
-	// Auth using Password If user already exists
-
-	//create token & assign to magic link
-
-	//send magic links via mail
-	/*
-		err := s.mailer.SendMail(ports.SendMailPayload{
-			To:          "",
-			Address:     "",
-			Subject:     "",
-			PlainText:   "",
-			HTMLContent: "",
-		})
-		if err != nil {
-			return nil, &domain.Error{
-				Code:    domain.ErrInternalServerError.Code,
-				Error:   domain.ErrInternalServerError.Error,
-				Message: err.Error(),
-			}
-		}
-	*/
-
-	return nil
-}
-
-// AuthenWithEmail -> send magic link via Email -> verify magic link token
-// FIXME: check password set ->
-func (s *Service) VerifyMagicLinkToken() *domain.Error {
-	return nil
-}
-
-//...
-
-// func (s *Service) ActivateAccount

@@ -36,7 +36,7 @@ func (h *AuthHandler) AuthenByEmail(c *gin.Context) {
 		return
 	}
 
-	err := h.authService.AuthenWithEmail(auth.AuthenByEmailDto{
+	data, err := h.authService.AuthenByEmailStepOne(auth.AuthenByEmailStepOneDto{
 		Email: body.Email,
 	})
 
@@ -45,5 +45,5 @@ func (h *AuthHandler) AuthenByEmail(c *gin.Context) {
 		return
 	}
 
-	response.WithMessage(c, http.StatusOK, "Check your email for verification")
+	response.WithData(c, http.StatusOK, data, "Success")
 }

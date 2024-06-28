@@ -27,7 +27,10 @@ type Config struct {
 	DBSslMode      bool
 	DBDsn          string
 
-	SecretKey string
+	SecretKey                     string
+	SendgridKey                   string
+	SendgridSetPasswordTemplateId string
+	SendgridEmailFrom             string
 
 	// Kafka KafkaConfig
 }
@@ -77,7 +80,10 @@ func generateConfigFromViper(v *viper.Viper) Config {
 		DBSslMode: v.GetBool("DB_SSL_MODE"),
 		DBDsn:     v.GetString("DB_DSN"),
 
-		SecretKey: v.GetString("SECRET_KEY"),
+		SecretKey:                     v.GetString("SECRET_KEY"),
+		SendgridKey:                   v.GetString("SENDGRID_API_KEY"),
+		SendgridSetPasswordTemplateId: v.GetString("SENDGRID_SET_PASSWORD_TEMPLATE_ID"),
+		SendgridEmailFrom:             v.GetString("SENDGRID_EMAIL_FROM"),
 	}
 }
 

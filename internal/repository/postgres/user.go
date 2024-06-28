@@ -29,7 +29,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 	return &user, nil
 }
 
-func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.User, *domain.Error) {
+func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*domain.User, *domain.Error) {
 	var user domain.User
 	err := r.db.Where("email = ?", email).First(&user).Error
 	if err != nil {
@@ -43,11 +43,26 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.
 	return &user, nil
 }
 
-func (r *UserRepository) CreateNewUser(ctx context.Context, email string) (*domain.User, *domain.Error) {
-	user := domain.User{
+func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email string) (*domain.User, *domain.Error) {
+
+	var user domain.User
+	// Try to find the user by email
+	err := r.db.Where("email = ?", email).First(&user).Error
+	if err == nil {
+		// User found, return the existing user
+		return &user, nil
+	}
+
+	// If the error is not "record not found", return the error
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, domain.ErrDatabaseQuery
+	}
+
+	// User not found, create a new user
+	user = domain.User{
 		Email: email,
 	}
-	err := r.db.Create(&user).Error
+	err = r.db.Create(&user).Error
 	if err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}

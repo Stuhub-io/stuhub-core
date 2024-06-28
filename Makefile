@@ -51,6 +51,10 @@ migrate-create:
 migrate-drop:
 	@ migrate  -database $(POSTGRESQL_DSN) -path=misc/migrations drop
 
+gen-struct:
+	@ gentool -c ./gen.yaml
+
+
 open-db: # CLI for open db using tablePlus only
 	@ open $(POSTGRESQL_DSN)
 

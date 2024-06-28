@@ -36,6 +36,7 @@ func main() {
 		Name:      "",
 		Address:   "",
 		ClientKey: "",
+		Config:    cfg,
 	})
 
 	r := gin.Default()
@@ -48,11 +49,13 @@ func main() {
 	// services
 	userService := user.NewService(user.NewServiceParams{
 		UserRepository: userRepository,
+		Config:         cfg,
 	})
 	authService := auth.NewService(auth.NewServiceParams{
 		UserRepository: userRepository,
 		TokenMaker:     tokenMaker,
 		Mailer:         mailer,
+		Config:         cfg,
 	})
 
 	// handlers
