@@ -9,7 +9,7 @@ type User struct {
 	Password  string `json:"password"`
 
 	// Socials
-	OauthGmail bool `json:"oauth_gmail"`
+	OauthGmail string `json:"oauth_gmail"`
 
 	ActivatedAt string `json:"activated_at"`
 	CreatedAt   string `json:"created_at"`
