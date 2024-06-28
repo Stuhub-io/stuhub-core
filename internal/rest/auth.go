@@ -25,10 +25,10 @@ func UseAuthHandler(params NewAuthHandlerParams) {
 
 	router := params.Router.Group("/auth-services")
 
-	router.POST("/auth-email", handler.AuthenByEmail)
+	router.GET("/email-step-one", handler.AuthenByEmailStepOne)
 }
 
-func (h *AuthHandler) AuthenByEmail(c *gin.Context) {
+func (h *AuthHandler) AuthenByEmailStepOne(c *gin.Context) {
 	var body request.RegisterByEmailBody
 
 	if ok, vr := request.Validate(c, &body); !ok {
