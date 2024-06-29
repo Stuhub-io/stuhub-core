@@ -51,7 +51,7 @@ func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEm
 		}, nil
 	}
 
-	token, errToken := s.tokenMaker.CreateToken(user.ID, user.Email, domain.AccessTokenDuration)
+	token, errToken := s.tokenMaker.CreateToken(user.PkID, user.Email, domain.EmailVerificationTokenDuration)
 	if errToken != nil {
 		return nil, domain.ErrInternalServerError
 	}
@@ -84,7 +84,7 @@ func (s *Service) MakeValidateEmailAuth(token string) string {
 func (s *Service) ValidateEmailAuth(token string) (*ValidateEmailTokenResp, *domain.Error) {
 	payload, err := s.tokenMaker.DecodeToken(token)
 	if err != nil {
-		return nil, domain.ErrBadRequest
+		return nil, domain.ErrTokenExpired
 	}
 
 	user, uErr := s.userRepository.GetUserByPkID(context.Background(), payload.UserPkID)
@@ -114,12 +114,12 @@ func (s *Service) SetPasswordAndAuthUser(dto AuthenByEmailPassword) (*AuthenByEm
 	if err != nil {
 		return nil, domain.ErrInternalServerError
 	}
-	access, tErr := s.tokenMaker.CreateToken(dto.Email, dto.Email, domain.AccessTokenDuration)
+	access, tErr := s.tokenMaker.CreateToken(user.PkID, user.Email, domain.AccessTokenDuration)
 	if tErr != nil {
 		return nil, domain.ErrInternalServerError
 	}
 
-	refresh, tErr := s.tokenMaker.CreateToken(dto.Email, dto.Email, domain.RefreshTokenDuration)
+	refresh, tErr := s.tokenMaker.CreateToken(user.PkID, user.Email, domain.RefreshTokenDuration)
 	if tErr != nil {
 		return nil, domain.ErrInternalServerError
 	}

@@ -26,6 +26,7 @@ func UseAuthHandler(params NewAuthHandlerParams) {
 	router := params.Router.Group("/auth-services")
 
 	router.POST("/email-step-one", handler.AuthenByEmailStepOne)
+	router.POST("/validate-email-token", handler.ValidateEmailToken)
 }
 
 func (h *AuthHandler) AuthenByEmailStepOne(c *gin.Context) {
@@ -45,5 +46,20 @@ func (h *AuthHandler) AuthenByEmailStepOne(c *gin.Context) {
 		return
 	}
 
+	response.WithData(c, http.StatusOK, data, "Success")
+}
+
+func (h *AuthHandler) ValidateEmailToken(c *gin.Context) {
+	var body request.ValidateEmailTokenBody
+	if ok, vr := request.Validate(c, &body); !ok {
+		response.BindError(c, vr.Error())
+		return
+	}
+
+	data, err := h.authService.ValidateEmailAuth(body.Token)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
 	response.WithData(c, http.StatusOK, data, "Success")
 }

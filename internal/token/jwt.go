@@ -16,7 +16,7 @@ type JWTMaker struct {
 }
 type CustomClaims struct {
 	jwt.RegisteredClaims
-	UserPkID string `json:"user_pkid"`
+	UserPkID int64  `json:"user_pkid,string"`
 	Email    string `json:"email"`
 }
 
@@ -37,8 +37,8 @@ func Must(secretKey string) *JWTMaker {
 	return jwtMaker
 }
 
-func (m *JWTMaker) CreateToken(id string, email string, duration time.Duration) (string, error) {
-	claims, err := newPayload(id, email, duration)
+func (m *JWTMaker) CreateToken(pkid int64, email string, duration time.Duration) (string, error) {
+	claims, err := newPayload(pkid, email, duration)
 	if err != nil {
 		return "", err
 	}
@@ -75,7 +75,7 @@ func (m *JWTMaker) DecodeToken(token string) (*domain.TokenPayload, error) {
 	}, nil
 }
 
-func newPayload(pkid string, email string, duration time.Duration) (*CustomClaims, error) {
+func newPayload(pkid int64, email string, duration time.Duration) (*CustomClaims, error) {
 	tokenID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err

@@ -58,12 +58,12 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 
 }
 
-func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId string) (*domain.User, *domain.Error) {
+func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain.User, *domain.Error) {
 	var user model.User
 	err := r.store.DB().Where("pkid = ?", pkId).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, domain.ErrUserNotFoundById(pkId)
+			return nil, domain.ErrUserNotFound
 		}
 		return nil, domain.ErrDatabaseQuery
 	}
