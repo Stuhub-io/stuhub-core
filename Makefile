@@ -28,13 +28,13 @@ deps:
 	@ echo "Required Tools Are Available"
 
 dev-env:
-	@ docker compose -f local.yml up --build -d --remove-orphans
+	@ docker-compose -f local.yml up --build -d --remove-orphans
 
 docker-stop:
-	@ docker compose -f local.yml down
+	@ docker-compose -f local.yml down
 
 docker-teardown:
-	@ docker compose -f local.yml down --remove-orphans -v
+	@ docker-compose -f local.yml down --remove-orphans -v
 
 # ~~~ Database ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 POSTGRESQL_DSN = postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0.0.1:$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable
@@ -89,5 +89,9 @@ test:
 swagger:
 	@echo Starting swagger generating
 	swag init -g **/**/*.go
+	make swag-format
+
+swag-format:
+	swag fmt
 
 .PHONY: migrate-up migrate-down migrate-create migrate-drop

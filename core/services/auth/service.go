@@ -40,7 +40,7 @@ func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEm
 	email := dto.Email
 	user, err := s.userRepository.GetOrCreateUserByEmail(context.Background(), email)
 	if err != nil {
-		return nil, domain.ErrInternalServerError
+		return nil, err
 	}
 
 	// User can auth with Password
