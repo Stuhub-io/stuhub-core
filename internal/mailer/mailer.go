@@ -1,6 +1,8 @@
 package mailer
 
 import (
+	"os"
+
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/ports"
 	"github.com/sendgrid/sendgrid-go"
@@ -21,7 +23,7 @@ type NewMailerParams struct {
 	config.Config
 }
 
-func NewMailer(params NewMailerParams) *Mailer {
+func NewMailer(params NewMailerParams) ports.Mailer {
 	return &Mailer{
 		name:      params.Name,
 		address:   params.Address,
@@ -31,22 +33,25 @@ func NewMailer(params NewMailerParams) *Mailer {
 }
 
 func (m *Mailer) SendMail(payload ports.SendSendGridMailPayload) error {
+	v3Mail := mail.NewV3Mail()
 	from := mail.NewEmail(payload.FromName, payload.FromAddress)
-	subject := payload.Subject
-	to := mail.NewEmail(payload.ToName, payload.ToAddress)
-	content := mail.NewContent("text/html", payload.Content)
+	v3Mail.SetFrom(from)
+	v3Mail.SetTemplateID(payload.TemplateId)
 
-	sender := mail.NewV3MailInit(from, subject, to, content)
+	p := mail.NewPersonalization()
 	for name := range payload.Data {
-		sender.Personalizations[0].SetSubstitution(name, payload.Data[name])
+		p.SetDynamicTemplateData(name, payload.Data[name])
 	}
-	sender.Personalizations[0].SetSubstitution("-name-", "Example User")
-	sender.Personalizations[0].SetSubstitution("-city-", "Denver")
-	sender.SetTemplateID(payload.TemplateId)
+	p.AddTos(mail.NewEmail(payload.ToName, payload.ToAddress))
 
-	request := sendgrid.GetRequest(m.config.SendgridKey, "/v3/mail/send", "https://api.sendgrid.com")
+	v3Mail.AddPersonalizations(p)
+
+	request := sendgrid.GetRequest(os.Getenv("SENDGRID_API_KEY"), "/v3/mail/send", "https://api.sendgrid.com")
 	request.Method = "POST"
-	request.Body = mail.GetRequestBody(sender)
+	request.Body = mail.GetRequestBody(v3Mail)
 	_, err := sendgrid.API(request)
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }

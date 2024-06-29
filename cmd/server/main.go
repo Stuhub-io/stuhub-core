@@ -14,7 +14,9 @@ import (
 	"github.com/Stuhub-io/core/services/auth"
 	"github.com/Stuhub-io/core/services/user"
 	_ "github.com/Stuhub-io/docs"
+	"github.com/Stuhub-io/internal/hasher"
 	"github.com/Stuhub-io/internal/mailer"
+	"github.com/Stuhub-io/internal/remote"
 	"github.com/Stuhub-io/internal/repository/postgres"
 	"github.com/Stuhub-io/internal/rest"
 	"github.com/Stuhub-io/internal/rest/middleware"
@@ -43,8 +45,8 @@ import (
 
 //	@securityDefinitions.basic	BasicAuth
 
-//	@externalDocs.description	OpenAPI
-//	@externalDocs.url			https://swagger.io/resources/open-api/
+// @externalDocs.description	OpenAPI
+// @externalDocs.url			https://swagger.io/resources/open-api/
 func main() {
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
 
@@ -56,6 +58,7 @@ func main() {
 	}
 
 	tokenMaker := token.Must(cfg.SecretKey)
+	hasher := hasher.NewScrypt()
 
 	// TODO: read from env
 	mailer := mailer.NewMailer(mailer.NewMailerParams{
@@ -70,6 +73,7 @@ func main() {
 	r.Use(middleware.CORS(&cfg))
 	r.Use(middleware.JSON(&cfg))
 
+	remoteRoute := remote.NewRemoteRoute()
 	// repositories
 	userRepository := postgres.NewUserRepository(postgres.NewUserRepositoryParams{
 		Store: postgresDB,
@@ -86,6 +90,8 @@ func main() {
 		TokenMaker:     tokenMaker,
 		Mailer:         mailer,
 		Config:         cfg,
+		RemoteRoute:    remoteRoute,
+		Hasher:         hasher,
 	})
 
 	// handlers

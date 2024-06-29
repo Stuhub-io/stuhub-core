@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS "users" (
   "avatar"  varchar NOT NULL,
   
   "oath_gmail" varchar NOT NULL,
+  "salt" VARCHAR(255) NOT NULL,
 
   "activated_at" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (now()),
