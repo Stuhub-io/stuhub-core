@@ -1,4 +1,4 @@
-package utils
+package userutils
 
 func GetUserFullName(f string, l string) string {
 	if f == "" {

@@ -18,6 +18,8 @@ type Config struct {
 	Env         string
 	Debug       bool
 
+	RemoteBaseURL string
+
 	AllowedOrigins string
 	DBHost         string
 	DBPort         string
@@ -71,6 +73,8 @@ func generateConfigFromViper(v *viper.Viper) Config {
 		ServiceName:    v.GetString("SERVICE_NAME"),
 		Debug:          v.GetBool("DEBUG"),
 		AllowedOrigins: v.GetString("ALLOWED_ORIGINS"),
+
+		RemoteBaseURL: v.GetString("REMOTE_BASE_URL"),
 
 		DBHost:    v.GetString("DB_HOST"),
 		DBPort:    v.GetString("DB_PORT"),

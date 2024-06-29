@@ -20,6 +20,7 @@ type User struct {
 	LastName    string     `gorm:"column:last_name;type:character varying(255);not null" json:"last_name"`
 	Avatar      string     `gorm:"column:avatar;type:character varying;not null" json:"avatar"`
 	OathGmail   string     `gorm:"column:oath_gmail;type:character varying;not null" json:"oath_gmail"`
+	Salt        string     `gorm:"column:salt;type:character varying(255);not null" json:"salt"`
 	ActivatedAt *time.Time `gorm:"column:activated_at;type:timestamp with time zone" json:"activated_at"`
 	CreatedAt   time.Time  `gorm:"column:created_at;type:timestamp with time zone;not null;default:now()" json:"created_at"`
 	UpdatedAt   time.Time  `gorm:"column:updated_at;type:timestamp with time zone;not null;default:now()" json:"updated_at"`

@@ -82,6 +82,16 @@ var (
 )
 
 var (
+	ErrUserPassword = &Error{
+		Code:    BadRequestCode,
+		Error:   BadRequestErr,
+		Message: "The password is invalid. Please input the correct password!",
+	}
+	ErrUserNotFound = &Error{
+		Code:    NotFoundCode,
+		Error:   NotFoundErr,
+		Message: "The user does not exist.",
+	}
 	ErrUserNotFoundById = func(id string) *Error {
 		return &Error{
 			Code:    NotFoundCode,
@@ -110,5 +120,13 @@ var (
 		Code:    BadRequestCode,
 		Error:   BadRequestErr,
 		Message: "Invalid credentials. Please input the correct account!",
+	}
+)
+
+var (
+	ErrTokenExpired = &Error{
+		Code:    BadRequestCode,
+		Error:   BadRequestErr,
+		Message: "The resource was expired. Please request a new one!",
 	}
 )
