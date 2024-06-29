@@ -10,6 +10,7 @@ import (
 
 func CORS(cfg *config.Config) gin.HandlerFunc {
 	corsOrigins := strings.Split(cfg.AllowedOrigins, ";")
+
 	return func(c *gin.Context) {
 		cors.New(
 			cors.Config{

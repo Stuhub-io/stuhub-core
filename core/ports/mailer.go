@@ -1,5 +1,7 @@
 package ports
 
+import "github.com/Stuhub-io/core/domain"
+
 type SendSendGridMailPayload struct {
 	FromName    string
 	FromAddress string
@@ -12,5 +14,5 @@ type SendSendGridMailPayload struct {
 }
 
 type Mailer interface {
-	SendMail(payload SendSendGridMailPayload) error
+	SendMail(payload SendSendGridMailPayload) *domain.Error
 }

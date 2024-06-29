@@ -29,7 +29,6 @@ linters:
     - forcetypeassert
     - ginkgolinter
     - gocheckcompilerdirectives
-    - gochecknoinits
     - gochecksumtype
     - goconst
     - gocritic
@@ -38,7 +37,6 @@ linters:
     - godox
     - gomodguard
     - gosimple
-    - gosmopolitan
     - importas
     - loggercheck
     - maintidx

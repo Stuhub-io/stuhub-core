@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/Stuhub-io/config"
+	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
@@ -32,7 +33,7 @@ func NewMailer(params NewMailerParams) ports.Mailer {
 	}
 }
 
-func (m *Mailer) SendMail(payload ports.SendSendGridMailPayload) error {
+func (m *Mailer) SendMail(payload ports.SendSendGridMailPayload) *domain.Error {
 	v3Mail := mail.NewV3Mail()
 	from := mail.NewEmail(payload.FromName, payload.FromAddress)
 	v3Mail.SetFrom(from)
@@ -43,7 +44,6 @@ func (m *Mailer) SendMail(payload ports.SendSendGridMailPayload) error {
 		p.SetDynamicTemplateData(name, payload.Data[name])
 	}
 	p.AddTos(mail.NewEmail(payload.ToName, payload.ToAddress))
-
 	v3Mail.AddPersonalizations(p)
 
 	request := sendgrid.GetRequest(os.Getenv("SENDGRID_API_KEY"), "/v3/mail/send", "https://api.sendgrid.com")
@@ -51,7 +51,8 @@ func (m *Mailer) SendMail(payload ports.SendSendGridMailPayload) error {
 	request.Body = mail.GetRequestBody(v3Mail)
 	_, err := sendgrid.API(request)
 	if err != nil {
-		return err
+		return domain.ErrSendMail
 	}
+
 	return nil
 }

@@ -1,6 +1,7 @@
 package token
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -20,7 +21,7 @@ type CustomClaims struct {
 	Email    string `json:"email"`
 }
 
-func new(secretKey string) (*JWTMaker, error) {
+func newMaker(secretKey string) (*JWTMaker, error) {
 	if len(secretKey) < minSecretKeySize {
 		return nil, fmt.Errorf("invalid key size: must be at least %d characters", minSecretKeySize)
 	}
@@ -29,7 +30,7 @@ func new(secretKey string) (*JWTMaker, error) {
 }
 
 func Must(secretKey string) *JWTMaker {
-	jwtMaker, err := new(secretKey)
+	jwtMaker, err := newMaker(secretKey)
 	if err != nil {
 		panic(err)
 	}
@@ -44,6 +45,7 @@ func (m *JWTMaker) CreateToken(pkid int64, email string, duration time.Duration)
 	}
 
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
 	return jwtToken.SignedString([]byte(m.secretKey))
 }
 
@@ -51,7 +53,7 @@ func (m *JWTMaker) DecodeToken(token string) (*domain.TokenPayload, error) {
 	keyFunc := func(token *jwt.Token) (any, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
-			return nil, fmt.Errorf("invalid token: ")
+			return nil, errors.New("invalid token")
 		}
 
 		return []byte(m.secretKey), nil
@@ -64,7 +66,7 @@ func (m *JWTMaker) DecodeToken(token string) (*domain.TokenPayload, error) {
 
 	claims, ok := jwtToken.Claims.(*CustomClaims)
 	if !ok {
-		return nil, fmt.Errorf("invalid token: ")
+		return nil, errors.New("invalid token")
 	}
 
 	return &domain.TokenPayload{
@@ -91,5 +93,6 @@ func newPayload(pkid int64, email string, duration time.Duration) (*CustomClaims
 		UserPkID: pkid,
 		Email:    email,
 	}
+
 	return claims, nil
 }

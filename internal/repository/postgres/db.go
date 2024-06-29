@@ -15,6 +15,7 @@ func open(dsn string, isDebug bool) (store.DBStore, error) {
 
 	if err != nil {
 		logger.L.Fatalf(err, "failed to open database connection")
+
 		return nil, err
 	}
 

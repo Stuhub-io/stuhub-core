@@ -130,3 +130,11 @@ var (
 		Message: "The resource was expired. Please request a new one!",
 	}
 )
+
+var (
+	ErrSendMail = &Error{
+		Code:    InternalServerErrCode,
+		Error:   InternalServerErr,
+		Message: "Failed to process sending email. Please try again!",
+	}
+)

@@ -60,7 +60,7 @@ func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEm
 	}
 
 	url := s.MakeValidateEmailAuth(token)
-	s.mailer.SendMail(ports.SendSendGridMailPayload{
+	err = s.mailer.SendMail(ports.SendSendGridMailPayload{
 		FromName:    "Stuhub.IO",
 		FromAddress: s.config.SendgridEmailFrom,
 		ToName:      userutils.GetUserFullName(user.FirstName, user.LastName),
@@ -71,6 +71,10 @@ func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEm
 		},
 		Subject: "Authenticate your email",
 	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &AuthenByEmailStepOneResp{
 		Email:           user.Email,
 		IsRequiredEmail: true,
@@ -114,10 +118,10 @@ func (s *Service) ValidateEmailAuth(token string) (*ValidateEmailTokenResp, *dom
 
 func (s *Service) SetPasswordAndAuthUser(dto AuthenByEmailAfterSetPassword) (*AuthenByEmailStepTwoResp, *domain.Error) {
 	user, derr := s.userRepository.GetUserByEmail(context.Background(), dto.Email)
-
 	if derr != nil {
 		return nil, domain.ErrUserNotFoundByEmail(dto.Email)
 	}
+
 	hashedPassword, err := s.hasher.Hash(dto.RawPassword, user.Salt)
 	if err != nil {
 		return nil, domain.ErrInternalServerError
@@ -160,6 +164,7 @@ func (s *Service) AuthenUserByEmailPassword(dto AuthenByEmailPassword) (*domain.
 	if derr != nil {
 		return nil, domain.ErrInternalServerError
 	}
+
 	if !valid {
 		return nil, domain.ErrUserPassword
 	}
