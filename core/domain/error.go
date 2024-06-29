@@ -82,6 +82,11 @@ var (
 )
 
 var (
+	ErrUserPassword = &Error{
+		Code:    BadRequestCode,
+		Error:   BadRequestErr,
+		Message: "The password is invalid. Please input the correct password!",
+	}
 	ErrUserNotFound = &Error{
 		Code:    NotFoundCode,
 		Error:   NotFoundErr,

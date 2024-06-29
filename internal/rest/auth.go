@@ -28,6 +28,7 @@ func UseAuthHandler(params NewAuthHandlerParams) {
 	router.POST("/email-step-one", handler.AuthenByEmailStepOne)
 	router.POST("/validate-email-token", handler.ValidateEmailToken)
 	router.POST("/set-password", handler.SetPassword)
+	router.POST("/email", handler.AuthenUserByEmailPassword)
 }
 
 func (h *AuthHandler) AuthenByEmailStepOne(c *gin.Context) {
@@ -72,10 +73,27 @@ func (h *AuthHandler) SetPassword(c *gin.Context) {
 		return
 	}
 
-	data, err := h.authService.SetPasswordAndAuthUser(auth.AuthenByEmailPassword{
+	data, err := h.authService.SetPasswordAndAuthUser(auth.AuthenByEmailAfterSetPassword{
 		Email:       body.Email,
-		Password:    body.Password,
+		RawPassword: body.Password,
 		ActionToken: body.ActionToken,
+	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+	response.WithData(c, http.StatusOK, data, "Success")
+}
+
+func (h *AuthHandler) AuthenUserByEmailPassword(c *gin.Context) {
+	var body request.AuthenUserByEmailPasswordBody
+	if ok, vr := request.Validate(c, &body); !ok {
+		response.BindError(c, vr.Error())
+		return
+	}
+	data, err := h.authService.AuthenUserByEmailPassword(auth.AuthenByEmailPassword{
+		Email:       body.Email,
+		RawPassword: body.Password,
 	})
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)

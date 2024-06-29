@@ -13,3 +13,8 @@ type SetUserPasswordBody struct {
 	Password    string `json:"password" binding:"required"`
 	ActionToken string `json:"action_token" binding:"required"`
 }
+
+type AuthenUserByEmailPasswordBody struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+}

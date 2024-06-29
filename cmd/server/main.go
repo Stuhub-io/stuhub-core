@@ -13,6 +13,7 @@ import (
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/services/auth"
 	"github.com/Stuhub-io/core/services/user"
+	"github.com/Stuhub-io/internal/hasher"
 	"github.com/Stuhub-io/internal/mailer"
 	"github.com/Stuhub-io/internal/remote"
 	"github.com/Stuhub-io/internal/repository/postgres"
@@ -34,6 +35,7 @@ func main() {
 	}
 
 	tokenMaker := token.Must(cfg.SecretKey)
+	hasher := hasher.NewScrypt()
 
 	// TODO: read from env
 	mailer := mailer.NewMailer(mailer.NewMailerParams{
@@ -66,6 +68,7 @@ func main() {
 		Mailer:         mailer,
 		Config:         cfg,
 		RemoteRoute:    remoteRoute,
+		Hasher:         hasher,
 	})
 
 	// handlers

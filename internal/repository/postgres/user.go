@@ -50,6 +50,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 		LastName:  user.LastName,
 		Avatar:    user.Avatar,
 
+		Salt:         user.Salt,
 		HavePassword: user.Password != nil && *user.Password != "",
 		ActivatedAt:  activatedAt,
 		CreatedAt:    user.CreatedAt.String(),
@@ -80,6 +81,7 @@ func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain
 		LastName:  user.LastName,
 		Avatar:    user.Avatar,
 
+		Salt:         user.Salt,
 		HavePassword: user.Password != nil && *user.Password != "",
 		ActivatedAt:  activatedAt,
 		CreatedAt:    user.CreatedAt.String(),
@@ -109,6 +111,7 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 		LastName:  user.LastName,
 		Avatar:    user.Avatar,
 
+		Salt:         user.Salt,
 		HavePassword: user.Password != nil && *user.Password != "",
 		ActivatedAt:  activatedAt,
 		CreatedAt:    user.CreatedAt.String(),
@@ -117,7 +120,7 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 
 }
 
-func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email string) (*domain.User, *domain.Error) {
+func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email string, salt string) (*domain.User, *domain.Error) {
 
 	var user model.User
 	// Try to find the user by email
@@ -129,6 +132,7 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 		// If the user is not found, create a new user
 		user = model.User{
 			Email: email,
+			Salt:  salt,
 		}
 
 		err = r.store.DB().Create(&user).Error
@@ -150,6 +154,7 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Avatar:    user.Avatar,
+		Salt:      user.Salt,
 
 		// Socials
 		OauthGmail:   user.OathGmail,
@@ -161,11 +166,26 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 	}, nil
 }
 
-func (r *UserRepository) SetUserPassword(ctx context.Context, pkID int64, password string) *domain.Error {
+func (r *UserRepository) SetUserPassword(ctx context.Context, pkID int64, hashedPassword string) *domain.Error {
 	// FIXME: Add password hashing
-	err := r.store.DB().Model(&model.User{}).Where("pkid = ?", pkID).Update("password", password).Error
+	err := r.store.DB().Model(&model.User{}).Where("pkid = ?", pkID).Update("password", hashedPassword).Error
 	if err != nil {
 		return domain.ErrDatabaseMutation
 	}
 	return nil
+}
+
+func (r *UserRepository) CheckPassword(ctx context.Context, email, rawPassword string, hasher ports.Hasher) (bool, *domain.Error) {
+	var user model.User
+	err := r.store.DB().Where("email = ?", email).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, domain.ErrUserNotFoundByEmail(email)
+		}
+		return false, domain.ErrDatabaseQuery
+	}
+
+	valid := hasher.Compare(rawPassword, *user.Password, user.Salt)
+
+	return valid, nil
 }

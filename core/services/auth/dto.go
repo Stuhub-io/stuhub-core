@@ -23,6 +23,11 @@ type ValidateEmailTokenResp struct {
 
 type AuthenByEmailPassword struct {
 	Email       string `json:"email"`
-	Password    string `json:"password"`
+	RawPassword string `json:"password"`
+}
+
+type AuthenByEmailAfterSetPassword struct {
+	Email       string `json:"email"`
+	RawPassword string `json:"password"`
 	ActionToken string `json:"action_token"`
 }
