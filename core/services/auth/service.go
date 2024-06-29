@@ -84,6 +84,7 @@ func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEm
 
 func (s *Service) MakeValidateEmailAuth(token string) string {
 	baseUrl := s.config.RemoteBaseURL + s.remoteRoute.ValidateEmailOauth
+
 	return baseUrl + "?token=" + token
 }
 
