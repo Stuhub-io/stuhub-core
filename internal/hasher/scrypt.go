@@ -16,21 +16,23 @@ type scryptImpl struct {
 	r          int
 	p          int
 	keyLength  int
+	secretKey  []byte
 }
 
-func newScryptDefault() *scryptImpl {
+func newScryptDefault(secretKey []byte) *scryptImpl {
 	return &scryptImpl{
 		saltLength: 8,
 		n:          1 << 15,
 		r:          8,
 		p:          1,
 		keyLength:  32,
+		secretKey:  secretKey,
 	}
 }
 
 // NewScrypt creates a new scrypt password helper.
-func NewScrypt() ports.Hasher {
-	return newScryptDefault()
+func NewScrypt(secretKey []byte) ports.Hasher {
+	return newScryptDefault(secretKey)
 }
 
 func (h scryptImpl) GenerateSalt() string {
@@ -44,6 +46,7 @@ func (h scryptImpl) GenerateSalt() string {
 
 	return base64.RawStdEncoding.EncodeToString(salt)
 }
+
 func (h scryptImpl) Hash(password, salt string) (string, error) {
 	// Convert password string to byte slice
 	var passwordBytes = []byte(password)
@@ -52,7 +55,9 @@ func (h scryptImpl) Hash(password, salt string) (string, error) {
 		return "", err
 	}
 
-	hash, err := scrypt.Key(passwordBytes, saltBytes, h.n, h.r, h.p, h.keyLength)
+	passwordWithKey := append(passwordBytes, h.secretKey...)
+
+	hash, err := scrypt.Key(passwordWithKey, saltBytes, h.n, h.r, h.p, h.keyLength)
 	if err != nil {
 		return "", err
 	}
@@ -61,13 +66,16 @@ func (h scryptImpl) Hash(password, salt string) (string, error) {
 
 	return hashedStr, nil
 }
+
 func (h scryptImpl) Compare(password, hashedPassword, salt string) bool {
 	saltBytes, err := base64.RawStdEncoding.DecodeString(salt)
 	if err != nil {
 		return false
 	}
 
-	otherHash, err := scrypt.Key([]byte(password), saltBytes, h.n, h.r, h.p, h.keyLength)
+	passwordWithKey := append([]byte(password), h.secretKey...)
+
+	otherHash, err := scrypt.Key(passwordWithKey, saltBytes, h.n, h.r, h.p, h.keyLength)
 	if err != nil {
 		return false
 	}

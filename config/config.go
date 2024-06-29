@@ -34,6 +34,8 @@ type Config struct {
 	SendgridSetPasswordTemplateId string
 	SendgridEmailFrom             string
 
+	HashPwSecretKey string
+
 	// Kafka KafkaConfig
 }
 
@@ -88,6 +90,8 @@ func generateConfigFromViper(v *viper.Viper) Config {
 		SendgridKey:                   v.GetString("SENDGRID_API_KEY"),
 		SendgridSetPasswordTemplateId: v.GetString("SENDGRID_SET_PASSWORD_TEMPLATE_ID"),
 		SendgridEmailFrom:             v.GetString("SENDGRID_EMAIL_FROM"),
+
+		HashPwSecretKey: v.GetString("HASH_PW_SECRET_KEY"),
 	}
 }
 

@@ -72,12 +72,12 @@ var (
 	ErrDatabaseQuery = &Error{
 		Code:    InternalServerErrCode,
 		Error:   DatabaseErr,
-		Message: "Database can't not process the query",
+		Message: "Database can't process the query",
 	}
 	ErrDatabaseMutation = &Error{
 		Code:    InternalServerErrCode,
 		Error:   DatabaseErr,
-		Message: "Database can't not process the mutation",
+		Message: "Database can't process the mutation",
 	}
 )
 

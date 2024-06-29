@@ -58,7 +58,8 @@ func main() {
 	}
 
 	tokenMaker := token.Must(cfg.SecretKey)
-	hasher := hasher.NewScrypt()
+	fmt.Print(cfg.HashPwSecretKey)
+	hasher := hasher.NewScrypt([]byte(cfg.HashPwSecretKey))
 
 	// TODO: read from env
 	mailer := mailer.NewMailer(mailer.NewMailerParams{

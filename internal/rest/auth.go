@@ -42,7 +42,6 @@ func (h *AuthHandler) AuthenByEmailStepOne(c *gin.Context) {
 	data, err := h.authService.AuthenByEmailStepOne(auth.AuthenByEmailStepOneDto{
 		Email: body.Email,
 	})
-
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -63,6 +62,7 @@ func (h *AuthHandler) ValidateEmailToken(c *gin.Context) {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
 	}
+
 	response.WithData(c, http.StatusOK, data, "Success")
 }
 
@@ -82,6 +82,7 @@ func (h *AuthHandler) SetPassword(c *gin.Context) {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
 	}
+
 	response.WithData(c, http.StatusOK, data, "Success")
 }
 
@@ -99,5 +100,6 @@ func (h *AuthHandler) AuthenUserByEmailPassword(c *gin.Context) {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
 	}
+
 	response.WithData(c, http.StatusOK, data, "Success")
 }

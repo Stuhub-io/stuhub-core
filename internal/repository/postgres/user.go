@@ -104,6 +104,7 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 
 		return nil, domain.ErrDatabaseQuery
 	}
+
 	var activatedAt string = ""
 	if user.ActivatedAt != nil {
 		activatedAt = user.ActivatedAt.String()
@@ -127,7 +128,6 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 }
 
 func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email string, salt string) (*domain.User, *domain.Error) {
-
 	var user model.User
 	// Try to find the user by email
 	err := r.store.DB().Where("email = ?", email).First(&user).Error
