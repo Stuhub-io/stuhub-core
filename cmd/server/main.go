@@ -108,7 +108,7 @@ func main() {
 	}
 
 	r.GET("/", func(c *gin.Context) {
-		c.JSON(200, "hello")
+		c.JSON(200, "Server is running OK!")
 	})
 
 	r.GET("/swagger/*any", swagger.WrapHandler(swaggerFiles.Handler))
