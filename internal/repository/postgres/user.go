@@ -162,6 +162,7 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 }
 
 func (r *UserRepository) SetUserPassword(ctx context.Context, pkID int64, password string) *domain.Error {
+	// FIXME: Add password hashing
 	err := r.store.DB().Model(&model.User{}).Where("pkid = ?", pkID).Update("password", password).Error
 	if err != nil {
 		return domain.ErrDatabaseMutation

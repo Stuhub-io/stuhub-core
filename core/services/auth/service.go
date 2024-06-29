@@ -97,9 +97,15 @@ func (s *Service) ValidateEmailAuth(token string) (*ValidateEmailTokenResp, *dom
 		providerName = domain.GoogleAuthProvider.Name
 	}
 
+	action_token, err := s.tokenMaker.CreateToken(user.PkID, user.Email, domain.NextStepTokenDuration)
+	if err != nil {
+		return nil, domain.ErrInternalServerError
+	}
+
 	return &ValidateEmailTokenResp{
 		Email:        user.Email,
 		OAuthPvodier: providerName,
+		ActionToken:  action_token,
 	}, nil
 }
 
@@ -114,6 +120,7 @@ func (s *Service) SetPasswordAndAuthUser(dto AuthenByEmailPassword) (*AuthenByEm
 	if err != nil {
 		return nil, domain.ErrInternalServerError
 	}
+
 	access, tErr := s.tokenMaker.CreateToken(user.PkID, user.Email, domain.AccessTokenDuration)
 	if tErr != nil {
 		return nil, domain.ErrInternalServerError

@@ -18,9 +18,11 @@ type AuthenByEmailStepTwoResp struct {
 type ValidateEmailTokenResp struct {
 	Email        string `json:"email"`
 	OAuthPvodier string `json:"oauth_provider"`
+	ActionToken  string `json:"action_token"` // New Token required consequence action
 }
 
 type AuthenByEmailPassword struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	ActionToken string `json:"action_token"`
 }
