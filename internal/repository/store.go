@@ -36,6 +36,7 @@ func (d *dbStore) NewTransaction() (DBStore, TxEndFunc) {
 			if nErr != nil {
 				return errors.New(nErr.Error())
 			}
+
 			return err
 		}
 
@@ -43,6 +44,7 @@ func (d *dbStore) NewTransaction() (DBStore, TxEndFunc) {
 		if cErr != nil {
 			return errors.New(cErr.Error())
 		}
+
 		return nil
 	}
 

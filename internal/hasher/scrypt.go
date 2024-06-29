@@ -56,7 +56,9 @@ func (h scryptImpl) Hash(password, salt string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	hashedStr := base64.RawStdEncoding.EncodeToString(hash)
+
 	return hashedStr, nil
 }
 func (h scryptImpl) Compare(password, hashedPassword, salt string) bool {
@@ -64,10 +66,12 @@ func (h scryptImpl) Compare(password, hashedPassword, salt string) bool {
 	if err != nil {
 		return false
 	}
+
 	otherHash, err := scrypt.Key([]byte(password), saltBytes, h.n, h.r, h.p, h.keyLength)
 	if err != nil {
 		return false
 	}
+
 	hashedPasswordBytes, err := base64.RawStdEncoding.DecodeString(hashedPassword)
 	if err != nil {
 		return false

@@ -89,5 +89,9 @@ test:
 swagger:
 	@echo Starting swagger generating
 	swag init -g **/**/*.go
+	make swag-format
+
+swag-format:
+	swag fmt
 
 .PHONY: migrate-up migrate-down migrate-create migrate-drop

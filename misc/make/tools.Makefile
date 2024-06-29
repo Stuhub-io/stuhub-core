@@ -10,4 +10,7 @@ install-golang-migrate:
 install-gorm-gentool:
 	go install gorm.io/gen/tools/gentool@latest
 
-.PHONY: install-golangci-lint install-air install-golang-migrate install-gorm-gentool
+install-swaggo:
+	go install github.com/swaggo/swag/cmd/swag@latest
+
+.PHONY: install-golangci-lint install-air install-golang-migrate install-gorm-gentool install-swaggo

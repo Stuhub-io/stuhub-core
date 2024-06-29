@@ -2,7 +2,6 @@ package rest
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/Stuhub-io/core/services/user"
 	"github.com/Stuhub-io/internal/rest/response"
@@ -29,9 +28,21 @@ func UseUserHandler(params NewUserHandlerParams) {
 	router.GET("/email/:email", handler.GetUserByEmail)
 }
 
+// GetUserByID godoc
+//
+//	@Summary		Get User Details
+//	@Description	Get User Details by ID
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"User ID"
+//	@Success		200	{object}	domain.User
+//	@Failure		400	{object}	domain.Error
+//	@Failure		500	{object}	domain.Error
+//	@Router			/v1/user-services/{id} [get]
 func (h *UserHandler) GetUserById(c *gin.Context) {
-	userId, _ := strconv.Atoi(c.Param("id"))
-	resp, err := h.userService.GetUserById(string(userId))
+	userId := c.Param("id")
+	resp, err := h.userService.GetUserById(userId)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return

@@ -13,6 +13,7 @@ import (
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/services/auth"
 	"github.com/Stuhub-io/core/services/user"
+	_ "github.com/Stuhub-io/docs"
 	"github.com/Stuhub-io/internal/hasher"
 	"github.com/Stuhub-io/internal/mailer"
 	"github.com/Stuhub-io/internal/remote"
@@ -22,8 +23,30 @@ import (
 	"github.com/Stuhub-io/internal/token"
 	"github.com/Stuhub-io/logger"
 	"github.com/gin-gonic/gin"
+
+	swaggerFiles "github.com/swaggo/files"
+	swagger "github.com/swaggo/gin-swagger"
 )
 
+//	@title			Swagger Example API
+//	@version		1.0
+//	@description	This is a sample server celler server.
+//	@termsOfService	http://swagger.io/terms/
+
+//	@contact.name	API Support
+//	@contact.url	http://www.swagger.io/support
+//	@contact.email	support@swagger.io
+
+//	@license.name	Apache 2.0
+//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+
+//	@host		localhost:5000
+//	@BasePath	/api/v1
+
+//	@securityDefinitions.basic	BasicAuth
+
+// @externalDocs.description	OpenAPI
+// @externalDocs.url			https://swagger.io/resources/open-api/
 func main() {
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
 
@@ -83,6 +106,12 @@ func main() {
 			AuthService: authService,
 		})
 	}
+
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(200, "Server is running OK!")
+	})
+
+	r.GET("/swagger/*any", swagger.WrapHandler(swaggerFiles.Handler))
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Port),

@@ -1,0 +1,67 @@
+definitions:
+  domain.Error:
+    properties:
+      code:
+        type: integer
+      error:
+        type: string
+      message:
+        type: string
+    type: object
+  domain.User:
+    properties:
+      activated_at:
+        type: string
+      avatar:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      have_password:
+        type: boolean
+      id:
+        type: string
+      last_name:
+        type: string
+      oauth_gmail:
+        description: Socials
+        type: string
+      updated_at:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /v1/user-services/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get User Details by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Get User Details
+      tags:
+      - users
+swagger: "2.0"

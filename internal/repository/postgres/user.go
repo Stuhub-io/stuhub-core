@@ -36,12 +36,15 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrUserNotFoundById(id)
 		}
+
 		return nil, domain.ErrDatabaseQuery
 	}
+
 	var activatedAt string = ""
 	if user.ActivatedAt != nil {
 		activatedAt = user.ActivatedAt.String()
 	}
+
 	return &domain.User{
 		PkID:      user.Pkid,
 		ID:        user.ID,
@@ -66,6 +69,7 @@ func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrUserNotFound
 		}
+
 		return nil, domain.ErrDatabaseQuery
 	}
 
@@ -73,6 +77,7 @@ func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain
 	if user.ActivatedAt != nil {
 		activatedAt = user.ActivatedAt.String()
 	}
+
 	return &domain.User{
 		PkID:      user.Pkid,
 		ID:        user.ID,
@@ -103,6 +108,7 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 	if user.ActivatedAt != nil {
 		activatedAt = user.ActivatedAt.String()
 	}
+
 	return &domain.User{
 		PkID:      user.Pkid,
 		ID:        user.ID,
@@ -145,6 +151,7 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 	if user.ActivatedAt != nil {
 		activatedAt = user.ActivatedAt.String()
 	}
+
 	// User found, return the existing user
 	return &domain.User{
 		PkID:  user.Pkid,
@@ -172,6 +179,7 @@ func (r *UserRepository) SetUserPassword(ctx context.Context, pkID int64, hashed
 	if err != nil {
 		return domain.ErrDatabaseMutation
 	}
+
 	return nil
 }
 
@@ -182,6 +190,7 @@ func (r *UserRepository) CheckPassword(ctx context.Context, email, rawPassword s
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, domain.ErrUserNotFoundByEmail(email)
 		}
+
 		return false, domain.ErrDatabaseQuery
 	}
 
