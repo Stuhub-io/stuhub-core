@@ -20,7 +20,7 @@ type Config struct {
 
 	RemoteBaseURL string
 
-	AllowedOrigins string
+	AllowedOrigins []string
 	DBHost         string
 	DBPort         string
 	DBUser         string
@@ -46,7 +46,7 @@ type KafkaConfig struct {
 }
 
 func (c *Config) GetCORS() []string {
-	cors := strings.Split(c.AllowedOrigins, ";")
+	cors := c.AllowedOrigins
 	rs := []string{}
 	for idx := range cors {
 		itm := cors[idx]
@@ -68,13 +68,15 @@ func GetDefaultConfigLoaders() []Loader {
 }
 
 func generateConfigFromViper(v *viper.Viper) Config {
+	allowedOrigins := strings.Split(v.GetString("ALLOWED_ORIGINS"), ",")
+
 	return Config{
 		BaseUrl:        v.GetString("BASE_URL"),
 		Port:           v.GetInt("PORT"),
 		Env:            v.GetString("ENV"),
 		ServiceName:    v.GetString("SERVICE_NAME"),
 		Debug:          v.GetBool("DEBUG"),
-		AllowedOrigins: v.GetString("ALLOWED_ORIGINS"),
+		AllowedOrigins: allowedOrigins,
 
 		RemoteBaseURL: v.GetString("REMOTE_BASE_URL"),
 

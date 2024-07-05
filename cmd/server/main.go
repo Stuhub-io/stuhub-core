@@ -58,7 +58,7 @@ func main() {
 	}
 
 	tokenMaker := token.Must(cfg.SecretKey)
-	fmt.Print(cfg.HashPwSecretKey)
+
 	hasher := hasher.NewScrypt([]byte(cfg.HashPwSecretKey))
 
 	// TODO: read from env
