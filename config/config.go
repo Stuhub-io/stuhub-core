@@ -29,6 +29,10 @@ type Config struct {
 	DBSslMode      bool
 	DBDsn          string
 
+	CacheHost     string
+	CachePort     string
+	CachePassword string
+
 	SecretKey                     string
 	SendgridKey                   string
 	SendgridSetPasswordTemplateId string
@@ -87,6 +91,10 @@ func generateConfigFromViper(v *viper.Viper) Config {
 		DBPass:    v.GetString("DB_PASS"),
 		DBSslMode: v.GetBool("DB_SSL_MODE"),
 		DBDsn:     v.GetString("DB_DSN"),
+
+		CacheHost:     v.GetString("CACHE_HOST"),
+		CachePort:     v.GetString("CACHE_PORT"),
+		CachePassword: v.GetString("CACHE_PASSWORD"),
 
 		SecretKey:                     v.GetString("SECRET_KEY"),
 		SendgridKey:                   v.GetString("SENDGRID_API_KEY"),
