@@ -2,6 +2,7 @@ package cache
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/Stuhub-io/core/domain"
@@ -9,6 +10,9 @@ import (
 
 func (u *CacheStore) SetUser(user *domain.User, duration time.Duration) error {
 	err := u.cache.Set(domain.UserKey(user.PkID), user, duration)
+	if err != nil {
+		fmt.Printf("caching user error: %v", err)
+	}
 
 	return err
 }

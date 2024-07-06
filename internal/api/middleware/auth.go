@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/Stuhub-io/core/domain"
@@ -56,10 +55,7 @@ func (a *AuthMiddleware) Authenticated() gin.HandlerFunc {
 			}
 
 			go func() {
-				cacheError := a.cacheStore.SetUser(data, time.Hour)
-				if cacheError != nil {
-					fmt.Printf("caching error: %v", cacheError)
-				}
+				a.cacheStore.SetUser(data, time.Hour)
 			}()
 
 			user = data
