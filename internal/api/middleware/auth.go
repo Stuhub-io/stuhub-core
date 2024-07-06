@@ -9,7 +9,7 @@ import (
 
 type HandlerWithTokenPayload func(*gin.Context, ...*domain.TokenPayload)
 
-func Authorized(tokenMaker ports.TokenMaker) gin.HandlerFunc {
+func Authenticated(tokenMaker ports.TokenMaker) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, err := authutils.ExtractBearerToken(c.GetHeader("Authorization"))
 		if err != nil {

@@ -29,7 +29,7 @@ func UseUserHandler(params NewUserHandlerParams) {
 
 	router := params.Router.Group("/user-services")
 
-	router.Use(middleware.Authorized(params.TokenMaker))
+	router.Use(middleware.Authenticated(params.TokenMaker))
 
 	router.GET("/:id", decorators.CurrentUser(handler.GetUserById))
 	router.GET("/email/:email", handler.GetUserByEmail)
