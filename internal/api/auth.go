@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/Stuhub-io/core/services/auth"
-	"github.com/Stuhub-io/internal/rest/request"
-	"github.com/Stuhub-io/internal/rest/response"
+	"github.com/Stuhub-io/internal/api/request"
+	"github.com/Stuhub-io/internal/api/response"
 	"github.com/gin-gonic/gin"
 )
 

@@ -14,12 +14,12 @@ import (
 	"github.com/Stuhub-io/core/services/auth"
 	"github.com/Stuhub-io/core/services/user"
 	_ "github.com/Stuhub-io/docs"
+	rest "github.com/Stuhub-io/internal/api"
+	"github.com/Stuhub-io/internal/api/middleware"
 	"github.com/Stuhub-io/internal/hasher"
 	"github.com/Stuhub-io/internal/mailer"
 	"github.com/Stuhub-io/internal/remote"
 	"github.com/Stuhub-io/internal/repository/postgres"
-	"github.com/Stuhub-io/internal/rest"
-	"github.com/Stuhub-io/internal/rest/middleware"
 	"github.com/Stuhub-io/internal/token"
 	"github.com/Stuhub-io/logger"
 	"github.com/gin-gonic/gin"
@@ -100,6 +100,7 @@ func main() {
 	{
 		rest.UseUserHandler(rest.NewUserHandlerParams{
 			Router:      v1,
+			TokenMaker:  tokenMaker,
 			UserService: userService,
 		})
 		rest.UseAuthHandler(rest.NewAuthHandlerParams{
