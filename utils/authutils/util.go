@@ -5,10 +5,10 @@ import (
 	"strings"
 )
 
-type userPayload string
+type userPayloadKey string
 
 var (
-	UserPayload userPayload = "userPayload"
+	UserPayloadKey userPayloadKey = "userPayload"
 )
 
 func ExtractBearerToken(header string) (string, error) {

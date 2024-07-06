@@ -63,7 +63,7 @@ func (a *AuthMiddleware) Authenticated() gin.HandlerFunc {
 			user = data
 		}
 
-		c.Set(string(authutils.UserPayload), user)
+		c.Set(string(authutils.UserPayloadKey), user)
 
 		c.Next()
 	}
