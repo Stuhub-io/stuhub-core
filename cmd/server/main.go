@@ -16,9 +16,12 @@ import (
 	_ "github.com/Stuhub-io/docs"
 	api "github.com/Stuhub-io/internal/api"
 	"github.com/Stuhub-io/internal/api/middleware"
+	"github.com/Stuhub-io/internal/cache"
+	"github.com/Stuhub-io/internal/cache/redis"
 	"github.com/Stuhub-io/internal/hasher"
 	"github.com/Stuhub-io/internal/mailer"
 	"github.com/Stuhub-io/internal/remote"
+	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/postgres"
 	"github.com/Stuhub-io/internal/token"
 	"github.com/Stuhub-io/logger"
@@ -52,12 +55,14 @@ func main() {
 
 	logger := logger.NewLogrusLogger()
 
-	postgresDB, err := postgres.NewStore(cfg.DBDsn, cfg.Debug)
-	if err != nil {
-		panic(err)
-	}
+	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug)
+
+	redisCache := redis.Must(cfg.CacheHost, cfg.CachePort, cfg.CachePassword)
 
 	tokenMaker := token.Must(cfg.SecretKey)
+
+	dbStore := store.NewDBStore(postgresDB, redisCache)
+	cacheStore := cache.NewCacheStore(redisCache)
 
 	hasher := hasher.NewScrypt([]byte(cfg.HashPwSecretKey))
 
@@ -75,9 +80,10 @@ func main() {
 	r.Use(middleware.JSON(&cfg))
 
 	remoteRoute := remote.NewRemoteRoute()
+
 	// repositories
 	userRepository := postgres.NewUserRepository(postgres.NewUserRepositoryParams{
-		Store: postgresDB,
+		Store: dbStore,
 		Cfg:   cfg,
 	})
 
@@ -95,13 +101,19 @@ func main() {
 		Hasher:         hasher,
 	})
 
+	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{
+		TokenMaker:     tokenMaker,
+		UserRepository: userRepository,
+		CacheStore:     cacheStore,
+	})
+
 	// handlers
 	v1 := r.Group("/v1")
 	{
 		api.UseUserHandler(api.NewUserHandlerParams{
-			Router:      v1,
-			TokenMaker:  tokenMaker,
-			UserService: userService,
+			Router:         v1,
+			AuthMiddleware: authMiddleware,
+			UserService:    userService,
 		})
 		api.UseAuthHandler(api.NewAuthHandlerParams{
 			Router:      v1,

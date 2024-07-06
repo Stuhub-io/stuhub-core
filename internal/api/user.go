@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/Stuhub-io/core/domain"
-	"github.com/Stuhub-io/core/ports"
 	"github.com/Stuhub-io/core/services/user"
 	"github.com/Stuhub-io/internal/api/decorators"
 	"github.com/Stuhub-io/internal/api/middleware"
@@ -17,9 +16,9 @@ type UserHandler struct {
 }
 
 type NewUserHandlerParams struct {
-	Router      *gin.RouterGroup
-	TokenMaker  ports.TokenMaker
-	UserService *user.Service
+	Router         *gin.RouterGroup
+	AuthMiddleware *middleware.AuthMiddleware
+	UserService    *user.Service
 }
 
 func UseUserHandler(params NewUserHandlerParams) {
@@ -28,8 +27,9 @@ func UseUserHandler(params NewUserHandlerParams) {
 	}
 
 	router := params.Router.Group("/user-services")
+	authMiddleware := params.AuthMiddleware
 
-	router.Use(middleware.Authenticated(params.TokenMaker))
+	router.Use(authMiddleware.Authenticated())
 
 	router.GET("/:id", decorators.CurrentUser(handler.GetUserById))
 	router.GET("/email/:email", handler.GetUserByEmail)
@@ -47,7 +47,7 @@ func UseUserHandler(params NewUserHandlerParams) {
 //	@Failure		400	{object}	domain.Error
 //	@Failure		500	{object}	domain.Error
 //	@Router			/v1/user-services/{id} [get]
-func (h *UserHandler) GetUserById(c *gin.Context, user *domain.TokenPayload) {
+func (h *UserHandler) GetUserById(c *gin.Context, user *domain.User) {
 	// userId := c.Param("id")
 	// _, err := h.userService.GetUserById(userId)
 	// if err != nil {

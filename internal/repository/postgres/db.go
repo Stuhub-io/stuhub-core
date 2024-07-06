@@ -1,14 +1,13 @@
 package postgres
 
 import (
-	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/logger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 )
 
-func open(dsn string, isDebug bool) (store.DBStore, error) {
+func open(dsn string, isDebug bool) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: dsn,
 	}), &gorm.Config{})
@@ -25,9 +24,14 @@ func open(dsn string, isDebug bool) (store.DBStore, error) {
 		db.Logger = gormlogger.Default.LogMode(gormlogger.Info)
 	}
 
-	return store.NewDbStore(db), nil
+	return db, nil
 }
 
-func NewStore(dsn string, isDebug bool) (store.DBStore, error) {
-	return open(dsn, isDebug)
+func Must(dsn string, isDebug bool) *gorm.DB {
+	db, err := open(dsn, isDebug)
+	if err != nil {
+		panic(err)
+	}
+
+	return db
 }

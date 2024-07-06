@@ -13,12 +13,12 @@ import (
 )
 
 type UserRepository struct {
-	store store.DBStore
+	store *store.DBStore
 	cfg   config.Config
 }
 
 type NewUserRepositoryParams struct {
-	Store store.DBStore
+	Store *store.DBStore
 	Cfg   config.Config
 }
 
@@ -59,7 +59,6 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 		CreatedAt:    user.CreatedAt.String(),
 		UpdatedAt:    user.UpdatedAt.String(),
 	}, nil
-
 }
 
 func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain.User, *domain.Error) {

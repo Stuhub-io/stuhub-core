@@ -3,31 +3,29 @@ package store
 import (
 	"errors"
 
+	"github.com/Stuhub-io/core/ports"
 	"gorm.io/gorm"
 )
 
 type TxEndFunc func(error) error
-type DBStore interface {
-	DB() *gorm.DB
-	NewTransaction() (DBStore, TxEndFunc)
-	SetNewDB(*gorm.DB)
+
+type DBStore struct {
+	Database *gorm.DB
+	Cache    ports.Cache
 }
 
-func NewDbStore(db *gorm.DB) DBStore {
-	return &dbStore{
+func NewDBStore(db *gorm.DB, cache ports.Cache) *DBStore {
+	return &DBStore{
 		Database: db,
+		Cache:    cache,
 	}
 }
 
-type dbStore struct {
-	Database *gorm.DB
-}
-
-func (d *dbStore) DB() *gorm.DB {
+func (d *DBStore) DB() *gorm.DB {
 	return d.Database
 }
 
-func (d *dbStore) NewTransaction() (DBStore, TxEndFunc) {
+func (d *DBStore) NewTransaction() (*DBStore, TxEndFunc) {
 	newDB := d.Database.Begin()
 
 	finallyFn := func(err error) error {
@@ -48,9 +46,9 @@ func (d *dbStore) NewTransaction() (DBStore, TxEndFunc) {
 		return nil
 	}
 
-	return &dbStore{Database: newDB}, finallyFn
+	return &DBStore{Database: newDB}, finallyFn
 }
 
-func (d *dbStore) SetNewDB(db *gorm.DB) {
+func (d *DBStore) SetNewDB(db *gorm.DB) {
 	d.Database = db
 }
