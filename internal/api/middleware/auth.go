@@ -55,10 +55,12 @@ func (a *AuthMiddleware) Authenticated() gin.HandlerFunc {
 				return
 			}
 
-			cacheError := a.cacheStore.SetUser(data, time.Hour)
-			if cacheError != nil {
-				fmt.Printf("caching error: %v", cacheError)
-			}
+			go func() {
+				cacheError := a.cacheStore.SetUser(data, time.Hour)
+				if cacheError != nil {
+					fmt.Printf("caching error: %v", cacheError)
+				}
+			}()
 
 			user = data
 		}
