@@ -20,6 +20,7 @@ import (
 	"github.com/Stuhub-io/internal/cache/redis"
 	"github.com/Stuhub-io/internal/hasher"
 	"github.com/Stuhub-io/internal/mailer"
+	"github.com/Stuhub-io/internal/oauth"
 	"github.com/Stuhub-io/internal/remote"
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/postgres"
@@ -88,12 +89,14 @@ func main() {
 	})
 
 	// services
+	oauthService := oauth.NewOauthService(logger)
 	userService := user.NewService(user.NewServiceParams{
 		UserRepository: userRepository,
 		Config:         cfg,
 	})
 	authService := auth.NewService(auth.NewServiceParams{
 		UserRepository: userRepository,
+		OauthService:   oauthService,
 		TokenMaker:     tokenMaker,
 		Mailer:         mailer,
 		Config:         cfg,
