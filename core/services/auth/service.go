@@ -154,39 +154,53 @@ func (s *Service) SetPasswordAndAuthUser(dto AuthenByEmailAfterSetPasswordDto) (
 	}, nil
 }
 
-func (s *Service) AuthenUserByEmailPassword(dto AuthenByEmailPasswordDto) (*domain.AuthToken, *domain.Error) {
+func (s *Service) AuthenUserByEmailPassword(dto AuthenByEmailPasswordDto) (*domain.AuthToken, *domain.User, *domain.Error) {
 	user, derr := s.userRepository.GetUserByEmail(context.Background(), dto.Email)
 	if derr != nil {
-		return nil, derr
+		return nil, nil, domain.ErrUserNotFoundByEmail(dto.Email)
 	}
 
 	if !user.HavePassword {
-		return nil, domain.ErrBadParamInput
+		return nil, nil, domain.ErrBadParamInput
 	}
 
 	valid, derr := s.userRepository.CheckPassword(context.Background(), user.Email, dto.RawPassword, s.hasher)
 	if derr != nil {
-		return nil, domain.ErrInternalServerError
+		return nil, nil, domain.ErrInternalServerError
 	}
 
 	if !valid {
-		return nil, domain.ErrUserPassword
+		return nil, nil, domain.ErrUserPassword
 	}
 
 	access, tErr := s.tokenMaker.CreateToken(user.PkID, user.Email, domain.AccessTokenDuration)
 	if tErr != nil {
-		return nil, domain.ErrInternalServerError
+		return nil, nil, domain.ErrInternalServerError
 	}
 
 	refresh, tErr := s.tokenMaker.CreateToken(user.PkID, user.Email, domain.RefreshTokenDuration)
 	if tErr != nil {
-		return nil, domain.ErrInternalServerError
+		return nil, nil, domain.ErrInternalServerError
 	}
 
 	return &domain.AuthToken{
 		Access:  access,
 		Refresh: refresh,
-	}, nil
+	}, user, nil
+}
+
+func (s *Service) GetUserByToken(token string) (*domain.User, *domain.Error) {
+	payload, err := s.tokenMaker.DecodeToken(token)
+	if err != nil {
+		return nil, domain.ErrTokenExpired
+	}
+
+	user, uErr := s.userRepository.GetUserByPkID(context.Background(), payload.UserPkID)
+	if uErr != nil {
+		return nil, domain.ErrBadRequest
+	}
+
+	return user, nil
 }
 
 func (s *Service) AuthenUserByGoogle(dto AuthenByGoogleDto) (*AuthenByGoogleResponse, *domain.Error) {
