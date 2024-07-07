@@ -29,6 +29,7 @@ func UseAuthHandler(params NewAuthHandlerParams) {
 	router.POST("/validate-email-token", handler.ValidateEmailToken)
 	router.POST("/set-password", handler.SetPassword)
 	router.POST("/email", handler.AuthenUserByEmailPassword)
+	router.POST("/google", handler.AuthenUserByGoogle)
 }
 
 func (h *AuthHandler) AuthenByEmailStepOne(c *gin.Context) {
@@ -73,7 +74,7 @@ func (h *AuthHandler) SetPassword(c *gin.Context) {
 		return
 	}
 
-	data, err := h.authService.SetPasswordAndAuthUser(auth.AuthenByEmailAfterSetPassword{
+	data, err := h.authService.SetPasswordAndAuthUser(auth.AuthenByEmailAfterSetPasswordDto{
 		Email:       body.Email,
 		RawPassword: body.Password,
 		ActionToken: body.ActionToken,
@@ -92,9 +93,27 @@ func (h *AuthHandler) AuthenUserByEmailPassword(c *gin.Context) {
 		response.BindError(c, vr.Error())
 		return
 	}
-	data, err := h.authService.AuthenUserByEmailPassword(auth.AuthenByEmailPassword{
+	data, err := h.authService.AuthenUserByEmailPassword(auth.AuthenByEmailPasswordDto{
 		Email:       body.Email,
 		RawPassword: body.Password,
+	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, http.StatusOK, data, "Success")
+}
+
+func (h *AuthHandler) AuthenUserByGoogle(c *gin.Context) {
+	var body request.AuthenUserByGoogleBody
+	if ok, vr := request.Validate(c, &body); !ok {
+		response.BindError(c, vr.Error())
+		return
+	}
+
+	data, err := h.authService.AuthenUserByGoogle(auth.AuthenByGoogleDto{
+		Token: body.Token,
 	})
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)

@@ -11,6 +11,7 @@ import (
 
 type Service struct {
 	userRepository ports.UserRepository
+	oauthService   ports.OauthService
 	mailer         ports.Mailer
 	tokenMaker     ports.TokenMaker
 	remoteRoute    ports.RemoteRoute
@@ -20,6 +21,7 @@ type Service struct {
 
 type NewServiceParams struct {
 	ports.UserRepository
+	ports.OauthService
 	ports.Mailer
 	ports.TokenMaker
 	ports.RemoteRoute
@@ -30,6 +32,7 @@ type NewServiceParams struct {
 func NewService(params NewServiceParams) *Service {
 	return &Service{
 		userRepository: params.UserRepository,
+		oauthService:   params.OauthService,
 		mailer:         params.Mailer,
 		tokenMaker:     params.TokenMaker,
 		config:         params.Config,
@@ -117,7 +120,7 @@ func (s *Service) ValidateEmailAuth(token string) (*ValidateEmailTokenResp, *dom
 	}, nil
 }
 
-func (s *Service) SetPasswordAndAuthUser(dto AuthenByEmailAfterSetPassword) (*AuthenByEmailStepTwoResp, *domain.Error) {
+func (s *Service) SetPasswordAndAuthUser(dto AuthenByEmailAfterSetPasswordDto) (*AuthenByEmailStepTwoResp, *domain.Error) {
 	user, derr := s.userRepository.GetUserByEmail(context.Background(), dto.Email)
 	if derr != nil {
 		return nil, domain.ErrUserNotFoundByEmail(dto.Email)
@@ -151,10 +154,10 @@ func (s *Service) SetPasswordAndAuthUser(dto AuthenByEmailAfterSetPassword) (*Au
 	}, nil
 }
 
-func (s *Service) AuthenUserByEmailPassword(dto AuthenByEmailPassword) (*domain.AuthToken, *domain.Error) {
+func (s *Service) AuthenUserByEmailPassword(dto AuthenByEmailPasswordDto) (*domain.AuthToken, *domain.Error) {
 	user, derr := s.userRepository.GetUserByEmail(context.Background(), dto.Email)
 	if derr != nil {
-		return nil, domain.ErrUserNotFoundByEmail(dto.Email)
+		return nil, derr
 	}
 
 	if !user.HavePassword {
@@ -183,5 +186,43 @@ func (s *Service) AuthenUserByEmailPassword(dto AuthenByEmailPassword) (*domain.
 	return &domain.AuthToken{
 		Access:  access,
 		Refresh: refresh,
+	}, nil
+}
+
+func (s *Service) AuthenUserByGoogle(dto AuthenByGoogleDto) (*AuthenByGoogleResponse, *domain.Error) {
+	userInfo, oerr := s.oauthService.GetGoogleUserInfo(context.Background(), dto.Token)
+	if oerr != nil {
+		return nil, domain.ErrGetGoogleInfo
+	}
+
+	user, err := s.userRepository.GetUserByEmail(context.Background(), userInfo.Email)
+	if err != nil && err.Error == domain.NotFoundErr {
+		salt := s.hasher.GenerateSalt()
+		newUser, err := s.userRepository.CreateUserWithGoogleInfo(context.Background(), userInfo.Email, salt, userInfo.FirstName, userInfo.LastName, userInfo.Avatar)
+		if err != nil {
+			return nil, err
+		}
+
+		user = newUser
+	} else if err != nil {
+		return nil, err
+	}
+
+	access, tErr := s.tokenMaker.CreateToken(user.PkID, user.Email, domain.AccessTokenDuration)
+	if tErr != nil {
+		return nil, domain.ErrInternalServerError
+	}
+
+	refresh, tErr := s.tokenMaker.CreateToken(user.PkID, user.Email, domain.RefreshTokenDuration)
+	if tErr != nil {
+		return nil, domain.ErrInternalServerError
+	}
+
+	return &AuthenByGoogleResponse{
+		User: user,
+		AuthToken: domain.AuthToken{
+			Access:  access,
+			Refresh: refresh,
+		},
 	}, nil
 }

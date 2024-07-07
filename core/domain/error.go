@@ -138,3 +138,11 @@ var (
 		Message: "Failed to process sending email. Please try again!",
 	}
 )
+
+var (
+	ErrGetGoogleInfo = &Error{
+		Code:    InternalServerErrCode,
+		Error:   InternalServerErr,
+		Message: "Failed to get Google info. Please try again!",
+	}
+)
