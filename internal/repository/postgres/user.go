@@ -128,13 +128,12 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 
 func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email string, salt string) (*domain.User, *domain.Error) {
 	var user model.User
-	// Try to find the user by email
 	err := r.store.DB().Where("email = ?", email).First(&user).Error
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrDatabaseQuery
 		}
-		// If the user is not found, create a new user
+
 		user = model.User{
 			Email: email,
 			Salt:  salt,
@@ -151,24 +150,55 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 		activatedAt = user.ActivatedAt.String()
 	}
 
-	// User found, return the existing user
 	return &domain.User{
-		PkID:  user.Pkid,
-		ID:    user.ID,
-		Email: user.Email,
-
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Avatar:    user.Avatar,
-		Salt:      user.Salt,
-
-		// Socials
-		OauthGmail:   user.OathGmail,
+		PkID:         user.Pkid,
+		ID:           user.ID,
+		Email:        user.Email,
+		FirstName:    user.FirstName,
+		LastName:     user.LastName,
+		Avatar:       user.Avatar,
+		Salt:         user.Salt,
+		OauthGmail:   user.OauthGmail,
 		HavePassword: user.Password != nil && *user.Password != "",
+		ActivatedAt:  activatedAt,
+		CreatedAt:    user.CreatedAt.String(),
+		UpdatedAt:    user.UpdatedAt.String(),
+	}, nil
+}
 
-		ActivatedAt: activatedAt,
-		CreatedAt:   user.CreatedAt.String(),
-		UpdatedAt:   user.UpdatedAt.String(),
+func (r *UserRepository) CreateUserWithGoogleInfo(ctx context.Context, email, salt, firstName, lastName, avatar string) (*domain.User, *domain.Error) {
+	user := model.User{
+		Email:      email,
+		Salt:       salt,
+		FirstName:  firstName,
+		LastName:   lastName,
+		Avatar:     avatar,
+		OauthGmail: email,
+	}
+
+	err := r.store.DB().Create(&user).Error
+	if err != nil {
+		return nil, domain.ErrDatabaseQuery
+	}
+
+	activatedAt := ""
+	if user.ActivatedAt != nil {
+		activatedAt = user.ActivatedAt.String()
+	}
+
+	return &domain.User{
+		PkID:         user.Pkid,
+		ID:           user.ID,
+		Email:        user.Email,
+		FirstName:    user.FirstName,
+		LastName:     user.LastName,
+		Avatar:       user.Avatar,
+		Salt:         user.Salt,
+		OauthGmail:   user.OauthGmail,
+		HavePassword: user.Password != nil && *user.Password != "",
+		ActivatedAt:  activatedAt,
+		CreatedAt:    user.CreatedAt.String(),
+		UpdatedAt:    user.UpdatedAt.String(),
 	}, nil
 }
 

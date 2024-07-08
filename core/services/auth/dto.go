@@ -21,13 +21,22 @@ type ValidateEmailTokenResp struct {
 	ActionToken  string `json:"action_token"` // New Token required consequence action
 }
 
-type AuthenByEmailPassword struct {
+type AuthenByEmailPasswordDto struct {
 	Email       string `json:"email"`
 	RawPassword string `json:"password"`
 }
 
-type AuthenByEmailAfterSetPassword struct {
+type AuthenByEmailAfterSetPasswordDto struct {
 	Email       string `json:"email"`
 	RawPassword string `json:"password"`
 	ActionToken string `json:"action_token"`
+}
+
+type AuthenByGoogleDto struct {
+	Token string `json:"token"`
+}
+
+type AuthenByGoogleResponse struct {
+	Profile          *domain.User `json:"profile"`
+	domain.AuthToken `json:"tokens"`
 }
