@@ -37,6 +37,6 @@ type AuthenByGoogleDto struct {
 }
 
 type AuthenByGoogleResponse struct {
-	User             *domain.User `json:"user"`
+	Profile          *domain.User `json:"profile"`
 	domain.AuthToken `json:"tokens"`
 }

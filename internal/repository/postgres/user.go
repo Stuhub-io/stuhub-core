@@ -158,7 +158,7 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 		LastName:     user.LastName,
 		Avatar:       user.Avatar,
 		Salt:         user.Salt,
-		OauthGmail:   user.OathGmail,
+		OauthGmail:   user.OauthGmail,
 		HavePassword: user.Password != nil && *user.Password != "",
 		ActivatedAt:  activatedAt,
 		CreatedAt:    user.CreatedAt.String(),
@@ -168,12 +168,12 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 
 func (r *UserRepository) CreateUserWithGoogleInfo(ctx context.Context, email, salt, firstName, lastName, avatar string) (*domain.User, *domain.Error) {
 	user := model.User{
-		Email:     email,
-		Salt:      salt,
-		FirstName: firstName,
-		LastName:  lastName,
-		Avatar:    avatar,
-		OathGmail: email,
+		Email:      email,
+		Salt:       salt,
+		FirstName:  firstName,
+		LastName:   lastName,
+		Avatar:     avatar,
+		OauthGmail: email,
 	}
 
 	err := r.store.DB().Create(&user).Error
@@ -194,7 +194,7 @@ func (r *UserRepository) CreateUserWithGoogleInfo(ctx context.Context, email, sa
 		LastName:     user.LastName,
 		Avatar:       user.Avatar,
 		Salt:         user.Salt,
-		OauthGmail:   user.OathGmail,
+		OauthGmail:   user.OauthGmail,
 		HavePassword: user.Password != nil && *user.Password != "",
 		ActivatedAt:  activatedAt,
 		CreatedAt:    user.CreatedAt.String(),

@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS "users" (
   "last_name" varchar(255) NOT NULL,
   "avatar"  varchar NOT NULL,
   
-  "oath_gmail" varchar NOT NULL,
+  "oauth_gmail" varchar NOT NULL,
   "salt" VARCHAR(255) NOT NULL,
 
   "activated_at" TIMESTAMP WITH TIME ZONE DEFAULT NULL,

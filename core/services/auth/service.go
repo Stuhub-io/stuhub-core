@@ -219,7 +219,7 @@ func (s *Service) AuthenUserByGoogle(dto AuthenByGoogleDto) (*AuthenByGoogleResp
 	}
 
 	return &AuthenByGoogleResponse{
-		User: user,
+		Profile: user,
 		AuthToken: domain.AuthToken{
 			Access:  access,
 			Refresh: refresh,
