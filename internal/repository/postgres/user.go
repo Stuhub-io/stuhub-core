@@ -90,6 +90,7 @@ func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain
 		ActivatedAt:  activatedAt,
 		CreatedAt:    user.CreatedAt.String(),
 		UpdatedAt:    user.UpdatedAt.String(),
+		OauthGmail:   user.OauthGmail,
 	}, nil
 }
 

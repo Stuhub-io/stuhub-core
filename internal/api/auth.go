@@ -3,6 +3,7 @@ package rest
 import (
 	"net/http"
 
+	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/services/auth"
 	"github.com/Stuhub-io/internal/api/request"
 	"github.com/Stuhub-io/internal/api/response"
@@ -30,6 +31,7 @@ func UseAuthHandler(params NewAuthHandlerParams) {
 	router.POST("/set-password", handler.SetPassword)
 	router.POST("/email", handler.AuthenUserByEmailPassword)
 	router.POST("/google", handler.AuthenUserByGoogle)
+	router.POST("/user-by-token", handler.GetUserByAccessToken)
 }
 
 func (h *AuthHandler) AuthenByEmailStepOne(c *gin.Context) {
@@ -93,13 +95,21 @@ func (h *AuthHandler) AuthenUserByEmailPassword(c *gin.Context) {
 		response.BindError(c, vr.Error())
 		return
 	}
-	data, err := h.authService.AuthenUserByEmailPassword(auth.AuthenByEmailPasswordDto{
+	token, user, err := h.authService.AuthenUserByEmailPassword(auth.AuthenByEmailPasswordDto{
 		Email:       body.Email,
 		RawPassword: body.Password,
 	})
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
+	}
+
+	data := struct {
+		Tokens  domain.AuthToken `json:"tokens"`
+		Profile domain.User      `json:"profile"`
+	}{
+		Tokens:  *token,
+		Profile: *user,
 	}
 
 	response.WithData(c, http.StatusOK, data, "Success")
@@ -121,4 +131,20 @@ func (h *AuthHandler) AuthenUserByGoogle(c *gin.Context) {
 	}
 
 	response.WithData(c, http.StatusOK, data, "Success")
+}
+
+func (h *AuthHandler) GetUserByAccessToken(c *gin.Context) {
+	var query request.GetUserByTokenQuery
+	if ok, vr := request.Validate(c, &query); !ok {
+		response.BindError(c, vr.Error())
+		return
+	}
+
+	user, err := h.authService.GetUserByToken(query.AccessToken)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, http.StatusOK, user, "Success")
 }

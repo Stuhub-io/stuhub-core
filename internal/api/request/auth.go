@@ -22,3 +22,7 @@ type AuthenUserByEmailPasswordBody struct {
 type AuthenUserByGoogleBody struct {
 	Token string `json:"token" binding:"required"`
 }
+
+type GetUserByTokenQuery struct {
+	AccessToken string `json:"access_token" binding:"required"`
+}
