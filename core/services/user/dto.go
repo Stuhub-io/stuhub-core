@@ -9,3 +9,7 @@ type GetUserByIdResponse struct {
 type GetUserByEmailResponse struct {
 	User *domain.User `json:"user"`
 }
+
+type UpdateUserInfo struct {
+	User *domain.User `json:"user"`
+}

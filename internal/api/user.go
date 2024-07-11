@@ -33,6 +33,7 @@ func UseUserHandler(params NewUserHandlerParams) {
 
 	router.GET("/:id", decorators.CurrentUser(handler.GetUserById))
 	router.GET("/email/:email", handler.GetUserByEmail)
+	router.PATCH("/update-info", decorators.CurrentUser(handler.UpdateUserInfo))
 }
 
 // GetUserByID godoc
@@ -61,6 +62,16 @@ func (h *UserHandler) GetUserById(c *gin.Context, user *domain.User) {
 func (h *UserHandler) GetUserByEmail(c *gin.Context) {
 	email := c.Param("email")
 	resp, err := h.userService.GetUserByEmail(email)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, http.StatusOK, resp)
+}
+
+func (h UserHandler) UpdateUserInfo(c* gin.Context, user *domain.User) {
+	resp, err := h.userService.UpdateUserInfo(user.PkID, user.FirstName, user.LastName)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return

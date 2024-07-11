@@ -46,3 +46,14 @@ func (s *Service) GetUserByEmail(email string) (*GetUserByEmailResponse, *domain
 		User: user,
 	}, nil
 }
+
+func (s *Service) UpdateUserInfo(pkID int64, firstName, lastName string) (*UpdateUserInfo, *domain.Error) {
+	user, err := s.userRepository.UpdateUserInfo(context.Background(), pkID, firstName, lastName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &UpdateUserInfo{
+		User: user,
+	}, nil
+}
