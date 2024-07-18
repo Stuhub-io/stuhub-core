@@ -47,13 +47,13 @@ func (s *Service) GetUserByEmail(email string) (*GetUserByEmailResponse, *domain
 	}, nil
 }
 
-func (s *Service) UpdateUserInfo(pkID int64, firstName, lastName string) (*UpdateUserInfo, *domain.Error) {
+func (s *Service) UpdateUserInfo(pkID int64, firstName, lastName string) (*UpdateUserInfoResponse, *domain.Error) {
 	user, err := s.userRepository.UpdateUserInfo(context.Background(), pkID, firstName, lastName)
 	if err != nil {
 		return nil, err
 	}
 
-	return &UpdateUserInfo{
+	return &UpdateUserInfoResponse{
 		User: user,
 	}, nil
 }

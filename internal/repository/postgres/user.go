@@ -230,13 +230,11 @@ func (r *UserRepository) CheckPassword(ctx context.Context, email, rawPassword s
 }
 
 func (r *UserRepository) UpdateUserInfo(ctx context.Context, PkID int64, firstName, lastName string) (*domain.User, *domain.Error) {
-	var user model.User = model.User{
-		Pkid: PkID,
+	var user = model.User{
+		FirstName: firstName,
+		LastName: lastName,
 	}
-	err := r.store.DB().Model(&user).Where("pkid = ?", PkID).Updates(map[string]interface{}{
-		"first_name": firstName,
-		"last_name":  lastName,
-	}).Error
+	err := r.store.DB().Model(&model.User{}).Where("pkid = ?", PkID).Updates(&user).Error
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation
 	}
