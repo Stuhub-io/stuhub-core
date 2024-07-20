@@ -14,5 +14,5 @@ type UserRepository interface {
 	CreateUserWithGoogleInfo(ctx context.Context, email, salt, firstName, lastName, avatar string) (*domain.User, *domain.Error)
 	SetUserPassword(ctx context.Context, PkID int64, hashedPassword string) *domain.Error
 	CheckPassword(ctx context.Context, email, rawPassword string, hasher Hasher) (bool, *domain.Error)
-	UpdateUserInfo(ctx context.Context, PkID int64, firstName, lastName string) (*domain.User, *domain.Error)
+	UpdateUserInfo(ctx context.Context, PkID int64, firstName, lastName, avatar string) (*domain.User, *domain.Error)
 }

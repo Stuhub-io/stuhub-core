@@ -13,4 +13,3 @@ type GetUserByEmailResponse struct {
 type UpdateUserInfoResponse struct {
 	User *domain.User `json:"user"`
 }
-
