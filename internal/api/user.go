@@ -7,6 +7,7 @@ import (
 	"github.com/Stuhub-io/core/services/user"
 	"github.com/Stuhub-io/internal/api/decorators"
 	"github.com/Stuhub-io/internal/api/middleware"
+	"github.com/Stuhub-io/internal/api/request"
 	"github.com/Stuhub-io/internal/api/response"
 	"github.com/gin-gonic/gin"
 )
@@ -32,7 +33,7 @@ func UseUserHandler(params NewUserHandlerParams) {
 	router.Use(authMiddleware.Authenticated())
 
 	router.GET("/:id", decorators.CurrentUser(handler.GetUserById))
-	router.GET("/email/:email", handler.GetUserByEmail)
+	router.PATCH("/update-info", decorators.CurrentUser(handler.UpdateUserInfo))
 }
 
 // GetUserByID godoc
@@ -48,19 +49,17 @@ func UseUserHandler(params NewUserHandlerParams) {
 //	@Failure		500	{object}	domain.Error
 //	@Router			/v1/user-services/{id} [get]
 func (h *UserHandler) GetUserById(c *gin.Context, user *domain.User) {
-	// userId := c.Param("id")
-	// _, err := h.userService.GetUserById(userId)
-	// if err != nil {
-	// 	response.WithErrorMessage(c, err.Code, err.Error, err.Message)
-	// 	return
-	// }
-
 	response.WithData(c, http.StatusOK, user)
 }
 
-func (h *UserHandler) GetUserByEmail(c *gin.Context) {
-	email := c.Param("email")
-	resp, err := h.userService.GetUserByEmail(email)
+func (h UserHandler) UpdateUserInfo(c *gin.Context, user *domain.User) {
+	var body request.UpdateUserInfoBody
+	if ok, vr := request.Validate(c, &body); !ok {
+		response.BindError(c, vr.Error())
+		return
+	}
+
+	resp, err := h.userService.UpdateUserInfo(user.PkID, body.FirstName, body.LastName, body.Avatar)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
