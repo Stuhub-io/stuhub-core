@@ -16,3 +16,10 @@ type UserRepository interface {
 	CheckPassword(ctx context.Context, email, rawPassword string, hasher Hasher) (bool, *domain.Error)
 	UpdateUserInfo(ctx context.Context, PkID int64, firstName, lastName, avatar string) (*domain.User, *domain.Error)
 }
+
+type OrganizationRepository interface {
+	GetOrgMember(ctx context.Context, pkID int64, includeUser bool) ([]domain.OrganizationMember, *domain.Error)
+	GetOrgBySlug(ctx context.Context, slug string) (*domain.Organization, *domain.Error)
+	CreateOrg(ctx context.Context, userPkID int64, name, description, avatar string) (*domain.Organization, *domain.Error)
+	GetOrgsByUserPkID(ctx context.Context, usePkID int64) ([]domain.Organization, *domain.Error)
+}
