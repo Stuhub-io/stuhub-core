@@ -114,12 +114,10 @@ func mapOrgMemberModelToDomain(model model.OrganizationMember, user *domain.User
 
 func (r *OrganizationRepository) GetOrgMember(ctx context.Context, pkID int64, includeUser bool) ([]domain.OrganizationMember, *domain.Error) {
 	var members []model.OrganizationMember
-
 	err := r.store.DB().Where("organization_id = ?", pkID).Find(&members).Error
 	if err != nil {
 		return nil, domain.ErrInternalServerError
 	}
-
 	var orgMembesrResp = make([]domain.OrganizationMember, len(members))
 	for i, member := range members {
 		orgMembesrResp[i] = domain.OrganizationMember{
@@ -177,7 +175,6 @@ func (r *OrganizationRepository) CreateOrg(ctx context.Context, ownerPkID int64,
 	if err != nil {
 		return nil, domain.ErrInternalServerError
 	}
-
 	existSlugs := make([]string, len(existSlutOrg))
 	for i, org := range existSlutOrg {
 		existSlugs[i] = org.Slug
