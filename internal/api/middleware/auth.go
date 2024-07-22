@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"time"
 
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
@@ -13,20 +12,17 @@ import (
 type AuthMiddleware struct {
 	tokenMaker     ports.TokenMaker
 	userRepository ports.UserRepository
-	cacheStore     ports.CacheStore
 }
 
 type NewAuthMiddlewareParams struct {
 	ports.TokenMaker
 	ports.UserRepository
-	ports.CacheStore
 }
 
 func NewAuthMiddleware(params NewAuthMiddlewareParams) *AuthMiddleware {
 	return &AuthMiddleware{
 		tokenMaker:     params.TokenMaker,
 		userRepository: params.UserRepository,
-		cacheStore:     params.CacheStore,
 	}
 }
 
@@ -44,21 +40,10 @@ func (a *AuthMiddleware) Authenticated() gin.HandlerFunc {
 			return
 		}
 
-		var user *domain.User
-		userPkID := payload.UserPkID
-		user = a.cacheStore.GetUser(userPkID)
-		if user == nil {
-			data, err := a.userRepository.GetUserByPkID(context.Background(), userPkID)
-			if err != nil {
-				c.AbortWithStatusJSON(err.Code, err)
-				return
-			}
-
-			go func() {
-				a.cacheStore.SetUser(data, time.Hour)
-			}()
-
-			user = data
+		user, dbErr := a.userRepository.GetUserByPkID(context.Background(), payload.UserPkID)
+		if dbErr != nil {
+			c.AbortWithStatusJSON(dbErr.Code, err)
+			return
 		}
 
 		c.Set(string(authutils.UserPayloadKey), user)

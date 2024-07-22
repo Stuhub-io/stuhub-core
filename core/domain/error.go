@@ -146,3 +146,25 @@ var (
 		Message: "Failed to get Google info. Please try again!",
 	}
 )
+
+var (
+	ErrOrgNotFound = &Error{
+		Code:    NotFoundCode,
+		Error:   NotFoundErr,
+		Message: "The organization does not exist.",
+	}
+	ErrExistOwnerOrg = func(name string) *Error {
+		return &Error{
+			Code:    BadRequestCode,
+			Error:   BadRequestErr,
+			Message: fmt.Sprintf("The org with the Name '%s' already exist.", name),
+		}
+	}
+	ErrExistOrgMember = func(userPkID int64) *Error {
+		return &Error{
+			Code:    BadRequestCode,
+			Error:   BadRequestErr,
+			Message: fmt.Sprintf("The member with the ID '%d' already exist in this organization.", userPkID),
+		}
+	}
+)

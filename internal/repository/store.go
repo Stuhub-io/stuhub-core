@@ -10,19 +10,23 @@ import (
 type TxEndFunc func(error) error
 
 type DBStore struct {
-	Database *gorm.DB
-	Cache    ports.Cache
+	Database   *gorm.DB
+	CacheStore ports.CacheStore
 }
 
-func NewDBStore(db *gorm.DB, cache ports.Cache) *DBStore {
+func NewDBStore(db *gorm.DB, cacheStore ports.CacheStore) *DBStore {
 	return &DBStore{
-		Database: db,
-		Cache:    cache,
+		Database:   db,
+		CacheStore: cacheStore,
 	}
 }
 
 func (d *DBStore) DB() *gorm.DB {
 	return d.Database
+}
+
+func (d *DBStore) Cache() ports.CacheStore {
+	return d.CacheStore
 }
 
 func (d *DBStore) NewTransaction() (*DBStore, TxEndFunc) {

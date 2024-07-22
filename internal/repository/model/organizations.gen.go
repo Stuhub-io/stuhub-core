@@ -14,6 +14,7 @@ const TableNameOrganization = "organizations"
 type Organization struct {
 	Pkid        int64     `gorm:"column:pkid;type:bigint;primaryKey;autoIncrement:true" json:"pkid"`
 	ID          string    `gorm:"column:id;type:uuid;not null;default:uuid_generate_v4()" json:"id"`
+	OwnerID     int64     `gorm:"column:owner_id;type:bigint;not null" json:"owner_id"`
 	Name        string    `gorm:"column:name;type:character varying(255);not null" json:"name"`
 	Slug        string    `gorm:"column:slug;type:character varying(255);not null" json:"slug"`
 	Description string    `gorm:"column:description;type:text;not null" json:"description"`

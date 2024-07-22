@@ -12,9 +12,10 @@ import (
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/services/auth"
+	"github.com/Stuhub-io/core/services/organization"
 	"github.com/Stuhub-io/core/services/user"
 	_ "github.com/Stuhub-io/docs"
-	api "github.com/Stuhub-io/internal/api"
+	"github.com/Stuhub-io/internal/api"
 	"github.com/Stuhub-io/internal/api/middleware"
 	"github.com/Stuhub-io/internal/cache"
 	"github.com/Stuhub-io/internal/cache/redis"
@@ -62,8 +63,8 @@ func main() {
 
 	tokenMaker := token.Must(cfg.SecretKey)
 
-	dbStore := store.NewDBStore(postgresDB, redisCache)
 	cacheStore := cache.NewCacheStore(redisCache)
+	dbStore := store.NewDBStore(postgresDB, cacheStore)
 
 	hasher := hasher.NewScrypt([]byte(cfg.HashPwSecretKey))
 
@@ -87,27 +88,35 @@ func main() {
 		Store: dbStore,
 		Cfg:   cfg,
 	})
+	orgRepository := postgres.NewOrganizationRepository(postgres.NewOrganizationRepositoryParams{
+		Store:          dbStore,
+		Cfg:            cfg,
+		UserRepository: userRepository,
+	})
 
 	// services
 	oauthService := oauth.NewOauthService(logger)
 	userService := user.NewService(user.NewServiceParams{
-		UserRepository: userRepository,
 		Config:         cfg,
+		UserRepository: userRepository,
 	})
 	authService := auth.NewService(auth.NewServiceParams{
+		Config:         cfg,
 		UserRepository: userRepository,
 		OauthService:   oauthService,
 		TokenMaker:     tokenMaker,
 		Mailer:         mailer,
-		Config:         cfg,
 		RemoteRoute:    remoteRoute,
 		Hasher:         hasher,
+	})
+	orgService := organization.NewService(organization.NewServiceParams{
+		Config:                 cfg,
+		OrganizationRepository: orgRepository,
 	})
 
 	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{
 		TokenMaker:     tokenMaker,
 		UserRepository: userRepository,
-		CacheStore:     cacheStore,
 	})
 
 	// handlers
@@ -121,6 +130,11 @@ func main() {
 		api.UseAuthHandler(api.NewAuthHandlerParams{
 			Router:      v1,
 			AuthService: authService,
+		})
+		api.UseOrganizationHandler(api.NewOrganizationHandlerParams{
+			Router:         v1,
+			AuthMiddleware: authMiddleware,
+			OrgService:     orgService,
 		})
 	}
 

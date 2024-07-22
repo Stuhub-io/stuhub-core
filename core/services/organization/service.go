@@ -25,12 +25,24 @@ func NewService(params NewServiceParams) *Service {
 	}
 }
 
-func (s *Service) CreateOrganization(dto CreateOrganizationParams) (*domain.Organization, *domain.Error) {
+func (s *Service) CreateOrganization(dto CreateOrganizationParams) (*CreateOrganizationResponse, *domain.Error) {
+	existingOrg, err := s.orgRepository.GetOwnerOrgByName(context.Background(), dto.OwnerPkID, dto.Name)
+	if err != nil && err.Error != domain.NotFoundErr {
+		return nil, err
+	}
+
+	if existingOrg != nil {
+		return nil, domain.ErrExistOwnerOrg(dto.Name)
+	}
+
 	org, err := s.orgRepository.CreateOrg(context.Background(), dto.OwnerPkID, dto.Name, dto.Description, dto.Avatar)
 	if err != nil {
 		return nil, err
 	}
-	return org, nil
+
+	return &CreateOrganizationResponse{
+		Org: org,
+	}, nil
 }
 
 func (s *Service) GetOrganizationDetailBySlug(slug string) (*domain.Organization, *domain.Error) {
@@ -38,14 +50,15 @@ func (s *Service) GetOrganizationDetailBySlug(slug string) (*domain.Organization
 	if err != nil {
 		return nil, err
 	}
+
 	return org, nil
 }
 
-func (s *Service) GetJoinedOrgs(userPkID int64) ([]domain.Organization, *domain.Error) {
+func (s *Service) GetJoinedOrgs(userPkID int64) ([]*domain.Organization, *domain.Error) {
 	orgs, err := s.orgRepository.GetOrgsByUserPkID(context.Background(), userPkID)
 	if err != nil {
 		return nil, err
 	}
-	// FIXME: Implement sort by recent visit later
+
 	return orgs, nil
 }
