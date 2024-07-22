@@ -17,6 +17,7 @@ func GetSlugResolution(existingSlugs []string, slug string) string {
 		if _, exists := existingSlugMap[slug]; !exists {
 			break
 		}
+
 		slug = originalSlug + "-" + strconv.Itoa(counter)
 		counter++
 	}
