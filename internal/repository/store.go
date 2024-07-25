@@ -1,13 +1,12 @@
 package store
 
 import (
-	"errors"
-
+	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
 	"gorm.io/gorm"
 )
 
-type TxEndFunc func(error) error
+type TxEndFunc func(error) *domain.Error
 
 type DBStore struct {
 	Database   *gorm.DB
@@ -32,19 +31,19 @@ func (d *DBStore) Cache() ports.CacheStore {
 func (d *DBStore) NewTransaction() (*DBStore, TxEndFunc) {
 	newDB := d.Database.Begin()
 
-	finallyFn := func(err error) error {
+	finallyFn := func(err error) *domain.Error {
 		if err != nil {
 			nErr := newDB.Rollback().Error
 			if nErr != nil {
-				return errors.New(nErr.Error())
+				return domain.NewErr(err.Error(), domain.InternalServerErrCode)
 			}
 
-			return err
+			return domain.ErrRollbackErr
 		}
 
 		cErr := newDB.Commit().Error
 		if cErr != nil {
-			return errors.New(cErr.Error())
+			return domain.NewErr(cErr.Error(), domain.InternalServerErrCode)
 		}
 
 		return nil

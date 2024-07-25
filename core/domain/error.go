@@ -79,6 +79,11 @@ var (
 		Error:   DatabaseErr,
 		Message: "Database can't process the mutation",
 	}
+	ErrRollbackErr = &Error{
+		Code:    InternalServerErrCode,
+		Error:   DatabaseErr,
+		Message: "Database can't rollback the transaction",
+	}
 )
 
 var (
@@ -168,3 +173,11 @@ var (
 		}
 	}
 )
+
+func NewErr(msg string, code int) *Error {
+	return &Error{
+		Code:    code,
+		Error:   http.StatusText(code),
+		Message: msg,
+	}
+}

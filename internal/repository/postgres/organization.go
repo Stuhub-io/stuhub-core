@@ -186,34 +186,36 @@ func (r *OrganizationRepository) CreateOrg(ctx context.Context, ownerPkID int64,
 
 	var newOrg model.Organization
 	var ownerMember model.OrganizationMember
-	err = r.store.DB().Transaction(func(tx *gorm.DB) error {
-		newOrg = model.Organization{
-			OwnerID:     ownerPkID,
-			Name:        name,
-			Description: description,
-			Avatar:      avatar,
-			Slug:        cleanSlug,
-		}
-		err = r.store.DB().Create(&newOrg).Error
-		if err != nil {
-			return err
-		}
 
-		ownerMember = model.OrganizationMember{
-			OrganizationPkid: newOrg.Pkid,
-			UserPkid:         ownerPkID,
-			Role:             domain.Owner.String(),
-		}
-		err = r.store.DB().Create(&ownerMember).Error
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, domain.ErrDatabaseMutation
+	// -- Transaction
+	tx, doneTx := r.store.NewTransaction()
+	newOrg = model.Organization{
+		OwnerID:     ownerPkID,
+		Name:        name,
+		Description: description,
+		Avatar:      avatar,
+		Slug:        cleanSlug,
 	}
+	err = tx.DB().Create(&newOrg).Error
+	if err != nil {
+		return nil, doneTx(err)
+	}
+
+	ownerMember = model.OrganizationMember{
+		OrganizationPkid: newOrg.Pkid,
+		UserPkid:         ownerPkID,
+		Role:             domain.Owner.String(),
+	}
+
+	err = tx.DB().Create(&ownerMember).Error
+	if err != nil {
+		return nil, doneTx(err)
+	}
+	commitErr := doneTx(nil)
+	if commitErr != nil {
+		return nil, commitErr
+	}
+	// -- End Transaction
 
 	owner, uerr := r.userRepository.GetUserByPkID(context.Background(), ownerMember.UserPkid)
 	if uerr != nil {
