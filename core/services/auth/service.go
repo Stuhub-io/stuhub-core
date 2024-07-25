@@ -108,7 +108,7 @@ func (s *Service) ValidateEmailAuth(token string) (*ValidateEmailTokenResp, *dom
 		providerName = domain.GoogleAuthProvider.Name
 	}
 
-	action_token, err := s.tokenMaker.CreateToken(user.PkID, user.Email, domain.NextStepTokenDuration)
+	actionToken, err := s.tokenMaker.CreateToken(user.PkID, user.Email, domain.NextStepTokenDuration)
 	if err != nil {
 		return nil, domain.ErrInternalServerError
 	}
@@ -116,7 +116,7 @@ func (s *Service) ValidateEmailAuth(token string) (*ValidateEmailTokenResp, *dom
 	return &ValidateEmailTokenResp{
 		Email:        user.Email,
 		OAuthPvodier: providerName,
-		ActionToken:  action_token,
+		ActionToken:  actionToken,
 	}, nil
 }
 

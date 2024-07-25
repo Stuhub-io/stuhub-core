@@ -79,6 +79,11 @@ var (
 		Error:   DatabaseErr,
 		Message: "Database can't process the mutation",
 	}
+	ErrRollbackErr = &Error{
+		Code:    InternalServerErrCode,
+		Error:   DatabaseErr,
+		Message: "Database can't rollback the transaction",
+	}
 )
 
 var (
@@ -146,3 +151,33 @@ var (
 		Message: "Failed to get Google info. Please try again!",
 	}
 )
+
+var (
+	ErrOrgNotFound = &Error{
+		Code:    NotFoundCode,
+		Error:   NotFoundErr,
+		Message: "The organization does not exist.",
+	}
+	ErrExistOwnerOrg = func(name string) *Error {
+		return &Error{
+			Code:    BadRequestCode,
+			Error:   BadRequestErr,
+			Message: fmt.Sprintf("The org with the Name '%s' already exist.", name),
+		}
+	}
+	ErrExistOrgMember = func(userPkID int64) *Error {
+		return &Error{
+			Code:    BadRequestCode,
+			Error:   BadRequestErr,
+			Message: fmt.Sprintf("The member with the ID '%d' already exist in this organization.", userPkID),
+		}
+	}
+)
+
+func NewErr(msg string, code int) *Error {
+	return &Error{
+		Code:    code,
+		Error:   http.StatusText(code),
+		Message: msg,
+	}
+}

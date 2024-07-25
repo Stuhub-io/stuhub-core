@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
@@ -20,6 +21,28 @@ type UserRepository struct {
 type NewUserRepositoryParams struct {
 	Store *store.DBStore
 	Cfg   config.Config
+}
+
+func mapUserModelToDomain(model model.User) *domain.User {
+	activatedAt := ""
+	if model.ActivatedAt != nil {
+		activatedAt = model.ActivatedAt.String()
+	}
+
+	return &domain.User{
+		PkID:         model.Pkid,
+		ID:           model.ID,
+		Email:        model.Email,
+		FirstName:    model.FirstName,
+		LastName:     model.LastName,
+		Avatar:       model.Avatar,
+		Salt:         model.Salt,
+		OauthGmail:   model.OauthGmail,
+		HavePassword: model.Password != nil && *model.Password != "",
+		ActivatedAt:  activatedAt,
+		CreatedAt:    model.CreatedAt.String(),
+		UpdatedAt:    model.UpdatedAt.String(),
+	}
 }
 
 func NewUserRepository(params NewUserRepositoryParams) ports.UserRepository {
@@ -40,30 +63,17 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	var activatedAt string = ""
-	if user.ActivatedAt != nil {
-		activatedAt = user.ActivatedAt.String()
-	}
-
-	return &domain.User{
-		PkID:      user.Pkid,
-		ID:        user.ID,
-		Email:     user.Email,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Avatar:    user.Avatar,
-
-		Salt:         user.Salt,
-		HavePassword: user.Password != nil && *user.Password != "",
-		ActivatedAt:  activatedAt,
-		CreatedAt:    user.CreatedAt.String(),
-		UpdatedAt:    user.UpdatedAt.String(),
-	}, nil
+	return mapUserModelToDomain(user), nil
 }
 
 func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain.User, *domain.Error) {
-	var user model.User
-	err := r.store.DB().Where("pkid = ?", pkId).First(&user).Error
+	cachedUser := r.store.Cache().GetUser(pkId)
+	if cachedUser != nil {
+		return cachedUser, nil
+	}
+
+	var userModel model.User
+	err := r.store.DB().Where("pkid = ?", pkId).First(&userModel).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrUserNotFound
@@ -72,26 +82,13 @@ func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	var activatedAt string = ""
-	if user.ActivatedAt != nil {
-		activatedAt = user.ActivatedAt.String()
-	}
+	user := mapUserModelToDomain(userModel)
 
-	return &domain.User{
-		PkID:      user.Pkid,
-		ID:        user.ID,
-		Email:     user.Email,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Avatar:    user.Avatar,
+	go func() {
+		r.store.Cache().SetUser(user, time.Hour)
+	}()
 
-		Salt:         user.Salt,
-		HavePassword: user.Password != nil && *user.Password != "",
-		ActivatedAt:  activatedAt,
-		CreatedAt:    user.CreatedAt.String(),
-		UpdatedAt:    user.UpdatedAt.String(),
-		OauthGmail:   user.OauthGmail,
-	}, nil
+	return user, nil
 }
 
 func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*domain.User, *domain.Error) {
@@ -105,26 +102,7 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	var activatedAt string = ""
-	if user.ActivatedAt != nil {
-		activatedAt = user.ActivatedAt.String()
-	}
-
-	return &domain.User{
-		PkID:      user.Pkid,
-		ID:        user.ID,
-		Email:     user.Email,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Avatar:    user.Avatar,
-
-		Salt:         user.Salt,
-		HavePassword: user.Password != nil && *user.Password != "",
-		ActivatedAt:  activatedAt,
-		CreatedAt:    user.CreatedAt.String(),
-		UpdatedAt:    user.UpdatedAt.String(),
-	}, nil
-
+	return mapUserModelToDomain(user), nil
 }
 
 func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email string, salt string) (*domain.User, *domain.Error) {
@@ -146,25 +124,7 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 		}
 	}
 
-	var activatedAt string = ""
-	if user.ActivatedAt != nil {
-		activatedAt = user.ActivatedAt.String()
-	}
-
-	return &domain.User{
-		PkID:         user.Pkid,
-		ID:           user.ID,
-		Email:        user.Email,
-		FirstName:    user.FirstName,
-		LastName:     user.LastName,
-		Avatar:       user.Avatar,
-		Salt:         user.Salt,
-		OauthGmail:   user.OauthGmail,
-		HavePassword: user.Password != nil && *user.Password != "",
-		ActivatedAt:  activatedAt,
-		CreatedAt:    user.CreatedAt.String(),
-		UpdatedAt:    user.UpdatedAt.String(),
-	}, nil
+	return mapUserModelToDomain(user), nil
 }
 
 func (r *UserRepository) CreateUserWithGoogleInfo(ctx context.Context, email, salt, firstName, lastName, avatar string) (*domain.User, *domain.Error) {
@@ -182,25 +142,7 @@ func (r *UserRepository) CreateUserWithGoogleInfo(ctx context.Context, email, sa
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	activatedAt := ""
-	if user.ActivatedAt != nil {
-		activatedAt = user.ActivatedAt.String()
-	}
-
-	return &domain.User{
-		PkID:         user.Pkid,
-		ID:           user.ID,
-		Email:        user.Email,
-		FirstName:    user.FirstName,
-		LastName:     user.LastName,
-		Avatar:       user.Avatar,
-		Salt:         user.Salt,
-		OauthGmail:   user.OauthGmail,
-		HavePassword: user.Password != nil && *user.Password != "",
-		ActivatedAt:  activatedAt,
-		CreatedAt:    user.CreatedAt.String(),
-		UpdatedAt:    user.UpdatedAt.String(),
-	}, nil
+	return mapUserModelToDomain(user), nil
 }
 
 func (r *UserRepository) SetUserPassword(ctx context.Context, pkID int64, hashedPassword string) *domain.Error {
@@ -240,24 +182,5 @@ func (r *UserRepository) UpdateUserInfo(ctx context.Context, PkID int64, firstNa
 		return nil, domain.ErrDatabaseMutation
 	}
 
-	var activatedAt string = ""
-	if user.ActivatedAt != nil {
-		activatedAt = user.ActivatedAt.String()
-	}
-
-	return &domain.User{
-		PkID:      user.Pkid,
-		ID:        user.ID,
-		Email:     user.Email,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Avatar:    user.Avatar,
-
-		Salt:         user.Salt,
-		HavePassword: user.Password != nil && *user.Password != "",
-		ActivatedAt:  activatedAt,
-		CreatedAt:    user.CreatedAt.String(),
-		UpdatedAt:    user.UpdatedAt.String(),
-	}, nil
-
+	return mapUserModelToDomain(user), nil
 }
