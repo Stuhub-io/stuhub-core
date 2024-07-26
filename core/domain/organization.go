@@ -1,7 +1,7 @@
 package domain
 
 type Organization struct {
-	PkId        int64                `json:"pk_id"`
+	PkId        int64                `json:"-"`
 	ID          string               `json:"id"`
 	OwnerID     int64                `json:"owner_id"`
 	Name        string               `json:"name"`
@@ -32,5 +32,5 @@ type OrganizationMember struct {
 	CreatedAt        string `json:"created_at"`
 	UpdatedAt        string `json:"updated_at"`
 	// Nullable depend on usecase
-	User *User `json:"details"`
+	User *User `json:"user"`
 }

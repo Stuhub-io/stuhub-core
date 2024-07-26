@@ -34,7 +34,7 @@ func UseOrganizationHandler(params NewOrganizationHandlerParams) {
 
 	router.POST("/create", decorators.CurrentUser(handler.CreateOrganization))
 	router.GET("/joined", decorators.CurrentUser(handler.GetJoinedOrgs))
-
+	router.GET("/get-by-slug", decorators.CurrentUser(handler.GetOrgBySlug))
 }
 
 func (h *OrganizationHandler) CreateOrganization(c *gin.Context, user *domain.User) {
@@ -60,6 +60,22 @@ func (h *OrganizationHandler) CreateOrganization(c *gin.Context, user *domain.Us
 
 func (h *OrganizationHandler) GetJoinedOrgs(c *gin.Context, user *domain.User) {
 	data, err := h.orgService.GetJoinedOrgs(user.PkID)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, http.StatusOK, data, "Success")
+}
+
+func (h *OrganizationHandler) GetOrgBySlug(c *gin.Context, user *domain.User) {
+	var params request.GetOrgBySlugParams
+	if ok, vr := request.Validate(c, &params); !ok {
+		response.BindError(c, vr.Error())
+		return
+	}
+
+	data, err := h.orgService.GetOrganizationDetailBySlug(params.Slug)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return

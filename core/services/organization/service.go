@@ -59,6 +59,5 @@ func (s *Service) GetJoinedOrgs(userPkID int64) ([]*domain.Organization, *domain
 	if err != nil {
 		return nil, err
 	}
-
 	return orgs, nil
 }
