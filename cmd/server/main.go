@@ -70,10 +70,10 @@ func main() {
 
 	// TODO: read from env
 	mailer := mailer.NewMailer(mailer.NewMailerParams{
-		Name:      "",
-		Address:   "",
-		ClientKey: "",
-		Config:    cfg,
+		Name:      "Stuhub.IO",
+		Address:   cfg.SendgridEmailFrom,
+		ClientKey: cfg.SendgridKey,
+		Logger:    logger,
 	})
 
 	r := gin.Default()

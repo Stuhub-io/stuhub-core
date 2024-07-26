@@ -44,7 +44,7 @@ func (h *OrganizationHandler) CreateOrganization(c *gin.Context, user *domain.Us
 		return
 	}
 
-	data, err := h.orgService.CreateOrganization(organization.CreateOrganizationParams{
+	data, err := h.orgService.CreateOrganization(organization.CreateOrganizationDto{
 		OwnerPkID:   user.PkID,
 		Name:        body.Name,
 		Description: body.Description,

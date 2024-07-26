@@ -25,7 +25,7 @@ func NewService(params NewServiceParams) *Service {
 	}
 }
 
-func (s *Service) CreateOrganization(dto CreateOrganizationParams) (*CreateOrganizationResponse, *domain.Error) {
+func (s *Service) CreateOrganization(dto CreateOrganizationDto) (*CreateOrganizationResponse, *domain.Error) {
 	existingOrg, err := s.orgRepository.GetOwnerOrgByName(context.Background(), dto.OwnerPkID, dto.Name)
 	if err != nil && err.Error != domain.NotFoundErr {
 		return nil, err
@@ -60,4 +60,16 @@ func (s *Service) GetJoinedOrgs(userPkID int64) ([]*domain.Organization, *domain
 		return nil, err
 	}
 	return orgs, nil
+}
+
+func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) {
+
+}
+
+func (s *Service) SendInitation(email string) {
+
+}
+
+func (s *Service) AddMemberToOrg(dto AddMemberToOrgDto) {
+
 }
