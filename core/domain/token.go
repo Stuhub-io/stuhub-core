@@ -8,8 +8,9 @@ const (
 )
 
 const (
-	EmailVerificationTokenDuration = 10 * time.Minute
-	NextStepTokenDuration          = 5 * time.Minute
+	EmailVerificationTokenDuration         = 10 * time.Minute
+	NextStepTokenDuration                  = 5 * time.Minute
+	OrgInvitationVerificationTokenDuration = 24 * 7 * time.Hour
 )
 
 type TokenPayload struct {

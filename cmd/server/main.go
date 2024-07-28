@@ -112,8 +112,10 @@ func main() {
 		Config:                 cfg,
 		OrganizationRepository: orgRepository,
 		UserRepository:         userRepository,
+		TokenMaker:             tokenMaker,
 		Hasher:                 hasher,
 		Mailer:                 mailer,
+		RemoteRoute:            remoteRoute,
 	})
 
 	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{

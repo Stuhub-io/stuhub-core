@@ -14,16 +14,20 @@ type Service struct {
 	cfg            config.Config
 	orgRepository  ports.OrganizationRepository
 	userRepository ports.UserRepository
+	tokenMaker     ports.TokenMaker
 	hasher         ports.Hasher
 	mailer         ports.Mailer
+	remoteRoute    ports.RemoteRoute
 }
 
 type NewServiceParams struct {
 	config.Config
 	ports.OrganizationRepository
 	ports.UserRepository
+	ports.TokenMaker
 	ports.Hasher
 	ports.Mailer
+	ports.RemoteRoute
 }
 
 func NewService(params NewServiceParams) *Service {
@@ -31,8 +35,10 @@ func NewService(params NewServiceParams) *Service {
 		cfg:            params.Config,
 		orgRepository:  params.OrganizationRepository,
 		userRepository: params.UserRepository,
+		tokenMaker:     params.TokenMaker,
 		hasher:         params.Hasher,
 		mailer:         params.Mailer,
+		remoteRoute:    params.RemoteRoute,
 	}
 }
 
@@ -94,25 +100,6 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 				return
 			}
 
-			err := s.mailer.SendMail(ports.SendSendGridMailPayload{
-				FromName:   dto.OwnerFullName + " via Stuhub",
-				ToName:     "",
-				ToAddress:  info.Email,
-				TemplateId: s.cfg.SendgridSetPasswordTemplateId,
-				Data: map[string]string{
-					"url":        "",
-					"owner_name": dto.OwnerFullName,
-					"org_name":   dto.OrgInfo.Name,
-					"org_avatar": dto.OrgInfo.Avatar,
-				},
-				Subject: "Authenticate your email",
-			})
-			if err != nil {
-				failedEmails = append(failedEmails, info.Email)
-				fmt.Printf("Err sending invitation for email: %s", info.Email)
-				return
-			}
-
 			var memberUserPkID *int64
 			memberUser, err := s.userRepository.GetUserByEmail(context.Background(), info.Email)
 			if err != nil && err.Error == domain.NotFoundErr {
@@ -136,6 +123,31 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 				return
 			}
 
+			token, errToken := s.tokenMaker.CreateToken(*memberUserPkID, info.Email, domain.OrgInvitationVerificationTokenDuration)
+			if errToken != nil {
+				fmt.Printf("Err create token url for: %s", info.Email)
+				return
+			}
+
+			err = s.mailer.SendMail(ports.SendSendGridMailPayload{
+				FromName:   dto.OwnerFullName + " via Stuhub",
+				ToName:     "",
+				ToAddress:  info.Email,
+				TemplateId: s.cfg.SendgridOrgInvitationTemplateId,
+				Data: map[string]string{
+					"url":        s.MakeValidateInvitationURL(token),
+					"owner_name": dto.OwnerFullName,
+					"org_name":   dto.OrgInfo.Name,
+					"org_avatar": dto.OrgInfo.Avatar,
+				},
+				Subject: "Authenticate your email",
+			})
+			if err != nil {
+				failedEmails = append(failedEmails, info.Email)
+				fmt.Printf("Err sending invitation for email: %s", info.Email)
+				return
+			}
+
 			sentEmails = append(sentEmails, info.Email)
 		}(info)
 	}
@@ -149,7 +161,7 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 }
 
 func (s *Service) MakeValidateInvitationURL(token string) string {
-	baseUrl := s.cfg.RemoteBaseURL
+	baseUrl := s.cfg.RemoteBaseURL + s.remoteRoute.ValidateOrgInvitation
 
 	return baseUrl + "?token=" + token
 }

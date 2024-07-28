@@ -33,10 +33,11 @@ type Config struct {
 	CachePort     string
 	CachePassword string
 
-	SecretKey                     string
-	SendgridKey                   string
-	SendgridSetPasswordTemplateId string
-	SendgridEmailFrom             string
+	SecretKey                       string
+	SendgridKey                     string
+	SendgridSetPasswordTemplateId   string
+	SendgridOrgInvitationTemplateId string
+	SendgridEmailFrom               string
 
 	HashPwSecretKey string
 
@@ -96,10 +97,11 @@ func generateConfigFromViper(v *viper.Viper) Config {
 		CachePort:     v.GetString("CACHE_PORT"),
 		CachePassword: v.GetString("CACHE_PASSWORD"),
 
-		SecretKey:                     v.GetString("SECRET_KEY"),
-		SendgridKey:                   v.GetString("SENDGRID_API_KEY"),
-		SendgridSetPasswordTemplateId: v.GetString("SENDGRID_SET_PASSWORD_TEMPLATE_ID"),
-		SendgridEmailFrom:             v.GetString("SENDGRID_EMAIL_FROM"),
+		SecretKey:                       v.GetString("SECRET_KEY"),
+		SendgridKey:                     v.GetString("SENDGRID_API_KEY"),
+		SendgridSetPasswordTemplateId:   v.GetString("SENDGRID_SET_PASSWORD_TEMPLATE_ID"),
+		SendgridOrgInvitationTemplateId: v.GetString("SENDGRID_ORG_INVITATION_TEMPLATE_ID"),
+		SendgridEmailFrom:               v.GetString("SENDGRID_EMAIL_FROM"),
 
 		HashPwSecretKey: v.GetString("HASH_PW_SECRET_KEY"),
 	}
