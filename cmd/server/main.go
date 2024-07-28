@@ -70,7 +70,6 @@ func main() {
 
 	// TODO: read from env
 	mailer := mailer.NewMailer(mailer.NewMailerParams{
-		Name:      "Stuhub.IO",
 		Address:   cfg.SendgridEmailFrom,
 		ClientKey: cfg.SendgridKey,
 		Logger:    logger,
@@ -112,6 +111,9 @@ func main() {
 	orgService := organization.NewService(organization.NewServiceParams{
 		Config:                 cfg,
 		OrganizationRepository: orgRepository,
+		UserRepository:         userRepository,
+		Hasher:                 hasher,
+		Mailer:                 mailer,
 	})
 
 	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{

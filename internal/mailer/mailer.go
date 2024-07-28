@@ -11,14 +11,12 @@ import (
 )
 
 type Mailer struct {
-	name      string
 	address   string
 	clientKey string
 	logger    logger.Logger
 }
 
 type NewMailerParams struct {
-	Name      string
 	Address   string
 	ClientKey string
 	Logger    logger.Logger
@@ -26,7 +24,6 @@ type NewMailerParams struct {
 
 func NewMailer(params NewMailerParams) ports.Mailer {
 	return &Mailer{
-		name:      params.Name,
 		address:   params.Address,
 		clientKey: params.ClientKey,
 		logger:    params.Logger,
@@ -35,7 +32,7 @@ func NewMailer(params NewMailerParams) ports.Mailer {
 
 func (m *Mailer) SendMail(payload ports.SendSendGridMailPayload) *domain.Error {
 	v3Mail := mail.NewV3Mail()
-	from := mail.NewEmail(m.name, m.address)
+	from := mail.NewEmail(payload.FromName, m.address)
 	v3Mail.SetFrom(from)
 	v3Mail.SetTemplateID(payload.TemplateId)
 

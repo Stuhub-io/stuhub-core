@@ -3,6 +3,7 @@ package ports
 import "github.com/Stuhub-io/core/domain"
 
 type SendSendGridMailPayload struct {
+	FromName   string
 	ToName     string
 	ToAddress  string
 	TemplateId string

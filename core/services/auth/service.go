@@ -64,6 +64,7 @@ func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEm
 
 	url := s.MakeValidateEmailAuth(token)
 	err = s.mailer.SendMail(ports.SendSendGridMailPayload{
+		FromName:   "Stuhub.IO",
 		ToName:     userutils.GetUserFullName(user.FirstName, user.LastName),
 		ToAddress:  user.Email,
 		TemplateId: s.config.SendgridSetPasswordTemplateId,

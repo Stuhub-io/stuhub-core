@@ -27,7 +27,7 @@ func (r OrganizationMemberRole) String() string {
 type OrganizationMember struct {
 	PkId             int64  `json:"pk_id"`
 	OrganizationPkID int64  `json:"organization_pkid"`
-	UserPkID         int64  `json:"user_pkid"`
+	UserPkID         *int64 `json:"user_pkid"`
 	Role             string `json:"role"`
 	CreatedAt        string `json:"created_at"`
 	UpdatedAt        string `json:"updated_at"`

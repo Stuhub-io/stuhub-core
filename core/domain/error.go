@@ -165,6 +165,11 @@ var (
 			Message: fmt.Sprintf("The org with the Name '%s' already exist.", name),
 		}
 	}
+	ErrOrgMemberNotFound = &Error{
+		Code:    NotFoundCode,
+		Error:   NotFoundErr,
+		Message: "The member does not exist.",
+	}
 	ErrExistOrgMember = func(userPkID int64) *Error {
 		return &Error{
 			Code:    BadRequestCode,

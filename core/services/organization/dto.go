@@ -17,13 +17,29 @@ type GetRecentVisitedOrganizationDto struct {
 	UserPkID int64
 }
 
+type OrgInviteInfo struct {
+	PkId    int64  `json:"pkid" binding:"required"`
+	Name    string `json:"name" binding:"required"`
+	Slug    string `json:"slug" binding:"required"`
+	Members int64  `json:"members" binding:"required"`
+	Avatar  string `json:"avatar" binding:"required"`
+}
+
 type EmailInviteInfo struct {
-	Email string
-	Role  string
+	Email string `json:"email" binding:"required"`
+	Role  string `json:"role" binding:"required"`
 }
 
 type InviteMemberByEmailsDto struct {
-	Emails []EmailInviteInfo
+	OwnerPkId     int64
+	OwnerFullName string
+	OrgInfo       OrgInviteInfo
+	InviteInfos   []EmailInviteInfo
+}
+
+type InviteMemberByEmailsResponse struct {
+	SentEmails   []string `json:"sent_emails"`
+	FailedEmails []string `json:"failed_emails"`
 }
 
 type AddMemberToOrgDto struct {

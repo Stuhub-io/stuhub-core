@@ -18,10 +18,12 @@ type UserRepository interface {
 }
 
 type OrganizationRepository interface {
-	GetOrgMember(ctx context.Context, pkID int64, includeUser bool) ([]domain.OrganizationMember, *domain.Error)
+	GetOrgMembers(ctx context.Context, pkID int64) ([]*domain.OrganizationMember, *domain.Error)
 	GetOrgBySlug(ctx context.Context, slug string) (*domain.Organization, *domain.Error)
 	GetOwnerOrgByName(ctx context.Context, ownerID int64, name string) (*domain.Organization, *domain.Error)
+	GetOwnerOrgByPkId(ctx context.Context, ownerID, pkId int64) (*domain.Organization, *domain.Error)
 	GetOrgsByUserPkID(ctx context.Context, usePkID int64) ([]*domain.Organization, *domain.Error)
+	GetOrgMemberByEmail(ctx context.Context, orgPkId int64, email string) (*domain.OrganizationMember, *domain.Error)
 	CreateOrg(ctx context.Context, userPkID int64, name, description, avatar string) (*domain.Organization, *domain.Error)
-	AddMemberToOrg(ctx context.Context, userPkID, orgPkID int64, role domain.OrganizationMemberRole) (*domain.OrganizationMember, *domain.Error)
+	AddMemberToOrg(ctx context.Context, orgPkID int64, userPkID *int64, role string) (*domain.OrganizationMember, *domain.Error)
 }
