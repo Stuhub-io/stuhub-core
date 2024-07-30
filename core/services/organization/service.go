@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
+	"github.com/Stuhub-io/utils/userutils"
 )
 
 type Service struct {
@@ -80,10 +82,16 @@ func (s *Service) GetJoinedOrgs(userPkID int64) ([]*domain.Organization, *domain
 }
 
 func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemberByEmailsResponse, *domain.Error) {
-	_, err := s.orgRepository.GetOwnerOrgByPkId(context.Background(), dto.OwnerPkId, dto.OrgInfo.PkId)
+	org, err := s.orgRepository.GetOwnerOrgByPkId(context.Background(), dto.Owner.PkID, dto.OrgInfo.PkId)
 	if err != nil {
 		return nil, err
 	}
+
+	if dto.Owner.ActivatedAt == "" || dto.Owner.PkID != org.OwnerID {
+		return nil, domain.ErrUnauthorized
+	}
+
+	ownerFullName := userutils.GetUserFullName(dto.Owner.FirstName, dto.Owner.LastName)
 
 	var sentEmails []string
 	var failedEmails []string
@@ -123,24 +131,24 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 				return
 			}
 
-			token, errToken := s.tokenMaker.CreateToken(*memberUserPkID, info.Email, domain.OrgInvitationVerificationTokenDuration)
+			token, errToken := s.tokenMaker.CreateOrgInviteToken(*memberUserPkID, org.PkId, domain.OrgInvitationVerificationTokenDuration)
 			if errToken != nil {
 				fmt.Printf("Err create token url for: %s", info.Email)
 				return
 			}
 
 			err = s.mailer.SendMail(ports.SendSendGridMailPayload{
-				FromName:   dto.OwnerFullName + " via Stuhub",
+				FromName:   ownerFullName + " via Stuhub",
 				ToName:     "",
 				ToAddress:  info.Email,
 				TemplateId: s.cfg.SendgridOrgInvitationTemplateId,
 				Data: map[string]string{
-					"url":        s.MakeValidateInvitationURL(token),
-					"owner_name": dto.OwnerFullName,
+					"url":        s.MakeValidateInvitationURL(token, dto.OrgInfo.Slug),
+					"owner_name": ownerFullName,
 					"org_name":   dto.OrgInfo.Name,
 					"org_avatar": dto.OrgInfo.Avatar,
 				},
-				Subject: "Authenticate your email",
+				Subject: "Accept organization invitation",
 			})
 			if err != nil {
 				failedEmails = append(failedEmails, info.Email)
@@ -160,8 +168,47 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 	}, nil
 }
 
-func (s *Service) MakeValidateInvitationURL(token string) string {
-	baseUrl := s.cfg.RemoteBaseURL + s.remoteRoute.ValidateOrgInvitation
+func (s *Service) ValidateOrgInviteToken(dto ValidateOrgInviteTokenDto) (*domain.OrganizationMember, *domain.Error) {
+	payload, derr := s.tokenMaker.DecodeOrgInviteToken(dto.Token)
+	if derr != nil {
+		return nil, domain.ErrTokenExpired
+	}
+
+	if payload.UserPkID != dto.CurrentUser.PkID {
+		return nil, domain.ErrUnauthorized
+	}
+
+	activatedMember, err := s.ActivateMember(ActivateMemberDto{
+		MemberPkID: payload.UserPkID,
+		OrgPkID:    payload.OrgPkID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return activatedMember, nil
+}
+
+func (s *Service) ActivateMember(dto ActivateMemberDto) (*domain.OrganizationMember, *domain.Error) {
+	member, err := s.orgRepository.GetOrgMemberByUserPkID(context.Background(), dto.OrgPkID, dto.MemberPkID)
+	if err != nil {
+		return nil, err
+	}
+
+	if member.ActivatedAt != "" {
+		return member, nil
+	}
+
+	updatedMember, err := s.orgRepository.SetOrgMemberActivatedAt(context.Background(), dto.MemberPkID, time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedMember, nil
+}
+
+func (s *Service) MakeValidateInvitationURL(token, slug string) string {
+	baseUrl := s.cfg.RemoteBaseURL + s.remoteRoute.ValidateOrgInvitation(slug)
 
 	return baseUrl + "?token=" + token
 }

@@ -2,5 +2,5 @@ package ports
 
 type RemoteRoute struct {
 	ValidateEmailOauth    string
-	ValidateOrgInvitation string
+	ValidateOrgInvitation func(slug string) string
 }

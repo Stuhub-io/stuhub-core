@@ -31,10 +31,9 @@ type EmailInviteInfo struct {
 }
 
 type InviteMemberByEmailsDto struct {
-	OwnerPkId     int64
-	OwnerFullName string
-	OrgInfo       OrgInviteInfo
-	InviteInfos   []EmailInviteInfo
+	Owner       *domain.User
+	OrgInfo     OrgInviteInfo
+	InviteInfos []EmailInviteInfo
 }
 
 type InviteMemberByEmailsResponse struct {
@@ -42,8 +41,18 @@ type InviteMemberByEmailsResponse struct {
 	FailedEmails []string `json:"failed_emails"`
 }
 
+type ValidateOrgInviteTokenDto struct {
+	CurrentUser *domain.User
+	Token       string
+}
+
 type AddMemberToOrgDto struct {
 	UserPkID int64
 	OrgPkID  int64
 	Role     domain.OrganizationMemberRole
+}
+
+type ActivateMemberDto struct {
+	MemberPkID int64
+	OrgPkID    int64
 }

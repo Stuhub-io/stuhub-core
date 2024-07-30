@@ -32,6 +32,10 @@ type AuthenByEmailAfterSetPasswordDto struct {
 	ActionToken string `json:"action_token"`
 }
 
+type ActivateUserDto struct {
+	UserPkId int64 `json:"user_pkid"`
+}
+
 type AuthenByGoogleDto struct {
 	Token string `json:"token"`
 }

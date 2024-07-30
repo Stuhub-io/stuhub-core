@@ -9,7 +9,6 @@ import (
 	"github.com/Stuhub-io/internal/api/middleware"
 	"github.com/Stuhub-io/internal/api/request"
 	"github.com/Stuhub-io/internal/api/response"
-	"github.com/Stuhub-io/utils/userutils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -37,6 +36,7 @@ func UseOrganizationHandler(params NewOrganizationHandlerParams) {
 	router.GET("/joined", decorators.CurrentUser(handler.GetJoinedOrgs))
 	router.GET("/get-by-slug", decorators.CurrentUser(handler.GetOrgBySlug))
 	router.POST("/invite-by-emails", decorators.CurrentUser(handler.InviteMembersByEmail))
+	router.POST("/invite-validation", decorators.CurrentUser(handler.ValidateOrgInvitation))
 }
 
 func (h *OrganizationHandler) CreateOrganization(c *gin.Context, user *domain.User) {
@@ -94,10 +94,9 @@ func (h *OrganizationHandler) InviteMembersByEmail(c *gin.Context, user *domain.
 	}
 
 	data, err := h.orgService.InviteMemberByEmails(organization.InviteMemberByEmailsDto{
-		OwnerPkId:     user.PkID,
-		OwnerFullName: userutils.GetUserFullName(user.FirstName, user.LastName),
-		OrgInfo:       params.OrgInfo,
-		InviteInfos:   params.Infos,
+		Owner:       user,
+		OrgInfo:     params.OrgInfo,
+		InviteInfos: params.Infos,
 	})
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
@@ -105,4 +104,23 @@ func (h *OrganizationHandler) InviteMembersByEmail(c *gin.Context, user *domain.
 	}
 
 	response.WithData(c, http.StatusOK, data, "Emails sent")
+}
+
+func (h *OrganizationHandler) ValidateOrgInvitation(c *gin.Context, user *domain.User) {
+	var params request.ValidateOrgInvitationParams
+	if ok, vr := request.Validate(c, &params); !ok {
+		response.BindError(c, vr.Error())
+		return
+	}
+
+	data, err := h.orgService.ValidateOrgInviteToken(organization.ValidateOrgInviteTokenDto{
+		CurrentUser: user,
+		Token:       params.Token,
+	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, http.StatusOK, data, "Invitation validated successfully!")
 }
