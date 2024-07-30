@@ -27,10 +27,10 @@ func (r OrganizationMemberRole) String() string {
 type OrganizationMember struct {
 	PkId             int64  `json:"pk_id"`
 	OrganizationPkID int64  `json:"organization_pkid"`
-	UserPkID         int64  `json:"user_pkid"`
+	UserPkID         *int64 `json:"user_pkid"`
 	Role             string `json:"role"`
+	ActivatedAt      string `json:"activated_at"`
 	CreatedAt        string `json:"created_at"`
 	UpdatedAt        string `json:"updated_at"`
-	// Nullable depend on usecase
-	User *User `json:"user"`
+	User             *User  `json:"user"`
 }

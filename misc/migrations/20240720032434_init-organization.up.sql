@@ -18,8 +18,9 @@ CREATE TABLE IF NOT EXISTS "organizations" (
 CREATE TABLE IF NOT EXISTS "organization_member" (
     "pkid" bigserial PRIMARY KEY,
     "organization_pkid" BIGINT NOT NULL,
-    "user_pkid" BIGINT NOT NULL,
+    "user_pkid" BIGINT NULL,
     "role" varchar(50) NOT NULL CHECK (role IN ('owner', 'member', 'guest')),
+    "activated_at" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
 

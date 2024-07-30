@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
@@ -12,6 +13,7 @@ import (
 	commonutils "github.com/Stuhub-io/utils"
 	"github.com/gosimple/slug"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type OrganizationRepository struct {
@@ -80,12 +82,18 @@ func mapOrgModelsToDomain(models []OrganizationWithMembers) []*domain.Organizati
 	for _, org := range models {
 		domainMembers := make([]domain.OrganizationMember, 0, len(org.Members))
 		for _, member := range org.Members {
+			activatedAt := ""
+			if member.ActivatedAt != nil {
+				activatedAt = member.ActivatedAt.String()
+			}
+
 			domainMember := domain.OrganizationMember{
 				PkId:             member.Pkid,
 				OrganizationPkID: member.OrganizationPkid,
-				UserPkID:         member.Pkid,
+				UserPkID:         &member.Pkid,
 				Role:             member.Role,
 				User:             mapUserModelToDomain(member.User),
+				ActivatedAt:      activatedAt,
 				CreatedAt:        member.CreatedAt.String(),
 				UpdatedAt:        member.UpdatedAt.String(),
 			}
@@ -100,40 +108,118 @@ func mapOrgModelsToDomain(models []OrganizationWithMembers) []*domain.Organizati
 	return domainOrgs
 }
 
-func mapOrgMemberModelToDomain(model model.OrganizationMember, user *domain.User) *domain.OrganizationMember {
+func mapOrgMemberUserModelToDomain(model model.OrganizationMember, user *domain.User) *domain.OrganizationMember {
+	activatedAt := ""
+	if model.ActivatedAt != nil {
+		activatedAt = model.ActivatedAt.String()
+	}
+
 	return &domain.OrganizationMember{
 		PkId:             model.Pkid,
 		OrganizationPkID: model.OrganizationPkid,
 		UserPkID:         model.UserPkid,
 		Role:             model.Role,
 		User:             user,
+		ActivatedAt:      activatedAt,
 		CreatedAt:        model.CreatedAt.String(),
 		UpdatedAt:        model.UpdatedAt.String(),
 	}
 }
 
-func (r *OrganizationRepository) GetOrgMember(ctx context.Context, pkID int64, includeUser bool) ([]domain.OrganizationMember, *domain.Error) {
-	var members []model.OrganizationMember
+func mapOrgMemberModelsToDomain(models []MemberWithUser) []*domain.OrganizationMember {
+	domainOrgMembers := make([]*domain.OrganizationMember, 0, len(models))
+	for _, member := range models {
+		activatedAt := ""
+		if member.ActivatedAt != nil {
+			activatedAt = member.ActivatedAt.String()
+		}
+		domainMember := &domain.OrganizationMember{
+			PkId:             member.Pkid,
+			OrganizationPkID: member.OrganizationPkid,
+			UserPkID:         &member.Pkid,
+			Role:             member.Role,
+			User:             mapUserModelToDomain(member.User),
+			ActivatedAt:      activatedAt,
+			CreatedAt:        member.CreatedAt.String(),
+			UpdatedAt:        member.UpdatedAt.String(),
+		}
+		domainOrgMembers = append(domainOrgMembers, domainMember)
+	}
 
-	err := r.store.DB().Where("organization_id = ?", pkID).Find(&members).Error
+	return domainOrgMembers
+}
+
+func (r *OrganizationRepository) GetOrgMembers(ctx context.Context, pkID int64) ([]*domain.OrganizationMember, *domain.Error) {
+	var members []MemberWithUser
+
+	err := r.store.DB().Preload("User").Where("organization_id = ?", pkID).First(&members).Error
 	if err != nil {
 		return nil, domain.ErrInternalServerError
 	}
 
-	var orgMembesrResp = make([]domain.OrganizationMember, len(members))
-	for i, member := range members {
-		orgMembesrResp[i] = domain.OrganizationMember{
-			PkId:             member.Pkid,
-			OrganizationPkID: member.OrganizationPkid,
-			UserPkID:         member.UserPkid,
-			Role:             member.Role,
-			CreatedAt:        member.CreatedAt.String(),
-			UpdatedAt:        member.UpdatedAt.String(),
-			// Include User entity if `includeUser` is true
-			// User: domain.User{...},
+	return mapOrgMemberModelsToDomain(members), nil
+}
+
+func (r *OrganizationRepository) GetOrgMemberByEmail(ctx context.Context, orgPkId int64, email string) (*domain.OrganizationMember, *domain.Error) {
+	var member MemberWithUser
+
+	err := r.store.DB().Preload("User").
+		Joins("JOIN users ON users.pkid = organization_member.user_pkid").
+		Where("organization_pkid = ? AND users.email = ?", orgPkId, email).
+		First(&member).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrOrgMemberNotFound
 		}
+		return nil, domain.ErrInternalServerError
 	}
-	return orgMembesrResp, nil
+
+	activatedAt := ""
+	if member.ActivatedAt != nil {
+		activatedAt = member.ActivatedAt.String()
+	}
+
+	return &domain.OrganizationMember{
+		PkId:             member.Pkid,
+		OrganizationPkID: member.OrganizationPkid,
+		UserPkID:         member.UserPkid,
+		Role:             member.Role,
+		User:             mapUserModelToDomain(member.User),
+		ActivatedAt:      activatedAt,
+		CreatedAt:        member.CreatedAt.String(),
+		UpdatedAt:        member.UpdatedAt.String(),
+	}, nil
+}
+
+func (r *OrganizationRepository) GetOrgMemberByUserPkID(ctx context.Context, orgPkId int64, userPkId int64) (*domain.OrganizationMember, *domain.Error) {
+	var member MemberWithUser
+
+	err := r.store.DB().Preload("User").
+		Joins("JOIN users ON users.pkid = organization_member.user_pkid").
+		Where("organization_pkid = ? AND users.pkid = ?", orgPkId, userPkId).
+		First(&member).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrOrgMemberNotFound
+		}
+		return nil, domain.ErrInternalServerError
+	}
+
+	activatedAt := ""
+	if member.ActivatedAt != nil {
+		activatedAt = member.ActivatedAt.String()
+	}
+
+	return &domain.OrganizationMember{
+		PkId:             member.Pkid,
+		OrganizationPkID: member.OrganizationPkid,
+		UserPkID:         member.UserPkid,
+		Role:             member.Role,
+		User:             mapUserModelToDomain(member.User),
+		ActivatedAt:      activatedAt,
+		CreatedAt:        member.CreatedAt.String(),
+		UpdatedAt:        member.UpdatedAt.String(),
+	}, nil
 }
 
 func (r *OrganizationRepository) GetOwnerOrgByName(ctx context.Context, ownerID int64, name string) (*domain.Organization, *domain.Error) {
@@ -150,6 +236,24 @@ func (r *OrganizationRepository) GetOwnerOrgByName(ctx context.Context, ownerID 
 
 	return &domain.Organization{
 		PkId: org.Pkid,
+	}, nil
+}
+
+func (r *OrganizationRepository) GetOwnerOrgByPkId(ctx context.Context, ownerID, pkId int64) (*domain.Organization, *domain.Error) {
+	var org model.Organization
+
+	err := r.store.DB().Where("owner_id = ? AND pkid = ?", ownerID, pkId).First(&org).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrOrgNotFound
+		}
+
+		return nil, domain.ErrDatabaseQuery
+	}
+
+	return &domain.Organization{
+		PkId:    org.Pkid,
+		OwnerID: org.OwnerID,
 	}, nil
 }
 
@@ -203,7 +307,7 @@ func (r *OrganizationRepository) CreateOrg(ctx context.Context, ownerPkID int64,
 
 	ownerMember = model.OrganizationMember{
 		OrganizationPkid: newOrg.Pkid,
-		UserPkid:         ownerPkID,
+		UserPkid:         &ownerPkID,
 		Role:             domain.Owner.String(),
 	}
 
@@ -217,13 +321,13 @@ func (r *OrganizationRepository) CreateOrg(ctx context.Context, ownerPkID int64,
 	}
 	// -- End Transaction
 
-	owner, uerr := r.userRepository.GetUserByPkID(context.Background(), ownerMember.UserPkid)
+	owner, uerr := r.userRepository.GetUserByPkID(context.Background(), *ownerMember.UserPkid)
 	if uerr != nil {
 		return nil, uerr
 	}
 
 	return mapOrg(newOrg, []domain.OrganizationMember{
-		*mapOrgMemberModelToDomain(ownerMember, owner),
+		*mapOrgMemberUserModelToDomain(ownerMember, owner),
 	}), nil
 }
 
@@ -241,32 +345,33 @@ func (r *OrganizationRepository) GetOrgsByUserPkID(ctx context.Context, userPkID
 	return mapOrgModelsToDomain(joinedOrgs), nil
 }
 
-func (r *OrganizationRepository) AddMemberToOrg(ctx context.Context, userPkID, orgPkID int64, role domain.OrganizationMemberRole) (*domain.OrganizationMember, *domain.Error) {
-	var existingMember model.OrganizationMember
-
-	rel := r.store.DB().Where("organization_pkid = ? AND user_pkid = ?").First(&existingMember)
-	if err := rel.Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, domain.ErrDatabaseQuery
-	}
-
-	if rel.RowsAffected == 1 {
-		return nil, domain.ErrExistOrgMember(userPkID)
-	}
-
+func (r *OrganizationRepository) AddMemberToOrg(ctx context.Context, orgPkID int64, userPkID *int64, role string) (*domain.OrganizationMember, *domain.Error) {
 	var newMember = model.OrganizationMember{
 		OrganizationPkid: orgPkID,
 		UserPkid:         userPkID,
-		Role:             role.String(),
+		Role:             role,
 	}
 	err := r.store.DB().Create(&newMember).Error
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation
 	}
 
-	user, dErr := r.userRepository.GetUserByPkID(context.Background(), userPkID)
-	if dErr != nil {
-		return nil, dErr
+	var user *domain.User
+
+	if newMember.UserPkid != nil {
+		user, _ = r.userRepository.GetUserByPkID(context.Background(), *newMember.UserPkid)
 	}
 
-	return mapOrgMemberModelToDomain(newMember, user), nil
+	return mapOrgMemberUserModelToDomain(newMember, user), nil
+}
+
+func (r *OrganizationRepository) SetOrgMemberActivatedAt(ctx context.Context, pkID int64, activatedAt time.Time) (*domain.OrganizationMember, *domain.Error) {
+	var member model.OrganizationMember
+
+	err := r.store.DB().Model(&member).Clauses(clause.Returning{}).Where("pkid = ?", pkID).Update("activated_at", activatedAt).Error
+	if err != nil {
+		return nil, domain.ErrDatabaseMutation
+	}
+
+	return mapOrgMemberUserModelToDomain(member, nil), nil
 }

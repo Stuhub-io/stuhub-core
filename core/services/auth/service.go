@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"time"
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
@@ -64,11 +65,10 @@ func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEm
 
 	url := s.MakeValidateEmailAuth(token)
 	err = s.mailer.SendMail(ports.SendSendGridMailPayload{
-		FromName:    "Stuhub.IO",
-		FromAddress: s.config.SendgridEmailFrom,
-		ToName:      userutils.GetUserFullName(user.FirstName, user.LastName),
-		ToAddress:   user.Email,
-		TemplateId:  s.config.SendgridSetPasswordTemplateId,
+		FromName:   "Stuhub.IO",
+		ToName:     userutils.GetUserFullName(user.FirstName, user.LastName),
+		ToAddress:  user.Email,
+		TemplateId: s.config.SendgridSetPasswordTemplateId,
 		Data: map[string]string{
 			"url": url,
 		},
@@ -121,19 +121,24 @@ func (s *Service) ValidateEmailAuth(token string) (*ValidateEmailTokenResp, *dom
 }
 
 func (s *Service) SetPasswordAndAuthUser(dto AuthenByEmailAfterSetPasswordDto) (*AuthenByEmailStepTwoResp, *domain.Error) {
-	user, derr := s.userRepository.GetUserByEmail(context.Background(), dto.Email)
-	if derr != nil {
+	user, err := s.userRepository.GetUserByEmail(context.Background(), dto.Email)
+	if err != nil {
 		return nil, domain.ErrUserNotFoundByEmail(dto.Email)
 	}
 
-	hashedPassword, err := s.hasher.Hash(dto.RawPassword, user.Salt)
-	if err != nil {
+	hashedPassword, herr := s.hasher.Hash(dto.RawPassword, user.Salt)
+	if herr != nil {
 		return nil, domain.ErrInternalServerError
 	}
 
-	derr = s.userRepository.SetUserPassword(context.Background(), user.PkID, hashedPassword)
-	if derr != nil {
-		return nil, domain.ErrInternalServerError
+	err = s.userRepository.SetUserPassword(context.Background(), user.PkID, hashedPassword)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = s.userRepository.SetUserActivatedAt(context.Background(), user.PkID, time.Now())
+	if err != nil {
+		return nil, err
 	}
 
 	access, tErr := s.tokenMaker.CreateToken(user.PkID, user.Email, domain.AccessTokenDuration)
@@ -152,6 +157,24 @@ func (s *Service) SetPasswordAndAuthUser(dto AuthenByEmailAfterSetPasswordDto) (
 			Refresh: refresh,
 		},
 	}, nil
+}
+
+func (s *Service) ActivateUser(dto ActivateUserDto) (*domain.User, *domain.Error) {
+	user, err := s.userRepository.GetUserByPkID(context.Background(), dto.UserPkId)
+	if err != nil {
+		return nil, domain.ErrUserNotFound
+	}
+
+	if user.ActivatedAt != "" {
+		return user, nil
+	}
+
+	updatedUser, err := s.userRepository.SetUserActivatedAt(context.Background(), dto.UserPkId, time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedUser, nil
 }
 
 func (s *Service) AuthenUserByEmailPassword(dto AuthenByEmailPasswordDto) (*domain.AuthToken, *domain.User, *domain.Error) {

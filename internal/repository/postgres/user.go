@@ -11,6 +11,7 @@ import (
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type UserRepository struct {
@@ -178,6 +179,17 @@ func (r *UserRepository) UpdateUserInfo(ctx context.Context, PkID int64, firstNa
 		Avatar:    avatar,
 	}
 	err := r.store.DB().Model(&model.User{}).Where("pkid = ?", PkID).Updates(&user).Error
+	if err != nil {
+		return nil, domain.ErrDatabaseMutation
+	}
+
+	return mapUserModelToDomain(user), nil
+}
+
+func (r *UserRepository) SetUserActivatedAt(ctx context.Context, pkID int64, activatedAt time.Time) (*domain.User, *domain.Error) {
+	var user model.User
+
+	err := r.store.DB().Model(&user).Clauses(clause.Returning{}).Where("pkid = ?", pkID).Update("activated_at", activatedAt).Error
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation
 	}

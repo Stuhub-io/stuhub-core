@@ -35,6 +35,8 @@ func UseOrganizationHandler(params NewOrganizationHandlerParams) {
 	router.POST("/create", decorators.CurrentUser(handler.CreateOrganization))
 	router.GET("/joined", decorators.CurrentUser(handler.GetJoinedOrgs))
 	router.GET("/get-by-slug", decorators.CurrentUser(handler.GetOrgBySlug))
+	router.POST("/invite-by-emails", decorators.CurrentUser(handler.InviteMembersByEmail))
+	router.POST("/invite-validation", decorators.CurrentUser(handler.ValidateOrgInvitation))
 }
 
 func (h *OrganizationHandler) CreateOrganization(c *gin.Context, user *domain.User) {
@@ -44,7 +46,7 @@ func (h *OrganizationHandler) CreateOrganization(c *gin.Context, user *domain.Us
 		return
 	}
 
-	data, err := h.orgService.CreateOrganization(organization.CreateOrganizationParams{
+	data, err := h.orgService.CreateOrganization(organization.CreateOrganizationDto{
 		OwnerPkID:   user.PkID,
 		Name:        body.Name,
 		Description: body.Description,
@@ -82,4 +84,43 @@ func (h *OrganizationHandler) GetOrgBySlug(c *gin.Context, user *domain.User) {
 	}
 
 	response.WithData(c, http.StatusOK, data, "Success")
+}
+
+func (h *OrganizationHandler) InviteMembersByEmail(c *gin.Context, user *domain.User) {
+	var params request.InviteMembersByEmailParams
+	if ok, vr := request.Validate(c, &params); !ok {
+		response.BindError(c, vr.Error())
+		return
+	}
+
+	data, err := h.orgService.InviteMemberByEmails(organization.InviteMemberByEmailsDto{
+		Owner:       user,
+		OrgInfo:     params.OrgInfo,
+		InviteInfos: params.Infos,
+	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, http.StatusOK, data, "Emails sent")
+}
+
+func (h *OrganizationHandler) ValidateOrgInvitation(c *gin.Context, user *domain.User) {
+	var params request.ValidateOrgInvitationParams
+	if ok, vr := request.Validate(c, &params); !ok {
+		response.BindError(c, vr.Error())
+		return
+	}
+
+	data, err := h.orgService.ValidateOrgInviteToken(organization.ValidateOrgInviteTokenDto{
+		CurrentUser: user,
+		Token:       params.Token,
+	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, http.StatusOK, data, "Invitation validated successfully!")
 }

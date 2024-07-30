@@ -3,39 +3,36 @@ package mailer
 import (
 	"os"
 
-	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
+	"github.com/Stuhub-io/logger"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
 type Mailer struct {
-	name      string
 	address   string
 	clientKey string
-	config    config.Config
+	logger    logger.Logger
 }
 
 type NewMailerParams struct {
-	Name      string
 	Address   string
 	ClientKey string
-	config.Config
+	Logger    logger.Logger
 }
 
 func NewMailer(params NewMailerParams) ports.Mailer {
 	return &Mailer{
-		name:      params.Name,
 		address:   params.Address,
 		clientKey: params.ClientKey,
-		config:    params.Config,
+		logger:    params.Logger,
 	}
 }
 
 func (m *Mailer) SendMail(payload ports.SendSendGridMailPayload) *domain.Error {
 	v3Mail := mail.NewV3Mail()
-	from := mail.NewEmail(payload.FromName, payload.FromAddress)
+	from := mail.NewEmail(payload.FromName, m.address)
 	v3Mail.SetFrom(from)
 	v3Mail.SetTemplateID(payload.TemplateId)
 
@@ -51,6 +48,7 @@ func (m *Mailer) SendMail(payload ports.SendSendGridMailPayload) *domain.Error {
 	request.Body = mail.GetRequestBody(v3Mail)
 	_, err := sendgrid.API(request)
 	if err != nil {
+		m.logger.Error(err, err.Error())
 		return domain.ErrSendMail
 	}
 

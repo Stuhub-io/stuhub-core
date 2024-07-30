@@ -12,7 +12,7 @@ func CORS(cfg *config.Config) gin.HandlerFunc {
 		cors.New(
 			cors.Config{
 				AllowOrigins: cfg.AllowedOrigins,
-				AllowMethods: []string{"GET", "POST", "PUT", "DELETE"},
+				AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
 				AllowHeaders: []string{
 					"Origin", "Host", "Content-Type", "Content-Length", "Accept-Encoding", "Accept-Language", "Accept",
 					"X-CSRF-Token", "Authorization", "X-Requested-With", "X-Access-Token", "credentials",

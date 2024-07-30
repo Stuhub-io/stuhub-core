@@ -70,10 +70,9 @@ func main() {
 
 	// TODO: read from env
 	mailer := mailer.NewMailer(mailer.NewMailerParams{
-		Name:      "",
-		Address:   "",
-		ClientKey: "",
-		Config:    cfg,
+		Address:   cfg.SendgridEmailFrom,
+		ClientKey: cfg.SendgridKey,
+		Logger:    logger,
 	})
 
 	r := gin.Default()
@@ -112,6 +111,11 @@ func main() {
 	orgService := organization.NewService(organization.NewServiceParams{
 		Config:                 cfg,
 		OrganizationRepository: orgRepository,
+		UserRepository:         userRepository,
+		TokenMaker:             tokenMaker,
+		Hasher:                 hasher,
+		Mailer:                 mailer,
+		RemoteRoute:            remoteRoute,
 	})
 
 	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{
