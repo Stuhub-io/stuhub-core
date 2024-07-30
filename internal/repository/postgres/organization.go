@@ -90,7 +90,7 @@ func mapOrgModelsToDomain(models []OrganizationWithMembers) []*domain.Organizati
 			domainMember := domain.OrganizationMember{
 				PkId:             member.Pkid,
 				OrganizationPkID: member.OrganizationPkid,
-				UserPkID:         &member.Pkid,
+				UserPkID:         member.UserPkid,
 				Role:             member.Role,
 				User:             mapUserModelToDomain(member.User),
 				ActivatedAt:      activatedAt,
