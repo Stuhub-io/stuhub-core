@@ -1,0 +1,3 @@
+
+DELETE TABLE IF EXISTS "spaces";
+DELETE TABLE IF EXISTS "space_member";
