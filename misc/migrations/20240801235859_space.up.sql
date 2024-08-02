@@ -5,13 +5,8 @@ CREATE TABLE IF NOT EXISTS "spaces" (
     "description" TEXT NOT NULL,
     "is_private" BOOLEAN NOT NULL DEFAULT FALSE,
     "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-
-    -- Foreign key constraints
-    CONSTRAINT fk_owner
-        FOREIGN KEY (owner_id) 
-        REFERENCES "users" (pkid) ON DELETE CASCADE
-);
+    "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);  -- Removed the trailing comma here
 
 CREATE TABLE IF NOT EXISTS "space_member" (
     "pkid" bigserial PRIMARY KEY,

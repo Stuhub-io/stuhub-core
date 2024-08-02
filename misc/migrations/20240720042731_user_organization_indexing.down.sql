@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS idx_organization_member_organization_pkid;
+DROP INDEX IF EXISTS idx_organization_member_user_pkid;
