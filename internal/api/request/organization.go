@@ -9,7 +9,7 @@ type CreateOrgBody struct {
 }
 
 type GetOrgBySlugParams struct {
-	Slug string `json:"slug" binding:"required"`
+	Slug string `form:"slug" binding:"required"`
 }
 
 type InviteMembersByEmailParams struct {

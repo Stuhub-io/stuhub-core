@@ -13,6 +13,7 @@ import (
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/services/auth"
 	"github.com/Stuhub-io/core/services/organization"
+	"github.com/Stuhub-io/core/services/space"
 	"github.com/Stuhub-io/core/services/user"
 	_ "github.com/Stuhub-io/docs"
 	"github.com/Stuhub-io/internal/api"
@@ -92,6 +93,10 @@ func main() {
 		Cfg:            cfg,
 		UserRepository: userRepository,
 	})
+	spaceRepository := postgres.NewSpaceRepository(postgres.NewSpaceRepositoryParams{
+		Cfg:   cfg,
+		Store: dbStore,
+	})
 
 	// services
 	oauthService := oauth.NewOauthService(logger)
@@ -108,6 +113,7 @@ func main() {
 		RemoteRoute:    remoteRoute,
 		Hasher:         hasher,
 	})
+
 	orgService := organization.NewService(organization.NewServiceParams{
 		Config:                 cfg,
 		OrganizationRepository: orgRepository,
@@ -116,6 +122,12 @@ func main() {
 		Hasher:                 hasher,
 		Mailer:                 mailer,
 		RemoteRoute:            remoteRoute,
+		SpaceRepository:        spaceRepository,
+	})
+
+	spaceService := space.NewService(space.NewServiceParams{
+		Config:          cfg,
+		SpaceRepository: spaceRepository,
 	})
 
 	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{
@@ -139,6 +151,11 @@ func main() {
 			Router:         v1,
 			AuthMiddleware: authMiddleware,
 			OrgService:     orgService,
+		})
+		api.UseSpaceHandler(api.NewSpaceHandlerParams{
+			Router:         v1,
+			AuthMiddleware: authMiddleware,
+			SpaceService:   spaceService,
 		})
 	}
 

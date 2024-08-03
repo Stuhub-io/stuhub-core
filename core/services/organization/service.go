@@ -13,13 +13,14 @@ import (
 )
 
 type Service struct {
-	cfg            config.Config
-	orgRepository  ports.OrganizationRepository
-	userRepository ports.UserRepository
-	tokenMaker     ports.TokenMaker
-	hasher         ports.Hasher
-	mailer         ports.Mailer
-	remoteRoute    ports.RemoteRoute
+	cfg             config.Config
+	orgRepository   ports.OrganizationRepository
+	userRepository  ports.UserRepository
+	tokenMaker      ports.TokenMaker
+	hasher          ports.Hasher
+	mailer          ports.Mailer
+	remoteRoute     ports.RemoteRoute
+	spaceRepository ports.SpaceRepository
 }
 
 type NewServiceParams struct {
@@ -30,17 +31,19 @@ type NewServiceParams struct {
 	ports.Hasher
 	ports.Mailer
 	ports.RemoteRoute
+	ports.SpaceRepository
 }
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
-		cfg:            params.Config,
-		orgRepository:  params.OrganizationRepository,
-		userRepository: params.UserRepository,
-		tokenMaker:     params.TokenMaker,
-		hasher:         params.Hasher,
-		mailer:         params.Mailer,
-		remoteRoute:    params.RemoteRoute,
+		cfg:             params.Config,
+		orgRepository:   params.OrganizationRepository,
+		userRepository:  params.UserRepository,
+		tokenMaker:      params.TokenMaker,
+		hasher:          params.Hasher,
+		mailer:          params.Mailer,
+		remoteRoute:     params.RemoteRoute,
+		spaceRepository: params.SpaceRepository,
 	}
 }
 
@@ -55,6 +58,10 @@ func (s *Service) CreateOrganization(dto CreateOrganizationDto) (*CreateOrganiza
 	}
 
 	org, err := s.orgRepository.CreateOrg(context.Background(), dto.OwnerPkID, dto.Name, dto.Description, dto.Avatar)
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.spaceRepository.CreateSpace(context.Background(), org.PkId, dto.OwnerPkID, true, "Privte Space", "")
 	if err != nil {
 		return nil, err
 	}

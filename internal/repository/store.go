@@ -38,7 +38,7 @@ func (d *DBStore) NewTransaction() (*DBStore, TxEndFunc) {
 				return domain.NewErr(err.Error(), domain.InternalServerErrCode)
 			}
 
-			return domain.ErrRollbackErr
+			return domain.ErrInternalServerError
 		}
 
 		cErr := newDB.Commit().Error
