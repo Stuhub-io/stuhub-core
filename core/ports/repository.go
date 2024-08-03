@@ -22,12 +22,17 @@ type UserRepository interface {
 type OrganizationRepository interface {
 	GetOrgMembers(ctx context.Context, pkID int64) ([]*domain.OrganizationMember, *domain.Error)
 	GetOrgBySlug(ctx context.Context, slug string) (*domain.Organization, *domain.Error)
-	GetOwnerOrgByName(ctx context.Context, ownerID int64, name string) (*domain.Organization, *domain.Error)
-	GetOwnerOrgByPkId(ctx context.Context, ownerID, pkId int64) (*domain.Organization, *domain.Error)
+	GetOwnerOrgByName(ctx context.Context, ownerPkID int64, name string) (*domain.Organization, *domain.Error)
+	GetOwnerOrgByPkId(ctx context.Context, ownerPkID, pkId int64) (*domain.Organization, *domain.Error)
 	GetOrgsByUserPkID(ctx context.Context, usePkID int64) ([]*domain.Organization, *domain.Error)
 	GetOrgMemberByEmail(ctx context.Context, orgPkId int64, email string) (*domain.OrganizationMember, *domain.Error)
 	GetOrgMemberByUserPkID(ctx context.Context, orgPkId int64, userPkId int64) (*domain.OrganizationMember, *domain.Error)
 	CreateOrg(ctx context.Context, userPkID int64, name, description, avatar string) (*domain.Organization, *domain.Error)
 	AddMemberToOrg(ctx context.Context, orgPkID int64, userPkID *int64, role string) (*domain.OrganizationMember, *domain.Error)
 	SetOrgMemberActivatedAt(ctx context.Context, pkID int64, activatedAt time.Time) (*domain.OrganizationMember, *domain.Error)
+}
+
+type SpaceRepository interface {
+	CreateSpace(ctx context.Context, orgPkID int64, ownerPkID int64, isPrivate bool, name, description string) (*domain.Space, *domain.Error)
+	GetSpacesByOrgPkID(ctx context.Context, orgPkID int64) ([]domain.Space, *domain.Error)
 }

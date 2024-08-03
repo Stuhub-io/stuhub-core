@@ -1,3 +1,3 @@
 
-DELETE TABLE IF EXISTS "spaces";
-DELETE TABLE IF EXISTS "space_member";
+DROP TABLE IF EXISTS "spaces";
+DROP TABLE IF EXISTS "space_member";

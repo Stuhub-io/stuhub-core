@@ -52,6 +52,7 @@ func (h *OrganizationHandler) CreateOrganization(c *gin.Context, user *domain.Us
 		Description: body.Description,
 		Avatar:      body.Avatar,
 	})
+
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return

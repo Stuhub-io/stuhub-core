@@ -14,6 +14,7 @@ const TableNameSpace = "spaces"
 type Space struct {
 	Pkid        int64     `gorm:"column:pkid;type:bigint;primaryKey;autoIncrement:true" json:"pkid"`
 	ID          string    `gorm:"column:id;type:uuid;not null;default:uuid_generate_v4()" json:"id"`
+	OrgPkid     int64     `gorm:"column:org_pkid;type:bigint;not null" json:"org_pkid"`
 	Name        string    `gorm:"column:name;type:character varying(255);not null" json:"name"`
 	Description string    `gorm:"column:description;type:text;not null" json:"description"`
 	IsPrivate   bool      `gorm:"column:is_private;type:boolean;not null" json:"is_private"`

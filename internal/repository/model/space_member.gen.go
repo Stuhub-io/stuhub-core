@@ -14,7 +14,7 @@ const TableNameSpaceMember = "space_member"
 type SpaceMember struct {
 	Pkid      int64     `gorm:"column:pkid;type:bigint;primaryKey;autoIncrement:true" json:"pkid"`
 	SpacePkid int64     `gorm:"column:space_pkid;type:bigint;not null" json:"space_pkid"`
-	UserPkid  *int64    `gorm:"column:user_pkid;type:bigint" json:"user_pkid"`
+	UserPkid  int64     `gorm:"column:user_pkid;type:bigint;not null" json:"user_pkid"`
 	Role      string    `gorm:"column:role;type:character varying(50);not null" json:"role"`
 	CreatedAt time.Time `gorm:"column:created_at;type:timestamp with time zone;not null;default:now()" json:"created_at"`
 	UpdatedAt time.Time `gorm:"column:updated_at;type:timestamp with time zone;not null;default:now()" json:"updated_at"`
