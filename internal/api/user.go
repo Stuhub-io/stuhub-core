@@ -33,6 +33,7 @@ func UseUserHandler(params NewUserHandlerParams) {
 	router.Use(authMiddleware.Authenticated())
 
 	router.GET("/:id", decorators.CurrentUser(handler.GetUserById))
+	router.POST("/find-by-email", handler.GetUserByEmail)
 	router.PATCH("/update-info", decorators.CurrentUser(handler.UpdateUserInfo))
 }
 
@@ -50,6 +51,22 @@ func UseUserHandler(params NewUserHandlerParams) {
 //	@Router			/v1/user-services/{id} [get]
 func (h *UserHandler) GetUserById(c *gin.Context, user *domain.User) {
 	response.WithData(c, http.StatusOK, user)
+}
+
+func (h *UserHandler) GetUserByEmail(c *gin.Context) {
+	var body request.GetUserByEmail
+	if ok, vr := request.Validate(c, &body); !ok {
+		response.BindError(c, vr.Error())
+		return
+	}
+
+	resp, err := h.userService.GetUserByEmail(body.Email)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, http.StatusOK, resp)
 }
 
 func (h UserHandler) UpdateUserInfo(c *gin.Context, user *domain.User) {

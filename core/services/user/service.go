@@ -38,7 +38,7 @@ func (s *Service) GetUserById(id string) (*GetUserByIdResponse, *domain.Error) {
 
 func (s *Service) GetUserByEmail(email string) (*GetUserByEmailResponse, *domain.Error) {
 	user, err := s.userRepository.GetUserByEmail(context.Background(), email)
-	if err != nil {
+	if err != nil && err.Error != domain.NotFoundErr {
 		return nil, err
 	}
 
