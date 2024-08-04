@@ -36,3 +36,8 @@ type SpaceRepository interface {
 	CreateSpace(ctx context.Context, orgPkID int64, ownerPkID int64, isPrivate bool, name, description string) (*domain.Space, *domain.Error)
 	GetSpacesByOrgPkID(ctx context.Context, orgPkID int64) ([]domain.Space, *domain.Error)
 }
+
+type PageRepository interface {
+	CreatePage(ctx context.Context, spacePkID int64, name, viewType string, ParentPagePkID int64) (*domain.Page, *domain.Error)
+	GetPagesBySpacePkID(ctx context.Context, spacePkID int64) ([]domain.Page, *domain.Error)
+}
