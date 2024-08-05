@@ -8,5 +8,3 @@ engine
 bin/
 *.out
 *.env
-
-!build/local/**/*.env

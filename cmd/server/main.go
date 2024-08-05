@@ -13,6 +13,7 @@ import (
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/services/auth"
 	"github.com/Stuhub-io/core/services/organization"
+	"github.com/Stuhub-io/core/services/page"
 	"github.com/Stuhub-io/core/services/space"
 	"github.com/Stuhub-io/core/services/user"
 	_ "github.com/Stuhub-io/docs"
@@ -97,6 +98,10 @@ func main() {
 		Cfg:   cfg,
 		Store: dbStore,
 	})
+	pageRepository := postgres.NewPageRepository(postgres.NewPageRepositoryParams{
+		Cfg:   cfg,
+		Store: dbStore,
+	})
 
 	// services
 	oauthService := oauth.NewOauthService(logger)
@@ -130,6 +135,11 @@ func main() {
 		SpaceRepository: spaceRepository,
 	})
 
+	pageService := page.NewService(page.NewServiceParams{
+		Config:         cfg,
+		PageRepository: pageRepository,
+	})
+
 	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{
 		TokenMaker:     tokenMaker,
 		UserRepository: userRepository,
@@ -156,6 +166,11 @@ func main() {
 			Router:         v1,
 			AuthMiddleware: authMiddleware,
 			SpaceService:   spaceService,
+		})
+		api.UsePageHanlder(api.NewPageHandlerParams{
+			Router:         v1,
+			AuthMiddleware: authMiddleware,
+			PageService:    pageService,
 		})
 	}
 
