@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS "pages" (
 
     CONSTRAINT fk_parent
         FOREIGN KEY (parent_page_pkid)
-        REFERENCES "spaces" (pkid)
+        REFERENCES "pages" (pkid)
         ON DELETE CASCADE
 );
 

@@ -19,5 +19,16 @@ const (
 )
 
 func (r PageViewType) String() string {
-	return [...]string{"doc", "table"}[r-1]
+	return [...]string{"document", "table"}[r-1]
+}
+
+func PageViewFromString(val string) PageViewType {
+	switch val {
+	case "document":
+		return PageViewTypeDoc
+	case "table":
+		return PageViewTypeTable
+	default:
+		return PageViewTypeDoc
+	}
 }
