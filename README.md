@@ -92,7 +92,28 @@ Can insert video URL in case the size exceeds github limit
 ## Technical Document
 
 1. **Project structure**
+![alt text](image.png)
+- `build/`: this folder contains the configuration info for api, postgres and redis, including docker and env files
+- `cmd/`: contains the file main.go to run the program
+- `config/`: loading and managing configuration specifications from build folder
+- `core`: handling and define business logic and domains, soul of the app
+   - `domain/`: define business entities
+   - `port/`: define interface to enforce services to follow so it can access repository package
+   - `services/`: handling business logic 
+- `docs/`: setup configuration for swagger api document
+- `internal/`: contains external and third-party services like apis, cache, database and oauth,...
+- `logger/`: setup debug logging
+- `misc/`: contains migration files
+- `utils/`: contains most reused functions
+- `.air.toml`: used for live reloading in Go applications
+- `.golangci.yaml`: specify linters to apply for source code
+- `gen.yaml`: help to create Go structs that map to the specified database tables
+- `go.mod`: contain and manage dependencies, specifies go version
+- `go.sum`: contains checksum of dependencies listed in `go.mod`, ensure those not be tempered
+- `local.yml`: to run docker compose
+- `Makefile`: contain command lines for setup and running the application
 <!-- 
+.
 - `cmd/` this folder contains the main application entry point files for the project
   - `server/main.go`: Containing init function `main()` of the service. This function will be executed when we run `make dev`
   - Other `main.go` files (e.g. `fetch-discord-users/main.go`): Entry points to execute some functional jobs. k8s Cronjob will be set up to execute these jobs schedually
