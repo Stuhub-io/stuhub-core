@@ -28,5 +28,5 @@ CREATE TABLE IF NOT EXISTS "space_member" (
 
     CONSTRAINT fk_user
         FOREIGN KEY (user_pkid) 
-        REFERENCES "users" (pkid)
+        REFERENCES "users" (pkid) ON DELETE CASCADE
 );
