@@ -7,6 +7,12 @@ ifneq (,$(wildcard build/local/postgres/.env))
     export
 endif
 
+# --- ENVS - PROD DATABASE ENVs -----------------------------------------------------------------------
+ifneq (,$(wildcard build/production/postgres/.env))
+    include build/production/postgres/.env
+    export
+endif
+
 # ~~~ Development Environment ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 setup:
 	@ echo "Setting up the project dependencies ..."
@@ -16,8 +22,19 @@ setup:
 	@ make up
 	@ make migrate-up
 
+setup-hosted-pg:
+	@ echo "Setting up the project dependencies ..."
+	@ make install-deps
+	@ make deps
+	@ make down
+	@ make hosted-pg-up
+	@ make migrate-prod-up	
+
 up: # Startup / Spinup Docker Compose and air
-	@ make dev-env  			
+	@ make dev-env  
+
+hosted-pg-up: 
+	@ make dev-hosted-pg-env  			
 
 down: docker-stop               ## Stop Docker
 destroy: docker-teardown clean  ## Teardown (removes volumes, tmp files, etc...)
@@ -29,6 +46,9 @@ deps:
 
 dev-env:
 	@ docker compose -f local.yml up --build -d --remove-orphans
+
+dev-hosted-pg-env:
+	@ docker compose -f local-hosted-pg.yml up --build -d --remove-orphans
 
 docker-stop:
 	@ docker compose -f local.yml down
@@ -57,6 +77,28 @@ gen-struct:
 
 open-db: # CLI for open db using tablePlus only
 	@ open $(POSTGRESQL_DSN)
+
+# ~~~ Prod Database ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PROD_POSTGRESQL_DSN = postgresql://$(PROD_POSTGRES_USER):$(PROD_POSTGRES_PASSWORD)@$(PROD_POSTGRES_HOST):$(PROD_POSTGRES_PORT)/$(PROD_POSTGRES_DB)?sslmode=disable
+migrate-prod-up:
+	@ migrate  -database $(PROD_POSTGRESQL_DSN) -path=misc/migrations --verbose up
+
+migrate-prod-down:
+	@ migrate  -database $(PROD_POSTGRESQL_DSN) -path=misc/migrations --verbose down
+
+migrate-create: 
+	@ read -p "Please provide name for the migration: " Name; \
+    migrate create -ext sql -dir misc/migrations $${Name}
+
+migrate-prod-drop:
+	@ migrate  -database $(PROD_POSTGRESQL_DSN) -path=misc/migrations drop
+
+gen-struct:
+	@ gentool -c ./gen.yaml
+
+
+open-prod-db: # CLI for open db using tablePlus only
+	@ open $(PROD_POSTGRESQL_DSN)
 
 # ~~~ Modules support ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 tidy:
