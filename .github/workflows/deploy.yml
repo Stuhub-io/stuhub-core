@@ -20,12 +20,10 @@ jobs:
         run: go build -o main .
 
       - name: Deploy to Render
-        uses: render-com/render-action@v1
+        uses: johnbeynon/render-deploy-action@v0.0.8
         with:
-          token: ${{ secrets.RENDER_TOKEN }}
-          service_name: stuhub-core
-          build_command: go build -o main ./cmd/server
-          start_command: ./main
+          service-id: ${{ secrets.RENDER_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_TOKEN }}
         env:
           BASE_URL: ${{ secrets.BASE_URL }}
           PORT: 5000
