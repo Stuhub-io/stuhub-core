@@ -40,7 +40,7 @@ jobs:
           DB_PASS: ${{ secrets.DB_PASS }}
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_SSL_MODE: disable
-          DB_DSN: DB_DSN: postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}?sslmode=disable
+          DB_DSN: postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}?sslmode=disable
 
           CACHE_HOST: ${{ secrets.CACHE_HOST }}
           CACHE_PORT: ${{ secrets.CACHE_PORT }}
