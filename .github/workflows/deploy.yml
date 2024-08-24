@@ -26,31 +26,31 @@ jobs:
           service_name: stuhub-core
           build_command: go build -o main ./cmd/server
           start_command: ./main
-          env:
-            BASE_URL: ${{ secrets.BASE_URL }}
-            PORT: 5000
-            ENV: dev
-            SERVICE_NAME: stuhub
-            DEBUG: true
-            ALLOWED_ORIGINS: "https://*.pod.town,https://*.vercel.app,https://*.podtown.com,http://localhost:3000"
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          PORT: 5000
+          ENV: dev
+          SERVICE_NAME: stuhub
+          DEBUG: true
+          ALLOWED_ORIGINS: "https://*.pod.town,https://*.vercel.app,https://*.podtown.com,http://localhost:3000"
 
-            DB_HOST: ${{ secrets.DB_HOST }}
-            DB_PORT: ${{ secrets.DB_PORT }}
-            DB_USER: ${{ secrets.DB_USER }}
-            DB_PASS: ${{ secrets.DB_PASS }}
-            DB_NAME: ${{ secrets.DB_NAME }}
-            DB_SSL_MODE: disable
-            DB_DSN: postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_SSL_MODE: disable
+          DB_DSN: DB_DSN: postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}?sslmode=disable
 
-            CACHE_HOST: ${{ secrets.CACHE_HOST }}
-            CACHE_PORT: ${{ secrets.CACHE_PORT }}
-            CACHE_PASSWORD: ${{ secrets.CACHE_PASSWORD }}
+          CACHE_HOST: ${{ secrets.CACHE_HOST }}
+          CACHE_PORT: ${{ secrets.CACHE_PORT }}
+          CACHE_PASSWORD: ${{ secrets.CACHE_PASSWORD }}
 
-            SECRET_KEY: ${{ secrets.SECRET_KEY }}
-            HASH_PW_SECRET_KEY: ${{ secrets.HASH_PW_SECRET_KEY }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          HASH_PW_SECRET_KEY: ${{ secrets.HASH_PW_SECRET_KEY }}
 
-            SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
-            SENDGRID_SET_PASSWORD_TEMPLATE_ID: ${{ secrets.SENDGRID_SET_PASSWORD_TEMPLATE_ID }}
-            SENDGRID_EMAIL_FROM: ${{ secrets.SENDGRID_EMAIL_FROM }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          SENDGRID_SET_PASSWORD_TEMPLATE_ID: ${{ secrets.SENDGRID_SET_PASSWORD_TEMPLATE_ID }}
+          SENDGRID_EMAIL_FROM: ${{ secrets.SENDGRID_EMAIL_FROM }}
 
-            REMOTE_BASE_URL: ${{ secrets.REMOTE_BASE_URL }}
+          REMOTE_BASE_URL: ${{ secrets.REMOTE_BASE_URL }}
