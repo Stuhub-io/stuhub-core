@@ -9,7 +9,8 @@ import (
 
 func open(dsn string, isDebug bool) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN: dsn,
+		DSN:                  dsn,
+		PreferSimpleProtocol: true,
 	}), &gorm.Config{})
 
 	if err != nil {

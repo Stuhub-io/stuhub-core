@@ -40,3 +40,11 @@ func (s *Service) GetPagesBySpacePkID(spacePkID int64) ([]domain.Page, *domain.E
 	}
 	return pages, nil
 }
+
+func (s *Service) DeletePageByPkID(pagePkID int64, userPkID int64) (*domain.Page, *domain.Error) {
+	result, err := s.pageRepository.DeletePageByPkID(context.Background(), pagePkID, userPkID)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}

@@ -40,4 +40,5 @@ type SpaceRepository interface {
 type PageRepository interface {
 	CreatePage(ctx context.Context, spacePkID int64, name string, viewType domain.PageViewType, ParentPagePkID *int64) (*domain.Page, *domain.Error)
 	GetPagesBySpacePkID(ctx context.Context, spacePkID int64) ([]domain.Page, *domain.Error)
+	DeletePageByPkID(ctx context.Context, pagePkID int64, userPkID int64) (*domain.Page, *domain.Error)
 }

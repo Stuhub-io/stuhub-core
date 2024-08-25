@@ -84,6 +84,11 @@ var (
 		Error:   DatabaseErr,
 		Message: "Database can't rollback the transaction",
 	}
+	ErrDatabaseDelete = &Error{
+		Code:    InternalServerErrCode,
+		Error:   DatabaseErr,
+		Message: "Database can't delete the object",
+	}
 )
 
 var (
@@ -176,6 +181,14 @@ var (
 			Error:   BadRequestErr,
 			Message: fmt.Sprintf("The member with the ID '%d' already exist in this organization.", userPkID),
 		}
+	}
+)
+
+var (
+	ErrSpaceMemberOrPageNotFound = &Error{
+		Code: NotFoundCode,
+		Error: NotFoundErr,
+		Message: "The member or page does not exist",
 	}
 )
 

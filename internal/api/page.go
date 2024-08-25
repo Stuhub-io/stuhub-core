@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/services/page"
@@ -35,6 +36,7 @@ func UsePageHanlder(params NewPageHandlerParams) {
 	router.Use(authMiddleware.Authenticated())
 	router.POST("/create", decorators.CurrentUser(handler.CreateNewPage))
 	router.GET("/all", decorators.CurrentUser(handler.GetSpacePages))
+	router.DELETE("/delete", decorators.CurrentUser(handler.DeletePageByPkID))
 }
 
 func (h *PageHandler) CreateNewPage(c *gin.Context, user *domain.User) {
@@ -72,4 +74,23 @@ func (h *PageHandler) GetSpacePages(c *gin.Context, user *domain.User) {
 		return
 	}
 	response.WithData(c, http.StatusOK, pages)
+}
+
+func (h *PageHandler) DeletePageByPkID(c *gin.Context, user *domain.User) {
+	PagePkID := c.Query("id")
+	if PagePkID == "" {
+		response.WithErrorMessage(c, 400, "","PkID Parameter Is Required")
+		return
+	}
+	pkID, err := strconv.ParseInt(PagePkID, 10, 64)
+	if err != nil {
+		response.WithErrorMessage(c, 400, "","Invalid PkID")
+		return
+	}
+	data, domainErr := h.pageService.DeletePageByPkID(pkID, user.PkID)
+	if domainErr != nil {
+		response.WithErrorMessage(c, domainErr.Code, domainErr.Error, domainErr.Message)
+		return
+	}
+	response.WithData(c, http.StatusOK, data)
 }
