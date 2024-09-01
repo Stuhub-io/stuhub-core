@@ -47,7 +47,7 @@ func (r *PageRepository) CreatePage(ctx context.Context, spacePkID int64, name s
 
 func (r *PageRepository) GetPagesBySpacePkID(ctx context.Context, spacePkID int64) ([]domain.Page, *domain.Error) {
 	var pages []model.Page
-	err := r.store.DB().Where("space_pkid = ?", spacePkID).Find(&pages).Error
+	err := r.store.DB().Where("space_pkid = ?", spacePkID).Order("created_at desc").Find(&pages).Error
 	if err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}

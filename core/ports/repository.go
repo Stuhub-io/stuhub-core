@@ -42,3 +42,8 @@ type PageRepository interface {
 	GetPagesBySpacePkID(ctx context.Context, spacePkID int64) ([]domain.Page, *domain.Error)
 	DeletePageByPkID(ctx context.Context, pagePkID int64, userPkID int64) (*domain.Page, *domain.Error)
 }
+
+type DocumentRepository interface {
+	CreateDocument(ctx context.Context, pagePkID int64, content string) (*domain.Document, *domain.Error)
+	GetDocumentByPagePkID(ctx context.Context, pagePkID int64) (*domain.Document, *domain.Error)
+}

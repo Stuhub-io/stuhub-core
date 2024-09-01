@@ -11,22 +11,25 @@ import (
 type Service struct {
 	cfg            config.Config
 	pageRepository ports.PageRepository
+	docRepository  ports.DocumentRepository
 }
 
 type NewServiceParams struct {
 	config.Config
 	ports.PageRepository
+	ports.DocumentRepository
 }
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
 		cfg:            params.Config,
 		pageRepository: params.PageRepository,
+		docRepository:  params.DocumentRepository,
 	}
 }
 
 func (s *Service) CreateNewPage(dto CreatePageDto) (*domain.Page, *domain.Error) {
-	page, err := s.pageRepository.CreatePage(context.Background(), dto.SpacePkID, "Untitled", dto.ViewType, dto.ParentPagePkID)
+	page, err := s.pageRepository.CreatePage(context.Background(), dto.SpacePkID, dto.Name, dto.ViewType, dto.ParentPagePkID)
 	if err != nil {
 		return nil, err
 	}
