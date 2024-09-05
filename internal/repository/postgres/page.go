@@ -67,3 +67,12 @@ func (r *PageRepository) DeletePageByPkID(ctx context.Context, pagePkID int64, u
 
 	return pageutils.MapPageModelToDomain(page), nil
 }
+
+func (r *PageRepository) GetPageByID(ctx context.Context, pageID string) (*domain.Page, *domain.Error) {
+	var page model.Page
+	err := r.store.DB().Where("id = ?", pageID).First(&page).Error
+	if err != nil {
+		return nil, domain.ErrDatabaseQuery
+	}
+	return pageutils.MapPageModelToDomain(page), nil
+}

@@ -8,6 +8,8 @@ import (
 	"github.com/Stuhub-io/internal/api/middleware"
 	"github.com/Stuhub-io/internal/api/request"
 	"github.com/Stuhub-io/internal/api/response"
+	"github.com/Stuhub-io/utils/docutils"
+	"github.com/Stuhub-io/utils/pageutils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,8 +35,9 @@ func UseDocumentHandle(params NewDocumentHandlerParams) {
 	router := params.Router.Group("/document-services")
 	authMiddleware := params.AuthMiddleware
 	router.Use(authMiddleware.Authenticated())
-	router.POST("/create", decorators.CurrentUser(handler.CreateNewDocument))
-	// router.GET("/get/:documentPkID", decorators.CurrentUser(handler))
+	router.POST("/documents", decorators.CurrentUser(handler.CreateNewDocument))
+	router.PUT("/documents/:"+docutils.DocumentPkIDParam, decorators.CurrentUser(handler.UpdateDocument))
+	router.GET("/documents/get-by-page/:"+pageutils.PagePkIDParam, decorators.CurrentUser(handler.GetDocumentByPagePkID))
 }
 
 func (h *DocumentHandler) CreateNewDocument(c *gin.Context, user *domain.User) {
@@ -76,4 +79,40 @@ func (h *DocumentHandler) CreateNewDocument(c *gin.Context, user *domain.User) {
 		Page: *page,
 		Doc:  *doc,
 	})
+}
+
+func (h *DocumentHandler) UpdateDocument(c *gin.Context, user *domain.User) {
+	documentPkID, valid := docutils.GetDocumentParams(c)
+	if !valid {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	var body request.UpdateDocumentBody
+	if ok, verr := request.Validate(c, &body); !ok {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	document, err := h.documentService.UpdateDocument(int64(documentPkID), body.JsonContent)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+	response.WithData(c, 200, document)
+}
+
+func (h *DocumentHandler) GetDocumentByPagePkID(c *gin.Context, user *domain.User) {
+	pagePkID, valid := pageutils.GetPagePkIDParam(c)
+	if !valid {
+		response.BindError(c, "documentPkID is missing or invalid")
+		return
+	}
+
+	document, err := h.documentService.GetDocumentByPagePkID(pagePkID)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+	response.WithData(c, 200, document)
 }

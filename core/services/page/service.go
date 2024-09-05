@@ -28,6 +28,7 @@ func NewService(params NewServiceParams) *Service {
 	}
 }
 
+// deprecated
 func (s *Service) CreateNewPage(dto CreatePageDto) (*domain.Page, *domain.Error) {
 	page, err := s.pageRepository.CreatePage(context.Background(), dto.SpacePkID, dto.Name, dto.ViewType, dto.ParentPagePkID)
 	if err != nil {
@@ -50,4 +51,12 @@ func (s *Service) DeletePageByPkID(pagePkID int64, userPkID int64) (*domain.Page
 		return nil, err
 	}
 	return result, nil
+}
+
+func (s *Service) GetPageByID(pageID string) (*domain.Page, *domain.Error) {
+	page, err := s.pageRepository.GetPageByID(context.Background(), pageID)
+	if err != nil {
+		return nil, err
+	}
+	return page, nil
 }
