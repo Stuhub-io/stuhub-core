@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
@@ -30,7 +29,6 @@ func NewPageRepository(params NewPageRepositoryParams) ports.PageRepository {
 }
 
 func (r *PageRepository) CreatePage(ctx context.Context, spacePkID int64, name string, viewType domain.PageViewType, ParentPagePkID *int64) (*domain.Page, *domain.Error) {
-	fmt.Print("\n\n\n", ParentPagePkID, ParentPagePkID == nil, "\n\n\n")
 	// var newPage model.Page
 	newPage := model.Page{
 		Name:           name,
@@ -60,24 +58,12 @@ func (r *PageRepository) GetPagesBySpacePkID(ctx context.Context, spacePkID int6
 	return domainPages, nil
 }
 
-func (r* PageRepository) DeletePageByPkID(ctx context.Context, pagePkID int64, userPkID int64) (*domain.Page, *domain.Error) {
-	// var count int64
-	// err := r.store.DB().
-	// 	Table("page").
-	// 	Select("page.space_pkid").
-	// 	Joins("JOIN space_member ON space_member.space_pkid = page.space_pkid").
-	// 	Where("page.page_pkid = ?", pagePkID).
-	// 	Where("space_member.user_pkid = ?", userPkID).
-	// 	Count(&count).Error
-	// if err != nil {
-	// 	return nil, domain.ErrSpaceMemberOrPageNotFound
-	// }
-
+func (r *PageRepository) DeletePageByPkID(ctx context.Context, pagePkID int64, userPkID int64) (*domain.Page, *domain.Error) {
 	var page model.Page
 	isDeleted := r.store.DB().Where("pkid = ?", pagePkID).Delete(&page).Error
 	if isDeleted != nil {
 		return nil, domain.ErrDatabaseDelete
 	}
-	
+
 	return pageutils.MapPageModelToDomain(page), nil
 }

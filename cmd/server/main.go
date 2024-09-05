@@ -12,6 +12,7 @@ import (
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/services/auth"
+	"github.com/Stuhub-io/core/services/document"
 	"github.com/Stuhub-io/core/services/organization"
 	"github.com/Stuhub-io/core/services/page"
 	"github.com/Stuhub-io/core/services/space"
@@ -102,13 +103,19 @@ func main() {
 		Cfg:   cfg,
 		Store: dbStore,
 	})
+	documentRepository := postgres.NewDocRepository(postgres.NewDocRepositoryParams{
+		Cfg:   cfg,
+		Store: dbStore,
+	})
 
 	// services
 	oauthService := oauth.NewOauthService(logger)
+
 	userService := user.NewService(user.NewServiceParams{
 		Config:         cfg,
 		UserRepository: userRepository,
 	})
+
 	authService := auth.NewService(auth.NewServiceParams{
 		Config:         cfg,
 		UserRepository: userRepository,
@@ -138,6 +145,12 @@ func main() {
 	pageService := page.NewService(page.NewServiceParams{
 		Config:         cfg,
 		PageRepository: pageRepository,
+	})
+
+	documentService := document.NewService(document.NewServiceParams{
+		Config:             cfg,
+		PageRepository:     pageRepository,
+		DocumentRepository: documentRepository,
 	})
 
 	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{
@@ -172,6 +185,12 @@ func main() {
 			AuthMiddleware: authMiddleware,
 			PageService:    pageService,
 		})
+		api.UseDocumentHandle((api.NewDocumentHandlerParams{
+			Router:          v1,
+			AuthMiddleware:  authMiddleware,
+			DocumentService: documentService,
+			PageService:     pageService,
+		}))
 	}
 
 	r.GET("/", func(c *gin.Context) {

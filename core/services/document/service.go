@@ -1,4 +1,4 @@
-package page
+package document
 
 import (
 	"context"
@@ -28,26 +28,26 @@ func NewService(params NewServiceParams) *Service {
 	}
 }
 
-func (s *Service) CreateNewPage(dto CreatePageDto) (*domain.Page, *domain.Error) {
-	page, err := s.pageRepository.CreatePage(context.Background(), dto.SpacePkID, dto.Name, dto.ViewType, dto.ParentPagePkID)
+func (s *Service) CreateNewDocument(pagePkID int64, jsonContent string) (*domain.Document, *domain.Error) {
+	doc, err := s.docRepository.CreateDocument(context.Background(), pagePkID, jsonContent)
 	if err != nil {
 		return nil, err
 	}
-	return page, nil
+	return doc, nil
 }
 
-func (s *Service) GetPagesBySpacePkID(spacePkID int64) ([]domain.Page, *domain.Error) {
-	pages, err := s.pageRepository.GetPagesBySpacePkID(context.Background(), spacePkID)
+func (s *Service) UpdateDocument(docPkID int64, content string) (*domain.Document, *domain.Error) {
+	doc, err := s.docRepository.UpdateDocument(context.Background(), docPkID, content)
 	if err != nil {
 		return nil, err
 	}
-	return pages, nil
+	return doc, nil
 }
 
-func (s *Service) DeletePageByPkID(pagePkID int64, userPkID int64) (*domain.Page, *domain.Error) {
-	result, err := s.pageRepository.DeletePageByPkID(context.Background(), pagePkID, userPkID)
+func (s *Service) GetDocumentByPagePkID(pagePkID int64) (*domain.Document, *domain.Error) {
+	doc, err := s.docRepository.GetDocumentByPagePkID(context.Background(), pagePkID)
 	if err != nil {
 		return nil, err
 	}
-	return result, nil
+	return doc, nil
 }
