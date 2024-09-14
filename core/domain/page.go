@@ -11,6 +11,12 @@ type Page struct {
 	ViewType       string `json:"view_type"`
 }
 
+type PageInput struct {
+	Name           string `json:"name"`
+	ParentPagePkID *int64 `json:"parent_page_pkid"`
+	ViewType       string `json:"view_type"`
+}
+
 type PageViewType int
 
 const (

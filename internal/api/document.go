@@ -94,7 +94,7 @@ func (h *DocumentHandler) UpdateDocument(c *gin.Context, user *domain.User) {
 		return
 	}
 
-	document, err := h.documentService.UpdateDocument(int64(documentPkID), body.JsonContent)
+	document, err := h.documentService.UpdateDocument(documentPkID, body.JsonContent)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
