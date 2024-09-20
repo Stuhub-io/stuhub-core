@@ -21,6 +21,7 @@ func NewFileLoader(filename string, dir string) Loader {
 
 func (r *FileReader) LoadEnv(v viper.Viper) (*viper.Viper, error) {
 	filePath := fmt.Sprintf("%s/%s", r.dir, r.filename)
+
 	err := godotenv.Load(filePath)
 	if err != nil {
 		return nil, err

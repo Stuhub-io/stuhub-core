@@ -7,6 +7,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+// default path to env for runing without DOCKER
+const DEFAULT_ENV_PATH = "build/staging/api"
+const DEFAULT_ENV_FILENAME = ".env"
+
 type Loader interface {
 	LoadEnv(viper.Viper) (*viper.Viper, error)
 }
@@ -65,8 +69,8 @@ func (c *Config) GetCORS() []string {
 
 func GetDefaultConfigLoaders() []Loader {
 	loaders := []Loader{
-		NewEnvReader(),             // Load envs
-		NewFileLoader(".env", "."), // Load env from file
+		NewEnvReader(), // Load envs
+		NewFileLoader(DEFAULT_ENV_FILENAME, DEFAULT_ENV_PATH), // Load env from file
 	}
 
 	return loaders

@@ -57,6 +57,7 @@ import (
 // @externalDocs.url			https://swagger.io/resources/open-api/
 func main() {
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
+	fmt.Println(cfg)
 
 	logger := logger.NewLogrusLogger()
 
