@@ -38,6 +38,7 @@ func UsePageHanlder(params NewPageHandlerParams) {
 	router.POST("/pages", decorators.CurrentUser(handler.CreateNewPage))
 	router.GET("/pages", decorators.CurrentUser(handler.GetSpacePages))
 	router.GET("/pages/:"+pageutils.PageIDParam, decorators.CurrentUser(handler.GetPageByID))
+	router.PUT("/pages/:"+pageutils.PageIDParam, decorators.CurrentUser(handler.GetPageByID))
 	router.DELETE("/pages", decorators.CurrentUser(handler.DeletePageByPkID))
 }
 
@@ -104,6 +105,30 @@ func (h *PageHandler) GetPageByID(c *gin.Context, user *domain.User) {
 		return
 	}
 	page, err := h.pageService.GetPageByID(pageID)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+	response.WithData(c, http.StatusOK, page)
+}
+
+func (h *PageHandler) UpdatePageByID(c *gin.Context, user *domain.User) {
+	pageID, valid := pageutils.GetPageIDParam(c)
+	if !valid {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+	var params request.UpdatePageBody
+	if ok, err := request.Validate(c, &params); !ok {
+		response.BindError(c, err.Error())
+		return
+	}
+
+	page, err := h.pageService.UpdatePageById(pageID, domain.PageInput{
+		Name:           params.Name,
+		ViewType:       params.ViewType,
+		ParentPagePkID: params.ParentPagePkID,
+	})
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return

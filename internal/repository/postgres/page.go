@@ -9,6 +9,7 @@ import (
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/pageutils"
+	"gorm.io/gorm/clause"
 )
 
 type PageRepository struct {
@@ -29,7 +30,6 @@ func NewPageRepository(params NewPageRepositoryParams) ports.PageRepository {
 }
 
 func (r *PageRepository) CreatePage(ctx context.Context, spacePkID int64, name string, viewType domain.PageViewType, ParentPagePkID *int64) (*domain.Page, *domain.Error) {
-	// var newPage model.Page
 	newPage := model.Page{
 		Name:           name,
 		SpacePkid:      spacePkID,
@@ -74,5 +74,26 @@ func (r *PageRepository) GetPageByID(ctx context.Context, pageID string) (*domai
 	if err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
+	return pageutils.MapPageModelToDomain(page), nil
+}
+
+func (r *PageRepository) UpdatePageByID(ctx context.Context, pageID string, newPage domain.PageInput) (*domain.Page, *domain.Error) {
+	var page = model.Page{}
+
+	dbErr := r.store.DB().Where("id = ?", pageID).First(&page).Error
+	if dbErr != nil {
+		return nil, domain.NewErr("Page not found", domain.BadRequestCode)
+	}
+
+	page.Name = newPage.Name
+	page.ViewType = newPage.ViewType
+	page.ParentPagePkid = newPage.ParentPagePkID
+
+	dbErr = r.store.DB().Clauses(clause.Returning{}).Select("*").Save(&page).Error
+
+	if dbErr != nil {
+		return nil, domain.ErrDatabaseMutation
+	}
+
 	return pageutils.MapPageModelToDomain(page), nil
 }

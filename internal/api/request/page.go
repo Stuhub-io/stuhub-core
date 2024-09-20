@@ -10,3 +10,9 @@ type CreatePageBody struct {
 type GetPagesBySpacePkIDParams struct {
 	SpacePkID int64 `form:"space_pk_id" binding:"required"`
 }
+
+type UpdatePageBody struct {
+	Name           string `json:"name" binding:"required"`
+	ViewType       string `json:"view_type" binding:"required"`
+	ParentPagePkID *int64 `json:"parent_page_pk_id,omitempty"`
+}

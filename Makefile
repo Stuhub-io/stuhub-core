@@ -1,17 +1,11 @@
+
 # --- Tooling & Variables ----------------------------------------------------------------
 include ./misc/make/tools.Makefile
 
-# --- ENVS - DATABASE ENVs -----------------------------------------------------------------------
-ifneq (,$(wildcard build/local/postgres/.env))
-    include build/local/postgres/.env
-    export
-endif
+ENV ?= local # local | production |
 
-# --- ENVS - PROD DATABASE ENVs -----------------------------------------------------------------------
-ifneq (,$(wildcard build/production/postgres/.env))
-    include build/production/postgres/.env
-    export
-endif
+include build/$(ENV)/postgres/.env
+export
 
 # ~~~ Development Environment ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 setup:
@@ -31,12 +25,10 @@ setup-hosted-pg:
 	@ make migrate-prod-up	
 
 up: # Startup / Spinup Docker Compose and air
-	@ make dev-env  
-
-hosted-pg-up: 
-	@ make dev-hosted-pg-env  			
+	@ docker compose -f local.yml up --build -d --remove-orphans
 
 down: docker-stop               ## Stop Docker
+
 destroy: docker-teardown clean  ## Teardown (removes volumes, tmp files, etc...)
 
 install-deps: install-golangci-lint install-air install-golang-migrate install-gorm-gentool
@@ -44,27 +36,26 @@ install-deps: install-golangci-lint install-air install-golang-migrate install-g
 deps:
 	@ echo "Required Tools Are Available"
 
-dev-env:
-	@ docker compose -f local.yml up --build -d --remove-orphans
-
-dev-hosted-pg-env:
-	@ docker compose -f local-hosted-pg.yml up --build -d --remove-orphans
-
 docker-stop:
 	@ docker compose -f local.yml down
 
 docker-teardown:
 	@ docker compose -f local.yml down --remove-orphans -v
 
+hosted-pg-up: 
+	@ docker compose -f local-hosted-pg.yml up --build -d --remove-orphans
+
 # ~~~ Database ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 POSTGRESQL_DSN = postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0.0.1:$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable
+
+# NOTE: run command with ENV = production for production database
 migrate-up:
-	@ migrate  -database $(POSTGRESQL_DSN) -path=misc/migrations --verbose up
+	@ migrate -database $(POSTGRESQL_DSN) -path=misc/migrations --verbose up
 
 migrate-down:
-	@ migrate  -database $(POSTGRESQL_DSN) -path=misc/migrations --verbose down
+	@ migrate -database $(POSTGRESQL_DSN) -path=misc/migrations --verbose down
 
-migrate-create: 
+migrate-create:
 	@ read -p "Please provide name for the migration: " Name; \
     migrate create -ext sql -dir misc/migrations $${Name}
 
@@ -74,31 +65,8 @@ migrate-drop:
 gen-struct:
 	@ gentool -c ./gen.yaml
 
-
 open-db: # CLI for open db using tablePlus only
 	@ open $(POSTGRESQL_DSN)
-
-# ~~~ Prod Database ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROD_POSTGRESQL_DSN = postgresql://$(PROD_POSTGRES_USER):$(PROD_POSTGRES_PASSWORD)@$(PROD_POSTGRES_HOST):$(PROD_POSTGRES_PORT)/$(PROD_POSTGRES_DB)?sslmode=disable
-migrate-prod-up:
-	@ migrate  -database $(PROD_POSTGRESQL_DSN) -path=misc/migrations --verbose up
-
-migrate-prod-down:
-	@ migrate  -database $(PROD_POSTGRESQL_DSN) -path=misc/migrations --verbose down
-
-migrate-create: 
-	@ read -p "Please provide name for the migration: " Name; \
-    migrate create -ext sql -dir misc/migrations $${Name}
-
-migrate-prod-drop:
-	@ migrate  -database $(PROD_POSTGRESQL_DSN) -path=misc/migrations drop
-
-gen-struct:
-	@ gentool -c ./gen.yaml
-
-
-open-prod-db: # CLI for open db using tablePlus only
-	@ open $(PROD_POSTGRESQL_DSN)
 
 # ~~~ Modules support ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 tidy:
@@ -115,17 +83,14 @@ deps-upgrade:
 deps-cleancache:
 	go clean -modcache
 
-
 # ~~~ Code Actions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 lint:
 	@echo Starting linters
 	golangci-lint run ./...
 	
-
 # ~~~ Testing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 test:
 	go test -v -cover ./...
-
 
 # ~~~ Swagger ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 swagger:
@@ -137,3 +102,21 @@ swag-format:
 	swag fmt
 
 .PHONY: migrate-up migrate-down migrate-create migrate-drop
+
+RELEASE_BRANCH ?= main
+BETA_BRANCH ?= develop
+DEVELOP_BRANCH ?= develop
+
+.PHONY: release
+release: sync-release
+	git checkout $(BETA_BRANCH) && git pull origin $(BETA_BRANCH) && \
+		git checkout $(RELEASE_BRANCH) && git pull origin $(RELEASE_BRANCH) && \
+		git merge $(BETA_BRANCH) --no-edit --no-ff && \
+		git push origin $(RELEASE_BRANCH) && \
+		git checkout $(DEVELOP_BRANCH) && git push origin $(DEVELOP_BRANCH)
+
+.PHONY: sync-release
+sync-release:
+	git checkout $(RELEASE_BRANCH) && git pull origin $(RELEASE_BRANCH) && \
+		git checkout $(BETA_BRANCH) && git pull origin $(BETA_BRANCH) && \
+		git merge $(RELEASE_BRANCH) --no-edit --no-ff

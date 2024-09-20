@@ -60,3 +60,11 @@ func (s *Service) GetPageByID(pageID string) (*domain.Page, *domain.Error) {
 	}
 	return page, nil
 }
+
+func (s *Service) UpdatePageById(pageID string, newPage domain.PageInput) (*domain.Page, *domain.Error) {
+	page, err := s.pageRepository.UpdatePageByID(context.Background(), pageID, newPage)
+	if err != nil {
+		return nil, err
+	}
+	return page, nil
+}
