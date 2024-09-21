@@ -1,6 +1,8 @@
 package api
 
 import (
+	"path"
+
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/services/document"
 	"github.com/Stuhub-io/core/services/page"
@@ -34,10 +36,11 @@ func UseDocumentHandle(params NewDocumentHandlerParams) {
 	}
 	router := params.Router.Group("/document-services")
 	authMiddleware := params.AuthMiddleware
+
 	router.Use(authMiddleware.Authenticated())
 	router.POST("/documents", decorators.CurrentUser(handler.CreateNewDocument))
-	router.PUT("/documents/:"+docutils.DocumentPkIDParam, decorators.CurrentUser(handler.UpdateDocument))
-	router.GET("/documents/get-by-page/:"+pageutils.PagePkIDParam, decorators.CurrentUser(handler.GetDocumentByPagePkID))
+	router.PUT((path.Join("documents", ":"+docutils.DocumentPkIDParam)), decorators.CurrentUser(handler.UpdateDocument))
+	router.GET(path.Join("documents", "get-by-page", ":"+pageutils.PagePkIDParam), decorators.CurrentUser(handler.GetDocumentByPagePkID))
 }
 
 func (h *DocumentHandler) CreateNewDocument(c *gin.Context, user *domain.User) {
