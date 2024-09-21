@@ -26,6 +26,7 @@ This repository is official BE service for **[Stuhub.io](https://stuhub-web-dev.
 2. Docker installed
 
 ### How to run source code locally
+If the command result in `make: *** build/...: Is a directory`, try run command with ENV=local|staging|production
 
 1. Set up source
 
