@@ -2,10 +2,14 @@
 # --- Tooling & Variables ----------------------------------------------------------------
 include ./misc/make/tools.Makefile
 
-ENV ?= local # local | production |
+ENV ?= local # local | production | staggning
 
-include build/$(ENV)/postgres/.env
+include ./build/$(ENV)/postgres/.env
 export
+
+# ~~~ Dev without Docker ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+dev:
+	@air -c .air.toml
 
 # ~~~ Development Environment ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 setup:
@@ -46,7 +50,7 @@ hosted-pg-up:
 	@ docker compose -f local-hosted-pg.yml up --build -d --remove-orphans
 
 # ~~~ Database ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-POSTGRESQL_DSN = postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0.0.1:$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable
+POSTGRESQL_DSN = postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable
 
 # NOTE: run command with ENV = production for production database
 migrate-up:

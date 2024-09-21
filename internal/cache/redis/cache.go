@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -22,7 +23,7 @@ func Must(host, port, password string) *RedisCache {
 
 	_, err := client.Ping(context.Background()).Result()
 	if err != nil {
-		panic("failed to connect to Redis")
+		log.Println("Make sure you have a Redis server running on the specified host and port")
 	}
 
 	return &RedisCache{client: client}
