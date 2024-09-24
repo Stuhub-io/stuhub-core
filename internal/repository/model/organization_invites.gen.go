@@ -18,6 +18,7 @@ type OrganizationInvite struct {
 	UserPkid         int64     `gorm:"column:user_pkid;type:bigint;not null" json:"user_pkid"`
 	CreatedAt        time.Time `gorm:"column:created_at;type:timestamp with time zone;not null;default:now()" json:"created_at"`
 	ExpiredAt        time.Time `gorm:"column:expired_at;type:timestamp with time zone;not null" json:"expired_at"`
+	IsUsed           bool      `gorm:"column:is_used;type:boolean;not null" json:"is_used"`
 }
 
 // TableName OrganizationInvite's table name

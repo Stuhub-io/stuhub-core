@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Stuhub-io/core/domain"
+	"github.com/Stuhub-io/internal/repository/model"
 )
 
 type UserRepository interface {
@@ -54,5 +55,6 @@ type DocumentRepository interface {
 
 type OrganizationInviteRepository interface {
 	CreateInvite(ctx context.Context, organizationPkID int64, userPkID int64) (*domain.OrganizationInvite, *domain.Error)
+	UpdateInvite(ctx context.Context, invite model.OrganizationInvite) (*domain.OrganizationInvite, *domain.Error)
 	GetInviteByID(ctx context.Context, inviteID string) (*domain.OrganizationInvite, *domain.Error)
 }

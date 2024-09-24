@@ -42,8 +42,8 @@ type InviteMemberByEmailsResponse struct {
 }
 
 type ValidateOrgInviteTokenDto struct {
-	CurrentUser *domain.User
-	Token       string
+	UserPkID int64
+	Token    string
 }
 
 type AddMemberToOrgDto struct {

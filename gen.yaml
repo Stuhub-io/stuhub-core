@@ -2,7 +2,17 @@ version: "0.1"
 database:
   dsn: "postgresql://admin:stuhub@localhost:5432/stuhub?sslmode=disable"
   db: "postgres"
-  tables: ["users", "organizations", "organization_member", "spaces", "space_member", "pages", "documents"]
+  tables:
+    [
+      "users",
+      "organizations",
+      "organization_member",
+      "spaces",
+      "space_member",
+      "pages",
+      "documents",
+      "organization_invites",
+    ]
   outPath: "./internal/repository/model"
   withUnitTest: false
   fieldNullable: true

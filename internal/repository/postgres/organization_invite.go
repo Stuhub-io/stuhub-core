@@ -43,6 +43,17 @@ func (r *OrganizationInvitesRepository) CreateInvite(ctx context.Context, organi
 	return organzation_inviteutils.TransformOrganizationInviteModelToDomain(newInvite), nil
 }
 
+func (r *OrganizationInvitesRepository) UpdateInvite(ctx context.Context, invite model.OrganizationInvite) (*domain.OrganizationInvite, *domain.Error) {
+	var updatedInvite model.OrganizationInvite
+
+	err := r.store.DB().Model(&updatedInvite).Updates(invite).Error
+	if err != nil {
+		return nil, domain.ErrDatabaseMutation
+	}
+
+	return organzation_inviteutils.TransformOrganizationInviteModelToDomain(updatedInvite), nil
+}
+
 func (r *OrganizationInvitesRepository) GetInviteByID(ctx context.Context, inviteID string) (*domain.OrganizationInvite, *domain.Error) {
 	var invite model.OrganizationInvite
 

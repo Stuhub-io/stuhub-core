@@ -29,7 +29,8 @@ func TransformOrganizationInviteModelToDomain(invite model.OrganizationInvite) *
 		ID:               invite.ID,
 		UserPkID:         invite.UserPkid,
 		OrganizationPkID: invite.OrganizationPkid,
-		CreatedAt:        invite.CreatedAt.String(),
-		ExpiredAt:        invite.ExpiredAt.String(),
+		IsUsed:           invite.IsUsed,
+		CreatedAt:        invite.CreatedAt,
+		ExpiredAt:        invite.ExpiredAt,
 	}
 }

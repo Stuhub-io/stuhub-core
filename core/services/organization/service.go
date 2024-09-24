@@ -9,6 +9,7 @@ import (
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
+	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/userutils"
 )
 
@@ -146,7 +147,7 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 				fmt.Printf("Err to create org invite: %s", info.Email)
 				return
 			}
-			fmt.Print("Hello ", s.cfg.SendgridOrgInvitationTemplateId)
+
 			err = s.mailer.SendMail(ports.SendSendGridMailPayload{
 				FromName:   ownerFullName + " via Stuhub",
 				ToName:     "",
@@ -178,18 +179,30 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 }
 
 func (s *Service) ValidateOrgInviteToken(dto ValidateOrgInviteTokenDto) (*domain.OrganizationMember, *domain.Error) {
-	payload, derr := s.tokenMaker.DecodeOrgInviteToken(dto.Token)
-	if derr != nil {
+	invite, err := s.organizationInviteRepository.GetInviteByID(context.Background(), dto.Token)
+	if err != nil {
+		return nil, err
+	}
+
+	if time.Now().After(invite.ExpiredAt) || invite.IsUsed {
 		return nil, domain.ErrTokenExpired
 	}
 
-	if payload.UserPkID != dto.CurrentUser.PkID {
+	if invite.UserPkID != dto.UserPkID {
 		return nil, domain.ErrUnauthorized
 	}
 
+	_, err = s.organizationInviteRepository.UpdateInvite(context.Background(), model.OrganizationInvite{
+		ID:     invite.ID,
+		IsUsed: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	activatedMember, err := s.ActivateMember(ActivateMemberDto{
-		MemberPkID: payload.UserPkID,
-		OrgPkID:    payload.OrgPkID,
+		MemberPkID: invite.UserPkID,
+		OrgPkID:    invite.OrganizationPkID,
 	})
 	if err != nil {
 		return nil, err

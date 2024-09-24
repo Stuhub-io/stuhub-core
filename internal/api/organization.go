@@ -36,7 +36,7 @@ func UseOrganizationHandler(params NewOrganizationHandlerParams) {
 	router.GET("/joined", decorators.CurrentUser(handler.GetJoinedOrgs))
 	router.GET("/get-by-slug", decorators.CurrentUser(handler.GetOrgBySlug))
 	router.POST("/invite-by-emails", decorators.CurrentUser(handler.InviteMembersByEmail))
-	router.POST("/invite-validation", decorators.CurrentUser(handler.ValidateOrgInvitation))
+	router.POST("/invite-validate", decorators.CurrentUser(handler.ValidateOrgInvitation))
 }
 
 func (h *OrganizationHandler) CreateOrganization(c *gin.Context, user *domain.User) {
@@ -115,8 +115,8 @@ func (h *OrganizationHandler) ValidateOrgInvitation(c *gin.Context, user *domain
 	}
 
 	data, err := h.orgService.ValidateOrgInviteToken(organization.ValidateOrgInviteTokenDto{
-		CurrentUser: user,
-		Token:       params.Token,
+		UserPkID: user.PkID,
+		Token:    params.Token,
 	})
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
