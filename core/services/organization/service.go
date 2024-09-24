@@ -94,7 +94,9 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 		return nil, err
 	}
 
-	if dto.Owner.ActivatedAt == "" || dto.Owner.PkID != org.OwnerID {
+	fmt.Print("\n\n", dto.Owner.PkID, org.OwnerID, "\n\n")
+
+	if dto.Owner.PkID != org.OwnerID {
 		return nil, domain.ErrUnauthorized
 	}
 

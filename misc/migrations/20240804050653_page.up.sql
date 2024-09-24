@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS "pages" (
     "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     "space_pkid" BIGINT NOT NULL,
     "parent_page_pkid" BIGINT,
-
+    
     "view_type" varchar(50) NOT NULL CHECK (view_type IN ('document', 'table')),
     
     CONSTRAINT fk_page_space
