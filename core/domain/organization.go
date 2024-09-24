@@ -34,3 +34,5 @@ type OrganizationMember struct {
 	UpdatedAt        string `json:"updated_at"`
 	User             *User  `json:"user"`
 }
+
+const InviteToOrgSubject = "Accept organization invitation"

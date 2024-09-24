@@ -51,3 +51,8 @@ type DocumentRepository interface {
 	GetDocumentByPkID(ctx context.Context, pkID int64) (*domain.Document, *domain.Error)
 	UpdateDocument(ctx context.Context, pagePkID int64, content string) (*domain.Document, *domain.Error)
 }
+
+type OrganizationInviteRepository interface {
+	CreateInvite(ctx context.Context, organizationPkID int64, userPkID int64) (*domain.OrganizationInvite, *domain.Error)
+	GetInviteByID(ctx context.Context, inviteID string) (*domain.OrganizationInvite, *domain.Error)
+}

@@ -13,14 +13,15 @@ import (
 )
 
 type Service struct {
-	cfg             config.Config
-	orgRepository   ports.OrganizationRepository
-	userRepository  ports.UserRepository
-	tokenMaker      ports.TokenMaker
-	hasher          ports.Hasher
-	mailer          ports.Mailer
-	remoteRoute     ports.RemoteRoute
-	spaceRepository ports.SpaceRepository
+	cfg                          config.Config
+	orgRepository                ports.OrganizationRepository
+	userRepository               ports.UserRepository
+	tokenMaker                   ports.TokenMaker
+	hasher                       ports.Hasher
+	mailer                       ports.Mailer
+	remoteRoute                  ports.RemoteRoute
+	spaceRepository              ports.SpaceRepository
+	organizationInviteRepository ports.OrganizationInviteRepository
 }
 
 type NewServiceParams struct {
@@ -32,18 +33,20 @@ type NewServiceParams struct {
 	ports.Mailer
 	ports.RemoteRoute
 	ports.SpaceRepository
+	ports.OrganizationInviteRepository
 }
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
-		cfg:             params.Config,
-		orgRepository:   params.OrganizationRepository,
-		userRepository:  params.UserRepository,
-		tokenMaker:      params.TokenMaker,
-		hasher:          params.Hasher,
-		mailer:          params.Mailer,
-		remoteRoute:     params.RemoteRoute,
-		spaceRepository: params.SpaceRepository,
+		cfg:                          params.Config,
+		orgRepository:                params.OrganizationRepository,
+		userRepository:               params.UserRepository,
+		tokenMaker:                   params.TokenMaker,
+		hasher:                       params.Hasher,
+		mailer:                       params.Mailer,
+		remoteRoute:                  params.RemoteRoute,
+		spaceRepository:              params.SpaceRepository,
+		organizationInviteRepository: params.OrganizationInviteRepository,
 	}
 }
 
@@ -111,11 +114,11 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 			defer wg.Done()
 
 			existingMember, _ := s.orgRepository.GetOrgMemberByEmail(context.Background(), dto.OrgInfo.PkId, info.Email)
-			if existingMember != nil {
+			if existingMember != nil && existingMember.ActivatedAt != "" {
 				return
 			}
 
-			var memberUserPkID *int64
+			var memberUserPkID int64
 			memberUser, err := s.userRepository.GetUserByEmail(context.Background(), info.Email)
 			if err != nil && err.Error == domain.NotFoundErr {
 				salt := s.hasher.GenerateSalt()
@@ -125,37 +128,37 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 					return
 				}
 
-				memberUserPkID = &newUser.PkID
+				memberUserPkID = newUser.PkID
 			}
 
 			if memberUser != nil {
-				memberUserPkID = &memberUser.PkID
+				memberUserPkID = memberUser.PkID
 			}
 
-			_, err = s.orgRepository.AddMemberToOrg(context.Background(), dto.OrgInfo.PkId, memberUserPkID, info.Role)
+			_, err = s.orgRepository.AddMemberToOrg(context.Background(), dto.OrgInfo.PkId, &memberUserPkID, info.Role)
 			if err != nil {
 				fmt.Printf("Err add member to org: %s", info.Email)
 				return
 			}
 
-			token, errToken := s.tokenMaker.CreateOrgInviteToken(*memberUserPkID, org.PkId, domain.OrgInvitationVerificationTokenDuration)
-			if errToken != nil {
-				fmt.Printf("Err create token url for: %s", info.Email)
+			invite, err := s.organizationInviteRepository.CreateInvite(context.Background(), dto.OrgInfo.PkId, memberUserPkID)
+			if err != nil {
+				fmt.Printf("Err to create org invite: %s", info.Email)
 				return
 			}
-
+			fmt.Print("Hello ", s.cfg.SendgridOrgInvitationTemplateId)
 			err = s.mailer.SendMail(ports.SendSendGridMailPayload{
 				FromName:   ownerFullName + " via Stuhub",
 				ToName:     "",
 				ToAddress:  info.Email,
 				TemplateId: s.cfg.SendgridOrgInvitationTemplateId,
 				Data: map[string]string{
-					"url":        s.MakeValidateInvitationURL(token, dto.OrgInfo.Slug),
+					"url":        s.MakeValidateInvitationURL(invite.ID, dto.OrgInfo.Slug),
 					"owner_name": ownerFullName,
 					"org_name":   dto.OrgInfo.Name,
 					"org_avatar": dto.OrgInfo.Avatar,
 				},
-				Subject: "Accept organization invitation",
+				Subject: domain.InviteToOrgSubject,
 			})
 			if err != nil {
 				failedEmails = append(failedEmails, info.Email)
@@ -166,7 +169,6 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 			sentEmails = append(sentEmails, info.Email)
 		}(info)
 	}
-
 	wg.Wait()
 
 	return &InviteMemberByEmailsResponse{
@@ -214,8 +216,8 @@ func (s *Service) ActivateMember(dto ActivateMemberDto) (*domain.OrganizationMem
 	return updatedMember, nil
 }
 
-func (s *Service) MakeValidateInvitationURL(token, slug string) string {
+func (s *Service) MakeValidateInvitationURL(inviteID, slug string) string {
 	baseUrl := s.cfg.RemoteBaseURL + s.remoteRoute.ValidateOrgInvitation(slug)
 
-	return baseUrl + "?token=" + token
+	return baseUrl + "?token=" + inviteID
 }

@@ -255,6 +255,10 @@ func (s *Service) AuthenUserByGoogle(dto AuthenByGoogleDto) (*AuthenByGoogleResp
 		return nil, domain.ErrInternalServerError
 	}
 
+	if user.ActivatedAt == "" {
+		s.userRepository.SetUserActivatedAt(context.Background(), user.PkID, time.Now())
+	}
+
 	return &AuthenByGoogleResponse{
 		Profile: user,
 		AuthToken: domain.AuthToken{
