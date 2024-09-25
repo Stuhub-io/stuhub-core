@@ -38,7 +38,7 @@ func UsePageHanlder(params NewPageHandlerParams) {
 	router.Use(authMiddleware.Authenticated())
 	router.POST("/pages", decorators.CurrentUser(handler.CreateNewPage))
 	router.GET("/pages", decorators.CurrentUser(handler.GetSpacePages))
-	router.GET(path.Join("pages", "+"+pageutils.PageIDParam), decorators.CurrentUser(handler.GetPageByID))
+	router.GET(path.Join("pages", ":"+pageutils.PageIDParam), decorators.CurrentUser(handler.GetPageByID))
 	router.PUT(path.Join("pages", ":"+pageutils.PageIDParam), decorators.CurrentUser(handler.UpdatePageByID))
 	router.DELETE("/pages", decorators.CurrentUser(handler.DeletePageByPkID))
 }

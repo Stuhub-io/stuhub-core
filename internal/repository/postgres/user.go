@@ -85,9 +85,9 @@ func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain
 
 	user := mapUserModelToDomain(userModel)
 
-	go func() {
-		r.store.Cache().SetUser(user, time.Hour)
-	}()
+	// go func() {
+	// 	r.store.Cache().SetUser(user, time.Hour)
+	// }()
 
 	return user, nil
 }
