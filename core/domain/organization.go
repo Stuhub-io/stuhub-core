@@ -1,7 +1,7 @@
 package domain
 
 type Organization struct {
-	PkId        int64                `json:"pk_id"`
+	PkID        int64                `json:"pkid"`
 	ID          string               `json:"id"`
 	OwnerID     int64                `json:"owner_id"`
 	Name        string               `json:"name"`
@@ -25,7 +25,7 @@ func (r OrganizationMemberRole) String() string {
 }
 
 type OrganizationMember struct {
-	PkId             int64  `json:"pk_id"`
+	PkID             int64  `json:"pkid"`
 	OrganizationPkID int64  `json:"organization_pkid"`
 	UserPkID         *int64 `json:"user_pkid"`
 	Role             string `json:"role"`

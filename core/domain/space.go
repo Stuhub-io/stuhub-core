@@ -1,7 +1,7 @@
 package domain
 
 type Space struct {
-	PkId        int64         `json:"pk_id"`
+	PkID        int64         `json:"pkid"`
 	ID          string        `json:"id"`
 	OrgPkID     int64         `json:"org_pkid"`
 	Name        string        `json:"name"`
@@ -25,7 +25,7 @@ func (r SpaceMemberRole) String() string {
 }
 
 type SpaceMember struct {
-	PkId      int64  `json:"pk_id"`
+	PkID      int64  `json:"pkid"`
 	SpacePkID int64  `json:"space_pkid"`
 	UserPkID  int64  `json:"user_pkid"`
 	Role      string `json:"role"`

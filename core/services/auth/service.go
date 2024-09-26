@@ -160,7 +160,7 @@ func (s *Service) SetPasswordAndAuthUser(dto AuthenByEmailAfterSetPasswordDto) (
 }
 
 func (s *Service) ActivateUser(dto ActivateUserDto) (*domain.User, *domain.Error) {
-	user, err := s.userRepository.GetUserByPkID(context.Background(), dto.UserPkId)
+	user, err := s.userRepository.GetUserByPkID(context.Background(), dto.UserPkID)
 	if err != nil {
 		return nil, domain.ErrUserNotFound
 	}
@@ -169,7 +169,7 @@ func (s *Service) ActivateUser(dto ActivateUserDto) (*domain.User, *domain.Error
 		return user, nil
 	}
 
-	updatedUser, err := s.userRepository.SetUserActivatedAt(context.Background(), dto.UserPkId, time.Now())
+	updatedUser, err := s.userRepository.SetUserActivatedAt(context.Background(), dto.UserPkID, time.Now())
 	if err != nil {
 		return nil, err
 	}

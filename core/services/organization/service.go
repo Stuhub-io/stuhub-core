@@ -61,7 +61,7 @@ func (s *Service) CreateOrganization(dto CreateOrganizationDto) (*CreateOrganiza
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.spaceRepository.CreateSpace(context.Background(), org.PkId, dto.OwnerPkID, true, "Privte Space", "")
+	_, err = s.spaceRepository.CreateSpace(context.Background(), org.PkID, dto.OwnerPkID, true, "Privte Space", "")
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (s *Service) GetJoinedOrgs(userPkID int64) ([]*domain.Organization, *domain
 }
 
 func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemberByEmailsResponse, *domain.Error) {
-	org, err := s.orgRepository.GetOwnerOrgByPkId(context.Background(), dto.Owner.PkID, dto.OrgInfo.PkId)
+	org, err := s.orgRepository.GetOwnerOrgByPkID(context.Background(), dto.Owner.PkID, dto.OrgInfo.PkID)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 		go func(info EmailInviteInfo) {
 			defer wg.Done()
 
-			existingMember, _ := s.orgRepository.GetOrgMemberByEmail(context.Background(), dto.OrgInfo.PkId, info.Email)
+			existingMember, _ := s.orgRepository.GetOrgMemberByEmail(context.Background(), dto.OrgInfo.PkID, info.Email)
 			if existingMember != nil {
 				return
 			}
@@ -134,13 +134,13 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 				memberUserPkID = &memberUser.PkID
 			}
 
-			_, err = s.orgRepository.AddMemberToOrg(context.Background(), dto.OrgInfo.PkId, memberUserPkID, info.Role)
+			_, err = s.orgRepository.AddMemberToOrg(context.Background(), dto.OrgInfo.PkID, memberUserPkID, info.Role)
 			if err != nil {
 				fmt.Printf("Err add member to org: %s", info.Email)
 				return
 			}
 
-			token, errToken := s.tokenMaker.CreateOrgInviteToken(*memberUserPkID, org.PkId, domain.OrgInvitationVerificationTokenDuration)
+			token, errToken := s.tokenMaker.CreateOrgInviteToken(*memberUserPkID, org.PkID, domain.OrgInvitationVerificationTokenDuration)
 			if errToken != nil {
 				fmt.Printf("Err create token url for: %s", info.Email)
 				return

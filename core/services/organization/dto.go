@@ -18,7 +18,7 @@ type GetRecentVisitedOrganizationDto struct {
 }
 
 type OrgInviteInfo struct {
-	PkId    int64  `json:"pkid" binding:"required"`
+	PkID    int64  `json:"pkid" binding:"required"`
 	Name    string `json:"name" binding:"required"`
 	Slug    string `json:"slug" binding:"required"`
 	Members int64  `json:"members" binding:"required"`
