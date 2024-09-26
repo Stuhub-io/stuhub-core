@@ -49,7 +49,7 @@ func NewOrganizationRepository(params NewOrganizationRepositoryParams) ports.Org
 func mapOrg(model model.Organization, members []domain.OrganizationMember) *domain.Organization {
 	return &domain.Organization{
 		ID:          model.ID,
-		PkId:        model.Pkid,
+		PkID:        model.Pkid,
 		OwnerID:     model.OwnerID,
 		Name:        model.Name,
 		Slug:        model.Slug,
@@ -64,7 +64,7 @@ func mapOrg(model model.Organization, members []domain.OrganizationMember) *doma
 func mapOrgModelToDomain(model OrganizationWithMembers, members []domain.OrganizationMember) *domain.Organization {
 	return &domain.Organization{
 		ID:          model.ID,
-		PkId:        model.Pkid,
+		PkID:        model.Pkid,
 		OwnerID:     model.OwnerID,
 		Name:        model.Name,
 		Slug:        model.Slug,
@@ -88,7 +88,7 @@ func mapOrgModelsToDomain(models []OrganizationWithMembers) []*domain.Organizati
 			}
 
 			domainMember := domain.OrganizationMember{
-				PkId:             member.Pkid,
+				PkID:             member.Pkid,
 				OrganizationPkID: member.OrganizationPkid,
 				UserPkID:         member.UserPkid,
 				Role:             member.Role,
@@ -115,7 +115,7 @@ func mapOrgMemberUserModelToDomain(model model.OrganizationMember, user *domain.
 	}
 
 	return &domain.OrganizationMember{
-		PkId:             model.Pkid,
+		PkID:             model.Pkid,
 		OrganizationPkID: model.OrganizationPkid,
 		UserPkID:         model.UserPkid,
 		Role:             model.Role,
@@ -134,7 +134,7 @@ func mapOrgMemberModelsToDomain(models []MemberWithUser) []*domain.OrganizationM
 			activatedAt = member.ActivatedAt.String()
 		}
 		domainMember := &domain.OrganizationMember{
-			PkId:             member.Pkid,
+			PkID:             member.Pkid,
 			OrganizationPkID: member.OrganizationPkid,
 			UserPkID:         &member.Pkid,
 			Role:             member.Role,
@@ -160,12 +160,12 @@ func (r *OrganizationRepository) GetOrgMembers(ctx context.Context, pkID int64) 
 	return mapOrgMemberModelsToDomain(members), nil
 }
 
-func (r *OrganizationRepository) GetOrgMemberByEmail(ctx context.Context, orgPkId int64, email string) (*domain.OrganizationMember, *domain.Error) {
+func (r *OrganizationRepository) GetOrgMemberByEmail(ctx context.Context, orgPkID int64, email string) (*domain.OrganizationMember, *domain.Error) {
 	var member MemberWithUser
 
 	err := r.store.DB().Preload("User").
 		Joins("JOIN users ON users.pkid = organization_member.user_pkid").
-		Where("organization_pkid = ? AND users.email = ?", orgPkId, email).
+		Where("organization_pkid = ? AND users.email = ?", orgPkID, email).
 		First(&member).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -180,7 +180,7 @@ func (r *OrganizationRepository) GetOrgMemberByEmail(ctx context.Context, orgPkI
 	}
 
 	return &domain.OrganizationMember{
-		PkId:             member.Pkid,
+		PkID:             member.Pkid,
 		OrganizationPkID: member.OrganizationPkid,
 		UserPkID:         member.UserPkid,
 		Role:             member.Role,
@@ -191,12 +191,12 @@ func (r *OrganizationRepository) GetOrgMemberByEmail(ctx context.Context, orgPkI
 	}, nil
 }
 
-func (r *OrganizationRepository) GetOrgMemberByUserPkID(ctx context.Context, orgPkId int64, userPkId int64) (*domain.OrganizationMember, *domain.Error) {
+func (r *OrganizationRepository) GetOrgMemberByUserPkID(ctx context.Context, orgPkID int64, userPkID int64) (*domain.OrganizationMember, *domain.Error) {
 	var member MemberWithUser
 
 	err := r.store.DB().Preload("User").
 		Joins("JOIN users ON users.pkid = organization_member.user_pkid").
-		Where("organization_pkid = ? AND users.pkid = ?", orgPkId, userPkId).
+		Where("organization_pkid = ? AND users.pkid = ?", orgPkID, userPkID).
 		First(&member).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -211,7 +211,7 @@ func (r *OrganizationRepository) GetOrgMemberByUserPkID(ctx context.Context, org
 	}
 
 	return &domain.OrganizationMember{
-		PkId:             member.Pkid,
+		PkID:             member.Pkid,
 		OrganizationPkID: member.OrganizationPkid,
 		UserPkID:         member.UserPkid,
 		Role:             member.Role,
@@ -235,11 +235,11 @@ func (r *OrganizationRepository) GetOwnerOrgByName(ctx context.Context, ownerID 
 	}
 
 	return &domain.Organization{
-		PkId: org.Pkid,
+		PkID: org.Pkid,
 	}, nil
 }
 
-func (r *OrganizationRepository) GetOwnerOrgByPkId(ctx context.Context, ownerID, pkId int64) (*domain.Organization, *domain.Error) {
+func (r *OrganizationRepository) GetOwnerOrgByPkID(ctx context.Context, ownerID, pkId int64) (*domain.Organization, *domain.Error) {
 	var org model.Organization
 
 	err := r.store.DB().Where("owner_id = ? AND pkid = ?", ownerID, pkId).First(&org).Error
@@ -252,7 +252,7 @@ func (r *OrganizationRepository) GetOwnerOrgByPkId(ctx context.Context, ownerID,
 	}
 
 	return &domain.Organization{
-		PkId:    org.Pkid,
+		PkID:    org.Pkid,
 		OwnerID: org.OwnerID,
 	}, nil
 }
@@ -268,7 +268,7 @@ func (r *OrganizationRepository) GetOrgBySlug(ctx context.Context, slug string) 
 	}
 
 	return &domain.Organization{
-		PkId: org.Pkid,
+		PkID: org.Pkid,
 	}, nil
 }
 

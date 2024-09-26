@@ -84,8 +84,8 @@ func (m *JWTMaker) DecodeToken(token string) (*domain.TokenAuthPayload, error) {
 	}, nil
 }
 
-func (m *JWTMaker) CreateOrgInviteToken(userPkId, orgPkId int64, duration time.Duration) (string, error) {
-	claims, err := newOrgInvitePayload(userPkId, orgPkId, duration)
+func (m *JWTMaker) CreateOrgInviteToken(userPkID, orgPkID int64, duration time.Duration) (string, error) {
+	claims, err := newOrgInvitePayload(userPkID, orgPkID, duration)
 	if err != nil {
 		return "", err
 	}
@@ -143,7 +143,7 @@ func newAuthPayload(pkid int64, email string, duration time.Duration) (*CustomAu
 	return claims, nil
 }
 
-func newOrgInvitePayload(userPkId, orgPkId int64, duration time.Duration) (*CustomOrgInviteClaims, error) {
+func newOrgInvitePayload(userPkID, orgPkID int64, duration time.Duration) (*CustomOrgInviteClaims, error) {
 	tokenID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
@@ -155,8 +155,8 @@ func newOrgInvitePayload(userPkId, orgPkId int64, duration time.Duration) (*Cust
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
 		},
-		UserPkID: userPkId,
-		OrgPkID:  orgPkId,
+		UserPkID: userPkID,
+		OrgPkID:  orgPkID,
 	}
 
 	return claims, nil
