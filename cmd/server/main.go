@@ -57,13 +57,12 @@ import (
 // @externalDocs.url			https://swagger.io/resources/open-api/
 func main() {
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
-	fmt.Println(cfg.DBDsn)
 
 	logger := logger.NewLogrusLogger()
 
 	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug)
 
-	redisCache := redis.Must(cfg.CacheHost, cfg.CachePort, cfg.CachePassword)
+	redisCache := redis.Must(cfg.RedisUrl)
 
 	tokenMaker := token.Must(cfg.SecretKey)
 
