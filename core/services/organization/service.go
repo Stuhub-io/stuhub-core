@@ -9,18 +9,20 @@ import (
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
+	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/userutils"
 )
 
 type Service struct {
-	cfg             config.Config
-	orgRepository   ports.OrganizationRepository
-	userRepository  ports.UserRepository
-	tokenMaker      ports.TokenMaker
-	hasher          ports.Hasher
-	mailer          ports.Mailer
-	remoteRoute     ports.RemoteRoute
-	spaceRepository ports.SpaceRepository
+	cfg                          config.Config
+	orgRepository                ports.OrganizationRepository
+	userRepository               ports.UserRepository
+	tokenMaker                   ports.TokenMaker
+	hasher                       ports.Hasher
+	mailer                       ports.Mailer
+	remoteRoute                  ports.RemoteRoute
+	spaceRepository              ports.SpaceRepository
+	organizationInviteRepository ports.OrganizationInviteRepository
 }
 
 type NewServiceParams struct {
@@ -32,18 +34,20 @@ type NewServiceParams struct {
 	ports.Mailer
 	ports.RemoteRoute
 	ports.SpaceRepository
+	ports.OrganizationInviteRepository
 }
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
-		cfg:             params.Config,
-		orgRepository:   params.OrganizationRepository,
-		userRepository:  params.UserRepository,
-		tokenMaker:      params.TokenMaker,
-		hasher:          params.Hasher,
-		mailer:          params.Mailer,
-		remoteRoute:     params.RemoteRoute,
-		spaceRepository: params.SpaceRepository,
+		cfg:                          params.Config,
+		orgRepository:                params.OrganizationRepository,
+		userRepository:               params.UserRepository,
+		tokenMaker:                   params.TokenMaker,
+		hasher:                       params.Hasher,
+		mailer:                       params.Mailer,
+		remoteRoute:                  params.RemoteRoute,
+		spaceRepository:              params.SpaceRepository,
+		organizationInviteRepository: params.OrganizationInviteRepository,
 	}
 }
 
@@ -61,7 +65,7 @@ func (s *Service) CreateOrganization(dto CreateOrganizationDto) (*CreateOrganiza
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.spaceRepository.CreateSpace(context.Background(), org.PkID, dto.OwnerPkID, true, "Privte Space", "")
+	_, err = s.spaceRepository.CreateSpace(context.Background(), org.PkId, dto.OwnerPkID, true, "Privte Space", "")
 	if err != nil {
 		return nil, err
 	}
@@ -86,6 +90,14 @@ func (s *Service) GetJoinedOrgs(userPkID int64) ([]*domain.Organization, *domain
 		return nil, err
 	}
 	return orgs, nil
+}
+
+func (s *Service) GetInviteDetails(inviteID string) (*domain.OrganizationInvite, *domain.Error) {
+	invite, err := s.organizationInviteRepository.GetInviteByID(context.Background(), inviteID)
+	if err != nil {
+		return nil, err
+	}
+	return invite, nil
 }
 
 func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemberByEmailsResponse, *domain.Error) {
@@ -113,11 +125,11 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 			defer wg.Done()
 
 			existingMember, _ := s.orgRepository.GetOrgMemberByEmail(context.Background(), dto.OrgInfo.PkID, info.Email)
-			if existingMember != nil {
+			if existingMember != nil && existingMember.ActivatedAt != "" {
 				return
 			}
 
-			var memberUserPkID *int64
+			var memberUserPkID int64
 			memberUser, err := s.userRepository.GetUserByEmail(context.Background(), info.Email)
 			if err != nil && err.Error == domain.NotFoundErr {
 				salt := s.hasher.GenerateSalt()
@@ -127,22 +139,22 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 					return
 				}
 
-				memberUserPkID = &newUser.PkID
+				memberUserPkID = newUser.PkID
 			}
 
 			if memberUser != nil {
-				memberUserPkID = &memberUser.PkID
+				memberUserPkID = memberUser.PkID
 			}
 
-			_, err = s.orgRepository.AddMemberToOrg(context.Background(), dto.OrgInfo.PkID, memberUserPkID, info.Role)
+			_, err = s.orgRepository.AddMemberToOrg(context.Background(), dto.OrgInfo.PkID, &memberUserPkID, info.Role)
 			if err != nil {
 				fmt.Printf("Err add member to org: %s", info.Email)
 				return
 			}
 
-			token, errToken := s.tokenMaker.CreateOrgInviteToken(*memberUserPkID, org.PkID, domain.OrgInvitationVerificationTokenDuration)
-			if errToken != nil {
-				fmt.Printf("Err create token url for: %s", info.Email)
+			invite, err := s.organizationInviteRepository.CreateInvite(context.Background(), dto.OrgInfo.PkID, memberUserPkID)
+			if err != nil {
+				fmt.Printf("Err to create org invite: %s", info.Email)
 				return
 			}
 
@@ -152,12 +164,12 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 				ToAddress:  info.Email,
 				TemplateId: s.cfg.SendgridOrgInvitationTemplateId,
 				Data: map[string]string{
-					"url":        s.MakeValidateInvitationURL(token, dto.OrgInfo.Slug),
+					"url":        s.MakeValidateInvitationURL(invite.ID),
 					"owner_name": ownerFullName,
 					"org_name":   dto.OrgInfo.Name,
 					"org_avatar": dto.OrgInfo.Avatar,
 				},
-				Subject: "Accept organization invitation",
+				Subject: domain.InviteToOrgSubject,
 			})
 			if err != nil {
 				failedEmails = append(failedEmails, info.Email)
@@ -168,7 +180,6 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 			sentEmails = append(sentEmails, info.Email)
 		}(info)
 	}
-
 	wg.Wait()
 
 	return &InviteMemberByEmailsResponse{
@@ -178,18 +189,29 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 }
 
 func (s *Service) ValidateOrgInviteToken(dto ValidateOrgInviteTokenDto) (*domain.OrganizationMember, *domain.Error) {
-	payload, derr := s.tokenMaker.DecodeOrgInviteToken(dto.Token)
-	if derr != nil {
+	invite, err := s.organizationInviteRepository.GetInviteByID(context.Background(), dto.Token)
+	if err != nil {
+		return nil, err
+	}
+	if time.Now().After(invite.ExpiredAt) || invite.IsUsed {
 		return nil, domain.ErrTokenExpired
 	}
 
-	if payload.UserPkID != dto.CurrentUser.PkID {
+	if invite.UserPkID != dto.UserPkID {
 		return nil, domain.ErrUnauthorized
 	}
 
+	_, err = s.organizationInviteRepository.UpdateInvite(context.Background(), model.OrganizationInvite{
+		ID:     invite.ID,
+		IsUsed: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	activatedMember, err := s.ActivateMember(ActivateMemberDto{
-		MemberPkID: payload.UserPkID,
-		OrgPkID:    payload.OrgPkID,
+		MemberPkID: invite.UserPkID,
+		OrgPkID:    invite.OrganizationPkID,
 	})
 	if err != nil {
 		return nil, err
@@ -216,8 +238,6 @@ func (s *Service) ActivateMember(dto ActivateMemberDto) (*domain.OrganizationMem
 	return updatedMember, nil
 }
 
-func (s *Service) MakeValidateInvitationURL(token, slug string) string {
-	baseUrl := s.cfg.RemoteBaseURL + s.remoteRoute.ValidateOrgInvitation(slug)
-
-	return baseUrl + "?token=" + token
+func (s *Service) MakeValidateInvitationURL(inviteID string) string {
+	return s.cfg.RemoteBaseURL + "/invite/" + inviteID
 }

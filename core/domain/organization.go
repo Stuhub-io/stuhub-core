@@ -1,7 +1,7 @@
 package domain
 
 type Organization struct {
-	PkID        int64                `json:"pkid"`
+	PkId        int64                `json:"pkid"`
 	ID          string               `json:"id"`
 	OwnerID     int64                `json:"owner_id"`
 	Name        string               `json:"name"`
@@ -10,6 +10,7 @@ type Organization struct {
 	Avatar      string               `json:"avatar"`
 	CreatedAt   string               `json:"created_at"`
 	UpdatedAt   string               `json:"updated_at"`
+	Owner       *User                `json:"owner"`
 	Members     []OrganizationMember `json:"members"`
 }
 
@@ -34,3 +35,5 @@ type OrganizationMember struct {
 	UpdatedAt        string `json:"updated_at"`
 	User             *User  `json:"user"`
 }
+
+const InviteToOrgSubject = "Accept organization invitation"

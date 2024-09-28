@@ -14,16 +14,17 @@ type RedisCache struct {
 	client *redis.Client
 }
 
-func Must(host, port, password string) *RedisCache {
-	client := redis.NewClient(&redis.Options{
-		Addr:     host + ":" + port,
-		Password: password,
-		DB:       0,
-	})
-
-	_, err := client.Ping(context.Background()).Result()
+func Must(url string) *RedisCache {
+	opts, err := redis.ParseURL(url)
 	if err != nil {
-		log.Println("Make sure you have a Redis server running on the specified host and port")
+		panic("Redis url is not valid!")
+	}
+
+	client := redis.NewClient(opts)
+
+	_, err = client.Ping(context.Background()).Result()
+	if err != nil {
+		panic("Make sure you have a Redis server running on the specified host and port")
 	}
 
 	return &RedisCache{client: client}
@@ -33,6 +34,12 @@ func (c *RedisCache) Set(key string, value any, duration time.Duration) error {
 	data, err := json.Marshal(value)
 	if err != nil {
 		return fmt.Errorf("failed to marshal cache value for key %q: %v", key, err)
+	}
+
+	_, err = c.client.Ping(context.Background()).Result()
+	if err != nil {
+		log.Printf("%v", err)
+		return nil
 	}
 
 	if err := c.client.Set(context.Background(), key, data, duration).Err(); err != nil {

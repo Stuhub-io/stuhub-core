@@ -31,5 +31,5 @@ CREATE TABLE IF NOT EXISTS "organization_member" (
 
     CONSTRAINT fk_user
         FOREIGN KEY (user_pkid) 
-        REFERENCES "users" (pkid)
+        REFERENCES "users" (pkid) ON DELETE CASCADE
 );

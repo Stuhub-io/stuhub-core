@@ -10,7 +10,7 @@ func NewRemoteRoute() ports.RemoteRoute {
 	return ports.RemoteRoute{
 		ValidateEmailOauth: "/auth-email",
 		ValidateOrgInvitation: func(slug string) string {
-			return fmt.Sprintf("/%s/inivte", slug)
+			return fmt.Sprintf("?from=%s/invite", slug)
 		},
 	}
 }

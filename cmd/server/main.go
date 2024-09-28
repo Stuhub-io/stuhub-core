@@ -57,13 +57,12 @@ import (
 // @externalDocs.url			https://swagger.io/resources/open-api/
 func main() {
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
-	fmt.Println(cfg)
 
 	logger := logger.NewLogrusLogger()
 
 	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug)
 
-	redisCache := redis.Must(cfg.CacheHost, cfg.CachePort, cfg.CachePassword)
+	redisCache := redis.Must(cfg.RedisUrl)
 
 	tokenMaker := token.Must(cfg.SecretKey)
 
@@ -72,7 +71,6 @@ func main() {
 
 	hasher := hasher.NewScrypt([]byte(cfg.HashPwSecretKey))
 
-	// TODO: read from env
 	mailer := mailer.NewMailer(mailer.NewMailerParams{
 		Address:   cfg.SendgridEmailFrom,
 		ClientKey: cfg.SendgridKey,
@@ -108,15 +106,21 @@ func main() {
 		Cfg:   cfg,
 		Store: dbStore,
 	})
+	organizationInviteRepository := postgres.NewOrganizationInvitesRepository(postgres.NewOrganizationInvitesRepositoryParams{
+		Cfg:   cfg,
+		Store: dbStore,
+	})
 
 	// services
+	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{
+		TokenMaker:     tokenMaker,
+		UserRepository: userRepository,
+	})
 	oauthService := oauth.NewOauthService(logger)
-
 	userService := user.NewService(user.NewServiceParams{
 		Config:         cfg,
 		UserRepository: userRepository,
 	})
-
 	authService := auth.NewService(auth.NewServiceParams{
 		Config:         cfg,
 		UserRepository: userRepository,
@@ -126,37 +130,29 @@ func main() {
 		RemoteRoute:    remoteRoute,
 		Hasher:         hasher,
 	})
-
 	orgService := organization.NewService(organization.NewServiceParams{
-		Config:                 cfg,
-		OrganizationRepository: orgRepository,
-		UserRepository:         userRepository,
-		TokenMaker:             tokenMaker,
-		Hasher:                 hasher,
-		Mailer:                 mailer,
-		RemoteRoute:            remoteRoute,
-		SpaceRepository:        spaceRepository,
+		Config:                       cfg,
+		OrganizationRepository:       orgRepository,
+		UserRepository:               userRepository,
+		TokenMaker:                   tokenMaker,
+		Hasher:                       hasher,
+		Mailer:                       mailer,
+		RemoteRoute:                  remoteRoute,
+		SpaceRepository:              spaceRepository,
+		OrganizationInviteRepository: organizationInviteRepository,
 	})
-
 	spaceService := space.NewService(space.NewServiceParams{
 		Config:          cfg,
 		SpaceRepository: spaceRepository,
 	})
-
 	pageService := page.NewService(page.NewServiceParams{
 		Config:         cfg,
 		PageRepository: pageRepository,
 	})
-
 	documentService := document.NewService(document.NewServiceParams{
 		Config:             cfg,
 		PageRepository:     pageRepository,
 		DocumentRepository: documentRepository,
-	})
-
-	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{
-		TokenMaker:     tokenMaker,
-		UserRepository: userRepository,
 	})
 
 	// handlers

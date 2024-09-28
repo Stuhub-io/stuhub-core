@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"path"
 
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/services/organization"
@@ -9,6 +10,7 @@ import (
 	"github.com/Stuhub-io/internal/api/middleware"
 	"github.com/Stuhub-io/internal/api/request"
 	"github.com/Stuhub-io/internal/api/response"
+	"github.com/Stuhub-io/utils/organization_inviteutils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -36,7 +38,8 @@ func UseOrganizationHandler(params NewOrganizationHandlerParams) {
 	router.GET("/joined", decorators.CurrentUser(handler.GetJoinedOrgs))
 	router.GET("/get-by-slug", decorators.CurrentUser(handler.GetOrgBySlug))
 	router.POST("/invite-by-emails", decorators.CurrentUser(handler.InviteMembersByEmail))
-	router.POST("/invite-validation", decorators.CurrentUser(handler.ValidateOrgInvitation))
+	router.GET(path.Join("/invite-details", ":"+organization_inviteutils.InviteIDParam), handler.GetInviteDetails)
+	router.POST("/invite-validate", decorators.CurrentUser(handler.ValidateOrgInvitation))
 }
 
 func (h *OrganizationHandler) CreateOrganization(c *gin.Context, user *domain.User) {
@@ -87,6 +90,22 @@ func (h *OrganizationHandler) GetOrgBySlug(c *gin.Context, user *domain.User) {
 	response.WithData(c, http.StatusOK, data, "Success")
 }
 
+func (h *OrganizationHandler) GetInviteDetails(c *gin.Context) {
+	inviteID, valid := organization_inviteutils.GetInviteIDParam(c)
+	if !valid {
+		response.BindError(c, "inviteID is missing or invalid")
+		return
+	}
+
+	invite, err := h.orgService.GetInviteDetails(inviteID)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, http.StatusOK, invite)
+}
+
 func (h *OrganizationHandler) InviteMembersByEmail(c *gin.Context, user *domain.User) {
 	var params request.InviteMembersByEmailParams
 	if ok, vr := request.Validate(c, &params); !ok {
@@ -115,8 +134,8 @@ func (h *OrganizationHandler) ValidateOrgInvitation(c *gin.Context, user *domain
 	}
 
 	data, err := h.orgService.ValidateOrgInviteToken(organization.ValidateOrgInviteTokenDto{
-		CurrentUser: user,
-		Token:       params.Token,
+		UserPkID: user.PkID,
+		Token:    params.Token,
 	})
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)

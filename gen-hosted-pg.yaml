@@ -1,6 +1,6 @@
 version: "0.1"
 database:
-  dsn: "postgresql://admin:stuhub@localhost:5432/stuhub?sslmode=disable"
+  dsn: postgresql://postgres.pffgcpdbpguxxjcryaku:stuhubadmin3@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=disable
   db: "postgres"
   tables:
     [

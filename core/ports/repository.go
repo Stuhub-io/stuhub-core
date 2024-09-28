@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Stuhub-io/core/domain"
+	"github.com/Stuhub-io/internal/repository/model"
 )
 
 type UserRepository interface {
@@ -20,7 +21,7 @@ type UserRepository interface {
 }
 
 type OrganizationRepository interface {
-	GetOrgMembers(ctx context.Context, pkID int64) ([]*domain.OrganizationMember, *domain.Error)
+	GetOrgMembers(ctx context.Context, pkID int64) ([]domain.OrganizationMember, *domain.Error)
 	GetOrgBySlug(ctx context.Context, slug string) (*domain.Organization, *domain.Error)
 	GetOwnerOrgByName(ctx context.Context, ownerPkID int64, name string) (*domain.Organization, *domain.Error)
 	GetOwnerOrgByPkID(ctx context.Context, ownerPkID, pkId int64) (*domain.Organization, *domain.Error)
@@ -50,4 +51,10 @@ type DocumentRepository interface {
 	GetDocumentByPagePkID(ctx context.Context, pagePkID int64) (*domain.Document, *domain.Error)
 	GetDocumentByPkID(ctx context.Context, pkID int64) (*domain.Document, *domain.Error)
 	UpdateDocument(ctx context.Context, pagePkID int64, content string) (*domain.Document, *domain.Error)
+}
+
+type OrganizationInviteRepository interface {
+	CreateInvite(ctx context.Context, organizationPkId int64, userPkId int64) (*domain.OrganizationInvite, *domain.Error)
+	UpdateInvite(ctx context.Context, invite model.OrganizationInvite) (*domain.OrganizationInvite, *domain.Error)
+	GetInviteByID(ctx context.Context, inviteID string) (*domain.OrganizationInvite, *domain.Error)
 }
