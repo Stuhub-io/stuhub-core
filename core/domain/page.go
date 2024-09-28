@@ -1,7 +1,7 @@
 package domain
 
 type Page struct {
-	PkId           int64  `json:"pk_id"`
+	PkID           int64  `json:"pkid"`
 	ID             string `json:"id"`
 	SpacePkID      int64  `json:"space_pkid"`
 	Name           string `json:"name"`

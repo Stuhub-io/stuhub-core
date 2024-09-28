@@ -27,7 +27,7 @@ func TransformDocModalToDomain(doc model.Document) *domain.Document {
 		jsonContent = *doc.JSONContent
 	}
 	return &domain.Document{
-		PkId:        doc.Pkid,
+		PkID:        doc.Pkid,
 		PagePkID:    doc.PagePkid,
 		Content:     doc.Content,
 		JsonContent: jsonContent,

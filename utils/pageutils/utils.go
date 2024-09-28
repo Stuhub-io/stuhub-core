@@ -30,7 +30,7 @@ func GetPagePkIDParam(c *gin.Context) (int64, bool) {
 
 func MapPageModelToDomain(model model.Page) *domain.Page {
 	return &domain.Page{
-		PkId:           model.Pkid,
+		PkID:           model.Pkid,
 		ID:             model.ID,
 		SpacePkID:      model.SpacePkid,
 		Name:           model.Name,

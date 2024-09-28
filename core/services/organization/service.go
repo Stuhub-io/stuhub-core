@@ -65,7 +65,7 @@ func (s *Service) CreateOrganization(dto CreateOrganizationDto) (*CreateOrganiza
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.spaceRepository.CreateSpace(context.Background(), org.PkId, dto.OwnerPkID, true, "Privte Space", "")
+	_, err = s.spaceRepository.CreateSpace(context.Background(), org.PkID, dto.OwnerPkID, true, "Privte Space", "")
 	if err != nil {
 		return nil, err
 	}
@@ -101,12 +101,14 @@ func (s *Service) GetInviteDetails(inviteID string) (*domain.OrganizationInvite,
 }
 
 func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemberByEmailsResponse, *domain.Error) {
-	org, err := s.orgRepository.GetOwnerOrgByPkId(context.Background(), dto.Owner.PkID, dto.OrgInfo.PkId)
+	org, err := s.orgRepository.GetOwnerOrgByPkID(context.Background(), dto.Owner.PkID, dto.OrgInfo.PkID)
 	if err != nil {
 		return nil, err
 	}
 
-	if dto.Owner.ActivatedAt == "" || dto.Owner.PkID != org.OwnerID {
+	fmt.Print("\n\n", dto.Owner.PkID, org.OwnerID, "\n\n")
+
+	if dto.Owner.PkID != org.OwnerID {
 		return nil, domain.ErrUnauthorized
 	}
 

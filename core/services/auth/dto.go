@@ -33,7 +33,7 @@ type AuthenByEmailAfterSetPasswordDto struct {
 }
 
 type ActivateUserDto struct {
-	UserPkId int64 `json:"user_pkid"`
+	UserPkID int64 `json:"user_pkid"`
 }
 
 type AuthenByGoogleDto struct {

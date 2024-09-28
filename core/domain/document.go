@@ -1,7 +1,7 @@
 package domain
 
 type Document struct {
-	PkId        int64  `json:"pk_id"`
+	PkID        int64  `json:"pkid"`
 	Content     string `json:"content"`
 	JsonContent string `json:"json_content"`
 	UpdatedAt   string `json:"updated_at"`

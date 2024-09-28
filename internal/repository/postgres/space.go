@@ -59,7 +59,7 @@ func (r *SpaceRepository) CreateSpace(ctx context.Context, orgPkID int64, ownerP
 	}
 	// -- End Tx
 	return &domain.Space{
-		PkId:        newSpace.Pkid,
+		PkID:        newSpace.Pkid,
 		ID:          newSpace.ID,
 		Name:        newSpace.Name,
 		OrgPkID:     newSpace.OrgPkid,
@@ -91,7 +91,7 @@ func (r *SpaceRepository) GetSpacesByOrgPkID(ctx context.Context, orgPkID int64)
 		domainSpaceMembers := make([]domain.SpaceMember, 0, len(space.Members))
 		for _, member := range space.Members {
 			domainSpaceMember := domain.SpaceMember{
-				PkId:      member.Pkid,
+				PkID:      member.Pkid,
 				SpacePkID: member.SpacePkid,
 				UserPkID:  member.UserPkid,
 				Role:      member.Role,
@@ -103,7 +103,7 @@ func (r *SpaceRepository) GetSpacesByOrgPkID(ctx context.Context, orgPkID int64)
 		}
 
 		domainSpace := domain.Space{
-			PkId:        space.Pkid,
+			PkID:        space.Pkid,
 			ID:          space.ID,
 			Name:        space.Name,
 			OrgPkID:     space.OrgPkid,

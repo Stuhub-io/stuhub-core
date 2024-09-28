@@ -65,7 +65,7 @@ func (h *DocumentHandler) CreateNewDocument(c *gin.Context, user *domain.User) {
 	}
 
 	doc, err := h.documentService.CreateNewDocument(
-		page.PkId,
+		page.PkID,
 		body.JsonContent,
 	)
 

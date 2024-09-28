@@ -48,12 +48,12 @@ func (r *OrganizationRepository) GetOrgMembers(ctx context.Context, pkID int64) 
 	return organizationutils.TransformOrganizationMemberModelToDomain_Many(members), nil
 }
 
-func (r *OrganizationRepository) GetOrgMemberByEmail(ctx context.Context, orgPkId int64, email string) (*domain.OrganizationMember, *domain.Error) {
+func (r *OrganizationRepository) GetOrgMemberByEmail(ctx context.Context, orgPkID int64, email string) (*domain.OrganizationMember, *domain.Error) {
 	var member organizationutils.MemberWithUser
 
 	err := r.store.DB().Preload("User").
 		Joins("JOIN users ON users.pkid = organization_member.user_pkid").
-		Where("organization_pkid = ? AND users.email = ?", orgPkId, email).
+		Where("organization_pkid = ? AND users.email = ?", orgPkID, email).
 		First(&member).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -65,12 +65,12 @@ func (r *OrganizationRepository) GetOrgMemberByEmail(ctx context.Context, orgPkI
 	return organizationutils.TransformOrganizationMemberModelToDomain(member), nil
 }
 
-func (r *OrganizationRepository) GetOrgMemberByUserPkID(ctx context.Context, orgPkId int64, userPkId int64) (*domain.OrganizationMember, *domain.Error) {
+func (r *OrganizationRepository) GetOrgMemberByUserPkID(ctx context.Context, orgPkID int64, userPkID int64) (*domain.OrganizationMember, *domain.Error) {
 	var member organizationutils.MemberWithUser
 
 	err := r.store.DB().Preload("User").
 		Joins("JOIN users ON users.pkid = organization_member.user_pkid").
-		Where("organization_pkid = ? AND users.pkid = ?", orgPkId, userPkId).
+		Where("organization_pkid = ? AND users.pkid = ?", orgPkID, userPkID).
 		First(&member).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -97,10 +97,10 @@ func (r *OrganizationRepository) GetOwnerOrgByName(ctx context.Context, ownerID 
 	return organizationutils.TransformOrganizationModelToDomain(org), nil
 }
 
-func (r *OrganizationRepository) GetOwnerOrgByPkId(ctx context.Context, ownerID, pkId int64) (*domain.Organization, *domain.Error) {
+func (r *OrganizationRepository) GetOwnerOrgByPkID(ctx context.Context, ownerID, pkID int64) (*domain.Organization, *domain.Error) {
 	var org organizationutils.OrganizationWithMembers
 
-	err := r.store.DB().Preload("Members").Where("owner_id = ? AND pkid = ?", ownerID, pkId).First(&org).Error
+	err := r.store.DB().Preload("Members").Where("owner_id = ? AND pkid = ?", ownerID, pkID).First(&org).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrOrgNotFound
