@@ -92,6 +92,14 @@ func (s *Service) GetJoinedOrgs(userPkID int64) ([]*domain.Organization, *domain
 	return orgs, nil
 }
 
+func (s *Service) GetInviteDetails(inviteID string) (*domain.OrganizationInvite, *domain.Error) {
+	invite, err := s.organizationInviteRepository.GetInviteByID(context.Background(), inviteID)
+	if err != nil {
+		return nil, err
+	}
+	return invite, nil
+}
+
 func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemberByEmailsResponse, *domain.Error) {
 	org, err := s.orgRepository.GetOwnerOrgByPkId(context.Background(), dto.Owner.PkID, dto.OrgInfo.PkId)
 	if err != nil {

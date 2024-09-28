@@ -13,6 +13,16 @@ const (
 	OrganizationInvitePkIDParam = "organizationInvitePkIDParam"
 )
 
+const InviteIDParam = "inviteID"
+
+func GetInviteIDParam(c *gin.Context) (string, bool) {
+	inviteID := c.Params.ByName(InviteIDParam)
+	if inviteID == "" {
+		return "", false
+	}
+	return inviteID, true
+}
+
 type InviteWithOrganization struct {
 	model.OrganizationInvite
 	Organization organizationutils.OrganizationWithMembers `gorm:"foreignKey:organization_pkid" json:"organization"` // Define foreign key relationship
