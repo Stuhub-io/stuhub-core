@@ -65,7 +65,7 @@ func (s *Service) CreateOrganization(dto CreateOrganizationDto) (*CreateOrganiza
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.spaceRepository.CreateSpace(context.Background(), org.PkID, dto.OwnerPkID, true, "Privte Space", "")
+	_, err = s.spaceRepository.CreateSpace(context.Background(), org.PkId, dto.OwnerPkID, true, "Privte Space", "")
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 		go func(info EmailInviteInfo) {
 			defer wg.Done()
 
-			existingMember, _ := s.orgRepository.GetOrgMemberByEmail(context.Background(), dto.OrgInfo.PkId, info.Email)
+			existingMember, _ := s.orgRepository.GetOrgMemberByEmail(context.Background(), dto.OrgInfo.PkID, info.Email)
 			if existingMember != nil && existingMember.ActivatedAt != "" {
 				return
 			}
@@ -146,13 +146,13 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 				memberUserPkID = memberUser.PkID
 			}
 
-			_, err = s.orgRepository.AddMemberToOrg(context.Background(), dto.OrgInfo.PkId, &memberUserPkID, info.Role)
+			_, err = s.orgRepository.AddMemberToOrg(context.Background(), dto.OrgInfo.PkID, &memberUserPkID, info.Role)
 			if err != nil {
 				fmt.Printf("Err add member to org: %s", info.Email)
 				return
 			}
 
-			invite, err := s.organizationInviteRepository.CreateInvite(context.Background(), dto.OrgInfo.PkId, memberUserPkID)
+			invite, err := s.organizationInviteRepository.CreateInvite(context.Background(), dto.OrgInfo.PkID, memberUserPkID)
 			if err != nil {
 				fmt.Printf("Err to create org invite: %s", info.Email)
 				return
@@ -189,8 +189,6 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 }
 
 func (s *Service) ValidateOrgInviteToken(dto ValidateOrgInviteTokenDto) (*domain.OrganizationMember, *domain.Error) {
-	fmt.Print(">>>, ", dto.Token)
-
 	invite, err := s.organizationInviteRepository.GetInviteByID(context.Background(), dto.Token)
 	if err != nil {
 		return nil, err
