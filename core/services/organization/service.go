@@ -154,7 +154,7 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 				ToAddress:  info.Email,
 				TemplateId: s.cfg.SendgridOrgInvitationTemplateId,
 				Data: map[string]string{
-					"url":        s.MakeValidateInvitationURL(invite.ID, dto.OrgInfo.Slug),
+					"url":        s.MakeValidateInvitationURL(invite.ID),
 					"owner_name": ownerFullName,
 					"org_name":   dto.OrgInfo.Name,
 					"org_avatar": dto.OrgInfo.Avatar,
@@ -229,8 +229,6 @@ func (s *Service) ActivateMember(dto ActivateMemberDto) (*domain.OrganizationMem
 	return updatedMember, nil
 }
 
-func (s *Service) MakeValidateInvitationURL(inviteID, slug string) string {
-	baseUrl := s.cfg.RemoteBaseURL + s.remoteRoute.ValidateOrgInvitation(slug)
-
-	return baseUrl + "?token=" + inviteID
+func (s *Service) MakeValidateInvitationURL(inviteID string) string {
+	return s.cfg.RemoteBaseURL + "/" + inviteID
 }

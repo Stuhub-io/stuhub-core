@@ -8,7 +8,8 @@ import (
 	"github.com/Stuhub-io/core/domain"
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
-	organzation_inviteutils "github.com/Stuhub-io/utils/organiation_inviteutils"
+	organization_inviteutils "github.com/Stuhub-io/utils/organization_inviteutils"
+	"gorm.io/gorm/clause"
 )
 
 type OrganizationInvitesRepository struct {
@@ -40,7 +41,7 @@ func (r *OrganizationInvitesRepository) CreateInvite(ctx context.Context, organi
 		return nil, domain.ErrDatabaseMutation
 	}
 
-	return organzation_inviteutils.TransformOrganizationInviteModelToDomain(newInvite), nil
+	return organization_inviteutils.TransformOrganizationInviteModelToDomain(newInvite), nil
 }
 
 func (r *OrganizationInvitesRepository) UpdateInvite(ctx context.Context, invite model.OrganizationInvite) (*domain.OrganizationInvite, *domain.Error) {
@@ -51,16 +52,16 @@ func (r *OrganizationInvitesRepository) UpdateInvite(ctx context.Context, invite
 		return nil, domain.ErrDatabaseMutation
 	}
 
-	return organzation_inviteutils.TransformOrganizationInviteModelToDomain(updatedInvite), nil
+	return organization_inviteutils.TransformOrganizationInviteModelToDomain(updatedInvite), nil
 }
 
 func (r *OrganizationInvitesRepository) GetInviteByID(ctx context.Context, inviteID string) (*domain.OrganizationInvite, *domain.Error) {
-	var invite model.OrganizationInvite
+	var invite organization_inviteutils.InviteWithOrganization
 
-	err := r.store.DB().Where("id = ?", inviteID).First(&invite).Error
+	err := r.store.DB().Preload("Organization.Members").Preload(clause.Associations).Where("id = ?", inviteID).First(&invite).Error
 	if err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	return organzation_inviteutils.TransformOrganizationInviteModelToDomain(invite), nil
+	return organization_inviteutils.TransformOrganizationInviteModelToDomain_WithOrg(invite), nil
 }

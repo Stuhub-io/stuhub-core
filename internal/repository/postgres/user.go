@@ -10,6 +10,7 @@ import (
 	"github.com/Stuhub-io/core/ports"
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
+	"github.com/Stuhub-io/utils/userutils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -22,28 +23,6 @@ type UserRepository struct {
 type NewUserRepositoryParams struct {
 	Store *store.DBStore
 	Cfg   config.Config
-}
-
-func mapUserModelToDomain(model model.User) *domain.User {
-	activatedAt := ""
-	if model.ActivatedAt != nil {
-		activatedAt = model.ActivatedAt.String()
-	}
-
-	return &domain.User{
-		PkID:         model.Pkid,
-		ID:           model.ID,
-		Email:        model.Email,
-		FirstName:    model.FirstName,
-		LastName:     model.LastName,
-		Avatar:       model.Avatar,
-		Salt:         model.Salt,
-		OauthGmail:   model.OauthGmail,
-		HavePassword: model.Password != nil && *model.Password != "",
-		ActivatedAt:  activatedAt,
-		CreatedAt:    model.CreatedAt.String(),
-		UpdatedAt:    model.UpdatedAt.String(),
-	}
 }
 
 func NewUserRepository(params NewUserRepositoryParams) ports.UserRepository {
@@ -64,7 +43,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	return mapUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(user), nil
 }
 
 func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain.User, *domain.Error) {
@@ -83,7 +62,7 @@ func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	user := mapUserModelToDomain(userModel)
+	user := userutils.TransformUserModelToDomain(userModel)
 
 	go func() {
 		r.store.Cache().SetUser(user, time.Hour)
@@ -103,7 +82,7 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	return mapUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(user), nil
 }
 
 func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email string, salt string) (*domain.User, *domain.Error) {
@@ -125,7 +104,7 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 		}
 	}
 
-	return mapUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(user), nil
 }
 
 func (r *UserRepository) CreateUserWithGoogleInfo(ctx context.Context, email, salt, firstName, lastName, avatar string) (*domain.User, *domain.Error) {
@@ -143,7 +122,7 @@ func (r *UserRepository) CreateUserWithGoogleInfo(ctx context.Context, email, sa
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	return mapUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(user), nil
 }
 
 func (r *UserRepository) SetUserPassword(ctx context.Context, pkID int64, hashedPassword string) *domain.Error {
@@ -183,7 +162,7 @@ func (r *UserRepository) UpdateUserInfo(ctx context.Context, PkID int64, firstNa
 		return nil, domain.ErrDatabaseMutation
 	}
 
-	return mapUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(user), nil
 }
 
 func (r *UserRepository) SetUserActivatedAt(ctx context.Context, pkID int64, activatedAt time.Time) (*domain.User, *domain.Error) {
@@ -194,5 +173,5 @@ func (r *UserRepository) SetUserActivatedAt(ctx context.Context, pkID int64, act
 		return nil, domain.ErrDatabaseMutation
 	}
 
-	return mapUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(user), nil
 }

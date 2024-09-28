@@ -8,6 +8,7 @@ import (
 	"github.com/Stuhub-io/core/ports"
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
+	"github.com/Stuhub-io/utils/userutils"
 )
 
 type SpaceRepository struct {
@@ -96,7 +97,7 @@ func (r *SpaceRepository) GetSpacesByOrgPkID(ctx context.Context, orgPkID int64)
 				Role:      member.Role,
 				CreatedAt: member.CreatedAt.String(),
 				UpdatedAt: member.UpdatedAt.String(),
-				User:      mapUserModelToDomain(member.User),
+				User:      userutils.TransformUserModelToDomain(member.User),
 			}
 			domainSpaceMembers = append(domainSpaceMembers, domainSpaceMember)
 		}

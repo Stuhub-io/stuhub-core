@@ -21,7 +21,7 @@ type UserRepository interface {
 }
 
 type OrganizationRepository interface {
-	GetOrgMembers(ctx context.Context, pkID int64) ([]*domain.OrganizationMember, *domain.Error)
+	GetOrgMembers(ctx context.Context, pkID int64) ([]domain.OrganizationMember, *domain.Error)
 	GetOrgBySlug(ctx context.Context, slug string) (*domain.Organization, *domain.Error)
 	GetOwnerOrgByName(ctx context.Context, ownerPkID int64, name string) (*domain.Organization, *domain.Error)
 	GetOwnerOrgByPkId(ctx context.Context, ownerPkID, pkId int64) (*domain.Organization, *domain.Error)
