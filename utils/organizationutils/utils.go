@@ -24,7 +24,7 @@ func TransformOrganizationMemberModelToDomain(member MemberWithUser) *domain.Org
 	}
 
 	return &domain.OrganizationMember{
-		PkId:             member.Pkid,
+		PkID:             member.Pkid,
 		OrganizationPkID: member.OrganizationPkid,
 		UserPkID:         member.UserPkid,
 		Role:             member.Role,
@@ -77,7 +77,7 @@ func TransformOrganizationModelToDomain_New(org model.Organization, ownerMember 
 	}
 
 	member := domain.OrganizationMember{
-		PkId:             ownerMember.Pkid,
+		PkID:             ownerMember.Pkid,
 		OrganizationPkID: ownerMember.OrganizationPkid,
 		UserPkID:         ownerMember.UserPkid,
 		Role:             ownerMember.Role,
@@ -108,7 +108,7 @@ func TransformOrganizationMemberModelToDomain_New(member model.OrganizationMembe
 	}
 
 	return &domain.OrganizationMember{
-		PkId:             member.Pkid,
+		PkID:             member.Pkid,
 		OrganizationPkID: member.OrganizationPkid,
 		UserPkID:         member.UserPkid,
 		Role:             member.Role,
