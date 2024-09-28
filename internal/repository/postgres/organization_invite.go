@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/Stuhub-io/config"
@@ -9,6 +10,7 @@ import (
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
 	organization_inviteutils "github.com/Stuhub-io/utils/organization_inviteutils"
+	"gorm.io/gorm"
 )
 
 type OrganizationInvitesRepository struct {
@@ -46,7 +48,8 @@ func (r *OrganizationInvitesRepository) CreateInvite(ctx context.Context, organi
 func (r *OrganizationInvitesRepository) UpdateInvite(ctx context.Context, invite model.OrganizationInvite) (*domain.OrganizationInvite, *domain.Error) {
 	var updatedInvite model.OrganizationInvite
 
-	err := r.store.DB().Model(&updatedInvite).Updates(invite).Error
+	err := r.store.DB().Model(&updatedInvite).Where("id = ?", invite.ID).Update("is_used", true).Error
+
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation
 	}
@@ -59,6 +62,9 @@ func (r *OrganizationInvitesRepository) GetInviteByID(ctx context.Context, invit
 
 	err := r.store.DB().Preload("Organization.Members").Preload("Organization.Owner").Where("id = ?", inviteID).First(&invite).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrOrgNotFound
+		}
 		return nil, domain.ErrDatabaseQuery
 	}
 

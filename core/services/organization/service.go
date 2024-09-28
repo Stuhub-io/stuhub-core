@@ -187,11 +187,12 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 }
 
 func (s *Service) ValidateOrgInviteToken(dto ValidateOrgInviteTokenDto) (*domain.OrganizationMember, *domain.Error) {
+	fmt.Print(">>>, ", dto.Token)
+
 	invite, err := s.organizationInviteRepository.GetInviteByID(context.Background(), dto.Token)
 	if err != nil {
 		return nil, err
 	}
-
 	if time.Now().After(invite.ExpiredAt) || invite.IsUsed {
 		return nil, domain.ErrTokenExpired
 	}
@@ -238,5 +239,5 @@ func (s *Service) ActivateMember(dto ActivateMemberDto) (*domain.OrganizationMem
 }
 
 func (s *Service) MakeValidateInvitationURL(inviteID string) string {
-	return s.cfg.RemoteBaseURL + "/" + inviteID
+	return s.cfg.RemoteBaseURL + "/invite/" + inviteID
 }

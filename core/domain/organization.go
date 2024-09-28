@@ -1,7 +1,7 @@
 package domain
 
 type Organization struct {
-	PkId        int64                `json:"pk_id"`
+	PkId        int64                `json:"pkid"`
 	ID          string               `json:"id"`
 	OwnerID     int64                `json:"owner_id"`
 	Name        string               `json:"name"`
