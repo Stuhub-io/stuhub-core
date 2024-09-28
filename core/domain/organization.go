@@ -10,6 +10,7 @@ type Organization struct {
 	Avatar      string               `json:"avatar"`
 	CreatedAt   string               `json:"created_at"`
 	UpdatedAt   string               `json:"updated_at"`
+	Owner       *User                `json:"owner"`
 	Members     []OrganizationMember `json:"members"`
 }
 

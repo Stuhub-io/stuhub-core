@@ -9,7 +9,6 @@ import (
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
 	organization_inviteutils "github.com/Stuhub-io/utils/organization_inviteutils"
-	"gorm.io/gorm/clause"
 )
 
 type OrganizationInvitesRepository struct {
@@ -58,7 +57,7 @@ func (r *OrganizationInvitesRepository) UpdateInvite(ctx context.Context, invite
 func (r *OrganizationInvitesRepository) GetInviteByID(ctx context.Context, inviteID string) (*domain.OrganizationInvite, *domain.Error) {
 	var invite organization_inviteutils.InviteWithOrganization
 
-	err := r.store.DB().Preload("Organization.Members").Preload(clause.Associations).Where("id = ?", inviteID).First(&invite).Error
+	err := r.store.DB().Preload("Organization.Members").Preload("Organization.Owner").Where("id = ?", inviteID).First(&invite).Error
 	if err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}

@@ -13,6 +13,7 @@ type MemberWithUser struct {
 
 type OrganizationWithMembers struct {
 	model.Organization
+	Owner   model.User       `gorm:"foreignKey:owner_id" json:"owner"`
 	Members []MemberWithUser `gorm:"foreignKey:organization_pkid" json:"members"` // Consider JSON tag for future use
 }
 
@@ -54,6 +55,7 @@ func TransformOrganizationModelToDomain(model OrganizationWithMembers) *domain.O
 		Avatar:      model.Avatar,
 		CreatedAt:   model.CreatedAt.String(),
 		UpdatedAt:   model.UpdatedAt.String(),
+		Owner:       userutils.TransformUserModelToDomain(model.Owner),
 		Members:     TransformOrganizationMemberModelToDomain_Many(model.Members),
 	}
 }
