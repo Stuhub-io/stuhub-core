@@ -44,6 +44,7 @@ type PageRepository interface {
 	DeletePageByPkID(ctx context.Context, pagePkID int64, userPkID int64) (*domain.Page, *domain.Error)
 	GetPageByID(ctx context.Context, pageID string) (*domain.Page, *domain.Error)
 	UpdatePageByID(ctx context.Context, pageID string, page domain.PageInput) (*domain.Page, *domain.Error)
+	ArchivedPageByID(ctx context.Context, pageID string) (*domain.Page, *domain.Error)
 }
 
 type DocumentRepository interface {

@@ -10,6 +10,7 @@ import (
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/pageutils"
 	"gorm.io/gorm/clause"
+	"time"
 )
 
 type PageRepository struct {
@@ -95,5 +96,21 @@ func (r *PageRepository) UpdatePageByID(ctx context.Context, pageID string, newP
 		return nil, domain.ErrDatabaseMutation
 	}
 
+	return pageutils.MapPageModelToDomain(page), nil
+}
+
+func (r* PageRepository) ArchivedPageByID(ctx context.Context, pageID string) (*domain.Page, *domain.Error) {
+	var page = model.Page{}
+	err := r.store.DB().Where("id = ?", pageID).First(&page).Error
+	if err != nil {
+		return nil, domain.NewErr("Page not found", domain.BadRequestCode)
+	}
+	now := time.Now()
+	page.ArchivedAt = &now
+	
+	err = r.store.DB().Clauses(clause.Returning{}).Select("*").Save(&page).Error
+	if err != nil {
+		return nil, domain.ErrDatabaseMutation
+	}
 	return pageutils.MapPageModelToDomain(page), nil
 }

@@ -41,6 +41,7 @@ func UsePageHanlder(params NewPageHandlerParams) {
 	router.GET(path.Join("pages", ":"+pageutils.PageIDParam), decorators.CurrentUser(handler.GetPageByID))
 	router.PUT(path.Join("pages", ":"+pageutils.PageIDParam), decorators.CurrentUser(handler.UpdatePageByID))
 	router.DELETE("/pages", decorators.CurrentUser(handler.DeletePageByPkID))
+	router.POST(path.Join("archive", ":"+pageutils.PageIDParam), decorators.CurrentUser(handler.ArchivedPageByID))
 }
 
 func (h *PageHandler) CreateNewPage(c *gin.Context, user *domain.User) {
@@ -130,6 +131,20 @@ func (h *PageHandler) UpdatePageByID(c *gin.Context, user *domain.User) {
 		ViewType:       params.ViewType,
 		ParentPagePkID: params.ParentPagePkID,
 	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+	response.WithData(c, http.StatusOK, page)
+}
+
+func (h *PageHandler) ArchivedPageByID(c *gin.Context, user *domain.User) {
+	pageID, valid := pageutils.GetPageIDParam(c)
+	if !valid {
+		response.BindError(c, "pageID is missing or invalid")
+		return
+	}
+	page, err := h.pageService.ArchivedPageByID(pageID)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
