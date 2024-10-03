@@ -8,6 +8,7 @@ type Page struct {
 	ParentPagePkID *int64 `json:"parent_page_pkid"`
 	CreatedAt      string `json:"created_at"`
 	UpdatedAt      string `json:"updated_at"`
+	ArchivedAt		string  `json:"archived_at"`
 	ViewType       string `json:"view_type"`
 }
 

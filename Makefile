@@ -4,6 +4,7 @@ include ./misc/make/tools.Makefile
 
 ENV ?= local # local | production | staggning
 
+
 include ./build/$(ENV)/postgres/.env
 export
 
@@ -68,6 +69,9 @@ migrate-drop:
 
 gen-struct:
 	@ gentool -c ./gen.yaml
+
+gen-struct-hosted:
+	@ gentool -c ./gen-hosted-pg.yaml
 
 open-db: # CLI for open db using tablePlus only
 	@ open $(POSTGRESQL_DSN)

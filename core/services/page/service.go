@@ -68,3 +68,11 @@ func (s *Service) UpdatePageById(pageID string, newPage domain.PageInput) (*doma
 	}
 	return page, nil
 }
+
+func (s *Service) ArchivedPageByID(pageID string) (*domain.Page, *domain.Error) {
+	page, err := s.pageRepository.ArchivedPageByID(context.Background(), pageID)
+	if err != nil {
+		return nil, err
+	}
+	return page, nil
+}
