@@ -38,5 +38,6 @@ func MapPageModelToDomain(model model.Page) *domain.Page {
 		CreatedAt:      model.CreatedAt.String(),
 		UpdatedAt:      model.UpdatedAt.String(),
 		ViewType:       model.ViewType,
+		CoverImage:     model.CoverImage,
 	}
 }

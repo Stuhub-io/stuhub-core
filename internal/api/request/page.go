@@ -15,4 +15,5 @@ type UpdatePageBody struct {
 	Name           string `json:"name"`
 	ViewType       string `json:"view_type" binding:"required"`
 	ParentPagePkID *int64 `json:"parent_page_pkid,omitempty"`
+	CoverImage     string `json:"cover_image,omitempty"`
 }

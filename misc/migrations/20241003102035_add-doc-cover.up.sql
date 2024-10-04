@@ -1,0 +1,2 @@
+ALTER TABLE "pages"
+ADD COLUMN "cover_image" VARCHAR NOT NULL DEFAULT '';

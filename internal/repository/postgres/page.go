@@ -3,6 +3,8 @@ package postgres
 import (
 	"context"
 
+	"time"
+
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
@@ -10,7 +12,6 @@ import (
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/pageutils"
 	"gorm.io/gorm/clause"
-	"time"
 )
 
 type PageRepository struct {
@@ -89,6 +90,7 @@ func (r *PageRepository) UpdatePageByID(ctx context.Context, pageID string, newP
 	page.Name = newPage.Name
 	page.ViewType = newPage.ViewType
 	page.ParentPagePkid = newPage.ParentPagePkID
+	page.CoverImage = newPage.CoverImage
 
 	dbErr = r.store.DB().Clauses(clause.Returning{}).Select("*").Save(&page).Error
 
@@ -99,7 +101,7 @@ func (r *PageRepository) UpdatePageByID(ctx context.Context, pageID string, newP
 	return pageutils.MapPageModelToDomain(page), nil
 }
 
-func (r* PageRepository) ArchivedPageByID(ctx context.Context, pageID string) (*domain.Page, *domain.Error) {
+func (r *PageRepository) ArchivedPageByID(ctx context.Context, pageID string) (*domain.Page, *domain.Error) {
 	var page = model.Page{}
 	err := r.store.DB().Where("id = ?", pageID).First(&page).Error
 	if err != nil {
@@ -107,7 +109,7 @@ func (r* PageRepository) ArchivedPageByID(ctx context.Context, pageID string) (*
 	}
 	now := time.Now()
 	page.ArchivedAt = &now
-	
+
 	err = r.store.DB().Clauses(clause.Returning{}).Select("*").Save(&page).Error
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation

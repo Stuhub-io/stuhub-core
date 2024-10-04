@@ -130,6 +130,7 @@ func (h *PageHandler) UpdatePageByID(c *gin.Context, user *domain.User) {
 		Name:           params.Name,
 		ViewType:       params.ViewType,
 		ParentPagePkID: params.ParentPagePkID,
+		CoverImage:     params.CoverImage,
 	})
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
