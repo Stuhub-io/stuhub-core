@@ -3,7 +3,7 @@ package request
 type CreatePageBody struct {
 	SpacePkID      int64  `json:"space_pkid" binding:"required"`
 	ViewType       string `json:"view_type" binding:"required"`
-	Name           string `json:"name" binding:"required"`
+	Name           string `json:"name,omitempty"`
 	ParentPagePkID *int64 `json:"parent_page_pkid,omitempty"`
 }
 
