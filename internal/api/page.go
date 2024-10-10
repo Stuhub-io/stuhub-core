@@ -41,7 +41,7 @@ func UsePageHanlder(params NewPageHandlerParams) {
 	router.GET(path.Join("pages", ":"+pageutils.PageIDParam), decorators.CurrentUser(handler.GetPageByID))
 	router.PUT(path.Join("pages", ":"+pageutils.PageIDParam), decorators.CurrentUser(handler.UpdatePageByID))
 	router.DELETE("/pages", decorators.CurrentUser(handler.DeletePageByPkID))
-	router.POST(path.Join("archive", ":"+pageutils.PageIDParam), decorators.CurrentUser(handler.ArchivedPageByID))
+	router.POST(path.Join("pages", ":"+pageutils.PageIDParam, "archive"), decorators.CurrentUser(handler.ArchivedPageByID))
 }
 
 func (h *PageHandler) CreateNewPage(c *gin.Context, user *domain.User) {

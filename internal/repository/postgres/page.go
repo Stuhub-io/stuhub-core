@@ -45,9 +45,13 @@ func (r *PageRepository) CreatePage(ctx context.Context, spacePkID int64, name s
 	return pageutils.MapPageModelToDomain(newPage), nil
 }
 
-func (r *PageRepository) GetPagesBySpacePkID(ctx context.Context, spacePkID int64) ([]domain.Page, *domain.Error) {
+func (r *PageRepository) GetPagesBySpacePkID(ctx context.Context, spacePkID int64, excludeArchived bool) ([]domain.Page, *domain.Error) {
 	var pages []model.Page
-	err := r.store.DB().Where("space_pkid = ?", spacePkID).Order("created_at desc").Find(&pages).Error
+	query := r.store.DB().Where("space_pkid = ?", spacePkID)
+	if excludeArchived {
+		query = query.Where("archived_at IS NULL")
+	}
+	err := query.Order("created_at desc").Find(&pages).Error
 	if err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}

@@ -38,7 +38,7 @@ func (s *Service) CreateNewPage(dto CreatePageDto) (*domain.Page, *domain.Error)
 }
 
 func (s *Service) GetPagesBySpacePkID(spacePkID int64) ([]domain.Page, *domain.Error) {
-	pages, err := s.pageRepository.GetPagesBySpacePkID(context.Background(), spacePkID)
+	pages, err := s.pageRepository.GetPagesBySpacePkID(context.Background(), spacePkID, true)
 	if err != nil {
 		return nil, err
 	}
