@@ -40,7 +40,7 @@ func UseDocumentHandle(params NewDocumentHandlerParams) {
 	router.Use(authMiddleware.Authenticated())
 	router.POST("/documents", decorators.CurrentUser(handler.CreateNewDocument))
 	router.PUT((path.Join("documents", ":"+docutils.DocumentPkIDParam)), decorators.CurrentUser(handler.UpdateDocument))
-	router.GET(path.Join("documents", "get-by-page", ":"+pageutils.PagePkIDParam), decorators.CurrentUser(handler.GetDocumentByPagePkID))
+	router.GET(path.Join("documents", "get-by-page", ":"+pageutils.PagePkIDParam), decorators.CurrentUser(handler.GetOrCreateDocumentByPagePkID))
 }
 
 func (h *DocumentHandler) CreateNewDocument(c *gin.Context, user *domain.User) {
@@ -53,11 +53,12 @@ func (h *DocumentHandler) CreateNewDocument(c *gin.Context, user *domain.User) {
 
 	pageInput := body.Page
 
-	page, err := h.pageService.CreateNewPage(page.CreatePageDto{
+	page, err := h.pageService.CreateNewPage(domain.PageInput{
 		Name:           pageInput.Name,
 		SpacePkID:      pageInput.SpacePkID,
 		ParentPagePkID: pageInput.ParentPagePkID,
-		ViewType:       domain.PageViewFromString(pageInput.ViewType),
+		ViewType:       pageInput.ViewType,
+		NodeID:         pageInput.NodeID,
 	})
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
@@ -105,14 +106,14 @@ func (h *DocumentHandler) UpdateDocument(c *gin.Context, user *domain.User) {
 	response.WithData(c, 200, document)
 }
 
-func (h *DocumentHandler) GetDocumentByPagePkID(c *gin.Context, user *domain.User) {
+func (h *DocumentHandler) GetOrCreateDocumentByPagePkID(c *gin.Context, user *domain.User) {
 	pagePkID, valid := pageutils.GetPagePkIDParam(c)
 	if !valid {
 		response.BindError(c, "documentPkID is missing or invalid")
 		return
 	}
 
-	document, err := h.documentService.GetDocumentByPagePkID(pagePkID)
+	document, err := h.documentService.GetOrCreateDocumentByPagePkID(pagePkID)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return

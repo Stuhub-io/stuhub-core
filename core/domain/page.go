@@ -11,6 +11,8 @@ type Page struct {
 	ArchivedAt     string `json:"archived_at"`
 	ViewType       string `json:"view_type"`
 	CoverImage     string `json:"cover_image"`
+	NodeID         string `json:"node_id"`
+	ChildPages     []Page `json:"child_pages"`
 }
 
 type PageInput struct {
@@ -18,6 +20,8 @@ type PageInput struct {
 	ParentPagePkID *int64 `json:"parent_page_pkid"`
 	ViewType       string `json:"view_type"`
 	CoverImage     string `json:"cover_image"`
+	SpacePkID      int64  `json:"space_pkid"` // Create only
+	NodeID         string `json:"node_id"`
 }
 
 type PageViewType int

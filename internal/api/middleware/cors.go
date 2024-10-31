@@ -1,8 +1,6 @@
 package middleware
 
 import (
-	"fmt"
-
 	"github.com/Stuhub-io/config"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -11,7 +9,6 @@ import (
 func CORS(cfg *config.Config) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
-		fmt.Print("Origins, ", cfg.AllowedOrigins)
 		cors.New(
 			cors.Config{
 				AllowOrigins: cfg.AllowedOrigins,

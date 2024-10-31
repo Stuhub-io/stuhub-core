@@ -2,12 +2,14 @@ package postgres
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/docutils"
+	"gorm.io/gorm"
 )
 
 type DocRepository struct {
@@ -40,12 +42,25 @@ func (r *DocRepository) CreateDocument(ctx context.Context, pagePkID int64, Json
 	return docutils.TransformDocModalToDomain(newDoc), nil
 }
 
-func (r *DocRepository) GetDocumentByPagePkID(ctx context.Context, pagePkID int64) (*domain.Document, *domain.Error) {
+func (r *DocRepository) GetOrCreateDocumentByPagePkID(ctx context.Context, pagePkID int64) (*domain.Document, *domain.Error) {
 	var doc model.Document
 	err := r.store.DB().Where("page_pkid = ?", pagePkID).Order("created_at desc").First(&doc).Error
 	if err != nil {
-		return nil, domain.ErrDatabaseQuery
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrDatabaseQuery
+		}
+		doc = model.Document{
+			PagePkid:    pagePkID,
+			Content:     "",
+			JSONContent: nil,
+		}
+		cerr := r.store.DB().Create(&doc).Error
+		if cerr != nil {
+			return nil, domain.ErrDatabaseMutation
+		}
+		return docutils.TransformDocModalToDomain(doc), nil
 	}
+
 	return docutils.TransformDocModalToDomain(doc), nil
 }
 

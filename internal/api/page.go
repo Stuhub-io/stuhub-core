@@ -36,14 +36,19 @@ func UsePageHanlder(params NewPageHandlerParams) {
 	authMiddleware := params.AuthMiddleware
 
 	router.Use(authMiddleware.Authenticated())
-	router.POST("/pages", decorators.CurrentUser(handler.CreateNewPage))
 	router.GET("/pages", decorators.CurrentUser(handler.GetSpacePages))
 	router.GET(path.Join("pages", ":"+pageutils.PageIDParam), decorators.CurrentUser(handler.GetPageByID))
 	router.PUT(path.Join("pages", ":"+pageutils.PageIDParam), decorators.CurrentUser(handler.UpdatePageByID))
-	router.DELETE("/pages", decorators.CurrentUser(handler.DeletePageByPkID))
 	router.POST(path.Join("pages", ":"+pageutils.PageIDParam, "archive"), decorators.CurrentUser(handler.ArchivedPageByID))
+
+	router.DELETE("/pages", decorators.CurrentUser(handler.DeletePageByPkID))
+	router.POST("/pages/bulk", decorators.CurrentUser(handler.BulkGetOrCreateByNodeID))
+	router.DELETE("/pages/bulk", decorators.CurrentUser(handler.BulkArchivePages))
+	// Depcrecated
+	router.POST("/pages", decorators.CurrentUser(handler.CreateNewPage))
 }
 
+// Deprecated: create page with DocumentServices
 func (h *PageHandler) CreateNewPage(c *gin.Context, user *domain.User) {
 	var body request.CreatePageBody
 
@@ -52,11 +57,12 @@ func (h *PageHandler) CreateNewPage(c *gin.Context, user *domain.User) {
 		return
 	}
 
-	page, err := h.pageService.CreateNewPage(page.CreatePageDto{
+	page, err := h.pageService.CreateNewPage(domain.PageInput{
 		ParentPagePkID: body.ParentPagePkID,
 		SpacePkID:      body.SpacePkID,
 		Name:           body.Name,
-		ViewType:       domain.PageViewFromString(body.ViewType),
+		ViewType:       body.ViewType,
+		CoverImage:     body.CoverImage,
 	})
 
 	if err != nil {
@@ -151,4 +157,51 @@ func (h *PageHandler) ArchivedPageByID(c *gin.Context, user *domain.User) {
 		return
 	}
 	response.WithData(c, http.StatusOK, page)
+}
+
+func (h *PageHandler) BulkGetOrCreateByNodeID(c *gin.Context, user *domain.User) {
+	var body request.BulkGetOrCreateByNodeIDBody
+
+	if ok, verr := request.Validate(c, &body); !ok {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	inputs := make([]domain.PageInput, len(body.PageInputs))
+	for i, page := range body.PageInputs {
+		inputs[i] = domain.PageInput{
+			Name:           page.Name,
+			SpacePkID:      page.SpacePkID,
+			ParentPagePkID: page.ParentPagePkID,
+			ViewType:       page.ViewType,
+			NodeID:         page.NodeID,
+			CoverImage:     page.CoverImage,
+		}
+	}
+	pages, err := h.pageService.BulkGetOrCreatePageByNodeID(inputs)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+	response.WithData(c, http.StatusOK, pages)
+}
+
+func (h *PageHandler) BulkArchivePages(c *gin.Context, user *domain.User) {
+	var body request.BulkArchivePagesBody
+
+	if ok, verr := request.Validate(c, &body); !ok {
+		response.BindError(c, verr.Error())
+		return
+	}
+	if len(body.PagePkIDs) == 0 {
+		response.BindError(c, "PagePkIDs is required")
+		return
+	}
+
+	err := h.pageService.BulkArchivePages(body.PagePkIDs)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+	response.WithData(c, http.StatusOK, nil)
 }

@@ -12,6 +12,10 @@ export
 dev:
 	@air -c .air.toml
 
+run-cmd:
+	@ read -p "Please provide cmd file name: " Name; \
+    go run cmd/$${Name}/main.go
+
 # ~~~ Development Environment ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 setup:
 	@ echo "Setting up the project dependencies ..."

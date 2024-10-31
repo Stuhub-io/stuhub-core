@@ -148,6 +148,7 @@ func main() {
 	pageService := page.NewService(page.NewServiceParams{
 		Config:         cfg,
 		PageRepository: pageRepository,
+		Logger:         logger,
 	})
 	documentService := document.NewService(document.NewServiceParams{
 		Config:             cfg,
