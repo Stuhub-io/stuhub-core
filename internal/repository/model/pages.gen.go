@@ -22,6 +22,7 @@ type Page struct {
 	ViewType       string     `gorm:"column:view_type;type:character varying(50);not null" json:"view_type"`
 	ArchivedAt     *time.Time `gorm:"column:archived_at;type:timestamp with time zone" json:"archived_at"`
 	CoverImage     string     `gorm:"column:cover_image;type:character varying;not null" json:"cover_image"`
+	NodeID         *string    `gorm:"column:node_id;type:uuid;uniqueIndex:page_node_id_idx,priority:1" json:"node_id"`
 }
 
 // TableName Page's table name

@@ -28,7 +28,15 @@ func GetPagePkIDParam(c *gin.Context) (int64, bool) {
 	return int64(pkID), cErr == nil
 }
 
-func MapPageModelToDomain(model model.Page) *domain.Page {
+func MapPageModelToDomain(model model.Page, ChildPages []domain.Page) *domain.Page {
+	archivedAt := ""
+	if model.ArchivedAt != nil {
+		archivedAt = model.ArchivedAt.String()
+	}
+	nodeID := ""
+	if model.NodeID != nil {
+		nodeID = *model.NodeID
+	}
 	return &domain.Page{
 		PkID:           model.Pkid,
 		ID:             model.ID,
@@ -39,5 +47,8 @@ func MapPageModelToDomain(model model.Page) *domain.Page {
 		UpdatedAt:      model.UpdatedAt.String(),
 		ViewType:       model.ViewType,
 		CoverImage:     model.CoverImage,
+		ArchivedAt:     archivedAt,
+		NodeID:         nodeID,
+		ChildPages:     ChildPages,
 	}
 }

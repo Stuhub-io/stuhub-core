@@ -44,8 +44,8 @@ func (s *Service) UpdateDocument(docPkID int64, content string) (*domain.Documen
 	return doc, nil
 }
 
-func (s *Service) GetDocumentByPagePkID(pagePkID int64) (*domain.Document, *domain.Error) {
-	doc, err := s.docRepository.GetDocumentByPagePkID(context.Background(), pagePkID)
+func (s *Service) GetOrCreateDocumentByPagePkID(pagePkID int64) (*domain.Document, *domain.Error) {
+	doc, err := s.docRepository.GetOrCreateDocumentByPagePkID(context.Background(), pagePkID)
 	if err != nil {
 		return nil, err
 	}
