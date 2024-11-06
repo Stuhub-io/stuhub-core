@@ -9,45 +9,46 @@ import (
 )
 
 type Service struct {
-	cfg            config.Config
-	pageRepository ports.PageRepository
-	docRepository  ports.DocumentRepository
+	cfg           config.Config
+	docRepository ports.DocumentRepository
 }
 
 type NewServiceParams struct {
 	config.Config
-	ports.PageRepository
 	ports.DocumentRepository
 }
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
-		cfg:            params.Config,
-		pageRepository: params.PageRepository,
-		docRepository:  params.DocumentRepository,
+		cfg:           params.Config,
+		docRepository: params.DocumentRepository,
 	}
 }
 
-func (s *Service) CreateNewDocument(pagePkID int64, jsonContent string) (*domain.Document, *domain.Error) {
-	doc, err := s.docRepository.CreateDocument(context.Background(), pagePkID, jsonContent)
+func (s *Service) CreatePage(pageInput domain.PageInput) (*domain.Page, *domain.Error) {
+	page, err := s.docRepository.CreatePage(context.Background(), pageInput)
 	if err != nil {
-		return nil, err
+		return nil, domain.ErrDatabaseMutation
 	}
-	return doc, nil
+	return page, nil
 }
 
-func (s *Service) UpdateDocument(docPkID int64, content string) (*domain.Document, *domain.Error) {
-	doc, err := s.docRepository.UpdateDocument(context.Background(), docPkID, content)
-	if err != nil {
-		return nil, err
-	}
-	return doc, nil
+func (s *Service) GetPagesByOrgPkID(query domain.PageListQuery) (d []domain.Page, e *domain.Error) {
+	d, e = s.docRepository.List(context.Background(), query)
+	return d, e
 }
 
-func (s *Service) GetOrCreateDocumentByPagePkID(pagePkID int64) (*domain.Document, *domain.Error) {
-	doc, err := s.docRepository.GetOrCreateDocumentByPagePkID(context.Background(), pagePkID)
-	if err != nil {
-		return nil, err
-	}
-	return doc, nil
+func (s *Service) UpdatePageByPkID(pagePkID int64, updateInput domain.PageUpdateInput) (d *domain.Page, e *domain.Error) {
+	d, e = s.docRepository.Update(context.Background(), pagePkID, updateInput)
+	return d, e
+}
+
+func (s *Service) GetPageDetailByID(pageID string) (d *domain.Page, e *domain.Error) {
+	d, e = s.docRepository.GetByID(context.Background(), pageID)
+	return d, e
+}
+
+func (s *Service) ArchivedPageByPkID(pagePkID int64) (d *domain.Page, e *domain.Error) {
+	d, e = s.docRepository.Archive(context.Background(), pagePkID)
+	return d, e
 }

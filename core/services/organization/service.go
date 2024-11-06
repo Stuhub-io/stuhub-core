@@ -21,7 +21,6 @@ type Service struct {
 	hasher                       ports.Hasher
 	mailer                       ports.Mailer
 	remoteRoute                  ports.RemoteRoute
-	spaceRepository              ports.SpaceRepository
 	organizationInviteRepository ports.OrganizationInviteRepository
 }
 
@@ -33,7 +32,6 @@ type NewServiceParams struct {
 	ports.Hasher
 	ports.Mailer
 	ports.RemoteRoute
-	ports.SpaceRepository
 	ports.OrganizationInviteRepository
 }
 
@@ -46,7 +44,6 @@ func NewService(params NewServiceParams) *Service {
 		hasher:                       params.Hasher,
 		mailer:                       params.Mailer,
 		remoteRoute:                  params.RemoteRoute,
-		spaceRepository:              params.SpaceRepository,
 		organizationInviteRepository: params.OrganizationInviteRepository,
 	}
 }
@@ -62,10 +59,6 @@ func (s *Service) CreateOrganization(dto CreateOrganizationDto) (*CreateOrganiza
 	}
 
 	org, err := s.orgRepository.CreateOrg(context.Background(), dto.OwnerPkID, dto.Name, dto.Description, dto.Avatar)
-	if err != nil {
-		return nil, err
-	}
-	_, err = s.spaceRepository.CreateSpace(context.Background(), org.PkId, dto.OwnerPkID, true, "Privte Space", "")
 	if err != nil {
 		return nil, err
 	}

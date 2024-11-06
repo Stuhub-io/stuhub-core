@@ -1,23 +1,18 @@
 package api
 
 import (
-	"path"
-
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/services/document"
-	"github.com/Stuhub-io/core/services/page"
 	"github.com/Stuhub-io/internal/api/decorators"
 	"github.com/Stuhub-io/internal/api/middleware"
 	"github.com/Stuhub-io/internal/api/request"
 	"github.com/Stuhub-io/internal/api/response"
 	"github.com/Stuhub-io/utils/docutils"
-	"github.com/Stuhub-io/utils/pageutils"
 	"github.com/gin-gonic/gin"
 )
 
 type DocumentHandler struct {
 	documentService *document.Service
-	pageService     *page.Service
 	AuthMiddleware  *middleware.AuthMiddleware
 }
 
@@ -25,80 +20,120 @@ type NewDocumentHandlerParams struct {
 	Router          *gin.RouterGroup
 	AuthMiddleware  *middleware.AuthMiddleware
 	DocumentService *document.Service
-	PageService     *page.Service
 }
 
 func UseDocumentHandle(params NewDocumentHandlerParams) {
 	handler := &DocumentHandler{
 		documentService: params.DocumentService,
-		pageService:     params.PageService,
 		AuthMiddleware:  params.AuthMiddleware,
 	}
 	router := params.Router.Group("/document-services")
 	authMiddleware := params.AuthMiddleware
 
 	router.Use(authMiddleware.Authenticated())
-	router.POST("/documents", decorators.CurrentUser(handler.CreateNewDocument))
-	router.PUT((path.Join("documents", ":"+docutils.DocumentPkIDParam)), decorators.CurrentUser(handler.UpdateDocument))
-	router.GET(path.Join("documents", "get-by-page", ":"+pageutils.PagePkIDParam), decorators.CurrentUser(handler.GetOrCreateDocumentByPagePkID))
+	router.GET("/documents", decorators.CurrentUser(handler.GetDocuments))
+	router.POST("/documents", decorators.CurrentUser(handler.CreateDocument))
+	router.GET("/documents/id/:"+docutils.PageIDParam, decorators.CurrentUser(handler.GetDocument))
+	router.PUT(("/documents/:" + docutils.PagePkIDParam), decorators.CurrentUser(handler.UpdateDocument))
+	router.DELETE("/documents"+docutils.PagePkIDParam, decorators.CurrentUser(handler.ArchiveDocument))
 }
 
-func (h *DocumentHandler) CreateNewDocument(c *gin.Context, user *domain.User) {
-	var body request.CreateDocumentBody
+func (h *DocumentHandler) GetDocument(c *gin.Context, user *domain.User) {
+	pageID, ok := docutils.GetPageIDParam(c)
+	if !ok {
+		response.BindError(c, "pageID is missing or invalid")
+		return
+	}
+
+	page, err := h.documentService.GetPageDetailByID(pageID)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 200, page)
+}
+
+func (h *DocumentHandler) GetDocuments(c *gin.Context, user *domain.User) {
+	var query request.GetPagesQuery
+	if ok, verr := request.Validate(c, &query); !ok {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	pages, err := h.documentService.GetPagesByOrgPkID(domain.PageListQuery{
+		OrgPkID:        query.OrgPkID,
+		ViewTypes:      query.ViewTypes,
+		ParentPagePkID: query.ParentPagePkID,
+		Offset:         int(query.PaginationRequest.Page * query.PaginationRequest.Size),
+		Limit:          int(query.PaginationRequest.Size),
+		IsArchived:     query.IsArchived,
+	})
+
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithPagination(c, 200, pages, domain.Pagination{
+		Page: query.PaginationRequest.Page,
+		Size: int64(len(pages)),
+	})
+}
+
+func (h *DocumentHandler) CreateDocument(c *gin.Context, user *domain.User) {
+	var body request.CreatePageBody
 
 	if ok, verr := request.Validate(c, &body); !ok {
 		response.BindError(c, verr.Error())
 		return
 	}
 
-	pageInput := body.Page
+	if body.Document.JsonContent == "" {
+		body.Document.JsonContent = "{}"
+	}
 
-	page, err := h.pageService.CreateNewPage(domain.PageInput{
-		Name:           pageInput.Name,
-		SpacePkID:      pageInput.SpacePkID,
-		ParentPagePkID: pageInput.ParentPagePkID,
-		ViewType:       pageInput.ViewType,
-		NodeID:         pageInput.NodeID,
+	page, err := h.documentService.CreatePage(domain.PageInput{
+		Name:             body.Name,
+		ParentPagePkID:   body.ParentPagePkID,
+		ViewType:         body.ViewType,
+		CoverImage:       body.CoverImage,
+		OrganizationPkID: body.OrgPkID,
+		Document:         domain.DocumentInput(body.Document),
 	})
+
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
 	}
 
-	doc, err := h.documentService.CreateNewDocument(
-		page.PkID,
-		body.JsonContent,
-	)
-
-	if err != nil {
-		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
-		return
-	}
-	type DocumentResponse struct {
-		Page domain.Page     `json:"page"`
-		Doc  domain.Document `json:"document"`
-	}
-
-	response.WithData(c, 200, DocumentResponse{
-		Page: *page,
-		Doc:  *doc,
-	})
+	response.WithData(c, 200, page)
 }
 
 func (h *DocumentHandler) UpdateDocument(c *gin.Context, user *domain.User) {
-	documentPkID, valid := docutils.GetDocumentParams(c)
-	if !valid {
+	pagePkID, ok := docutils.GetPagePkIDParam(c)
+	if !ok {
 		response.BindError(c, "pagePkID is missing or invalid")
 		return
 	}
 
-	var body request.UpdateDocumentBody
+	var body request.UpdatePageBody
 	if ok, verr := request.Validate(c, &body); !ok {
 		response.BindError(c, verr.Error())
 		return
 	}
 
-	document, err := h.documentService.UpdateDocument(documentPkID, body.JsonContent)
+	if body.Document != nil && body.Document.JsonContent == "" {
+		body.Document.JsonContent = "{}"
+	}
+
+	document, err := h.documentService.UpdatePageByPkID(pagePkID, domain.PageUpdateInput{
+		Name:           body.Name,
+		ParentPagePkID: body.ParentPagePkID,
+		ViewType:       body.ViewType,
+		CoverImage:     body.CoverImage,
+		Document:       body.Document,
+	})
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -106,17 +141,5 @@ func (h *DocumentHandler) UpdateDocument(c *gin.Context, user *domain.User) {
 	response.WithData(c, 200, document)
 }
 
-func (h *DocumentHandler) GetOrCreateDocumentByPagePkID(c *gin.Context, user *domain.User) {
-	pagePkID, valid := pageutils.GetPagePkIDParam(c)
-	if !valid {
-		response.BindError(c, "documentPkID is missing or invalid")
-		return
-	}
-
-	document, err := h.documentService.GetOrCreateDocumentByPagePkID(pagePkID)
-	if err != nil {
-		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
-		return
-	}
-	response.WithData(c, 200, document)
+func (h *DocumentHandler) ArchiveDocument(c *gin.Context, user *domain.User) {
 }

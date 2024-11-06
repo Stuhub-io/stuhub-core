@@ -17,12 +17,12 @@ type Page struct {
 	Name           string     `gorm:"column:name;type:character varying(255);not null" json:"name"`
 	CreatedAt      time.Time  `gorm:"column:created_at;type:timestamp with time zone;not null;default:now()" json:"created_at"`
 	UpdatedAt      time.Time  `gorm:"column:updated_at;type:timestamp with time zone;not null;default:now()" json:"updated_at"`
-	SpacePkid      int64      `gorm:"column:space_pkid;type:bigint;not null" json:"space_pkid"`
 	ParentPagePkid *int64     `gorm:"column:parent_page_pkid;type:bigint;index:idx_parent_page_pkid,priority:1" json:"parent_page_pkid"`
 	ViewType       string     `gorm:"column:view_type;type:character varying(50);not null" json:"view_type"`
 	ArchivedAt     *time.Time `gorm:"column:archived_at;type:timestamp with time zone" json:"archived_at"`
 	CoverImage     string     `gorm:"column:cover_image;type:character varying;not null" json:"cover_image"`
 	NodeID         *string    `gorm:"column:node_id;type:uuid;uniqueIndex:page_node_id_idx,priority:1" json:"node_id"`
+	OrgPkid        *int64     `gorm:"column:org_pkid;type:bigint" json:"org_pkid"`
 }
 
 // TableName Page's table name

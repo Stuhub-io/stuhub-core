@@ -9,6 +9,6 @@ const (
 )
 
 type Pagination struct {
-	PageSize   int `json:"size"`
-	PageOffset int `json:"offset"`
+	Size int64 `json:"size"`
+	Page int64 `json:"page"`
 }
