@@ -46,7 +46,7 @@ type PageUpdateInput struct {
 	CoverImage     *string       `json:"cover_image"`
 	Document       *struct {
 		JsonContent string `json:"json_content"`
-	}
+	} `json:"document"`
 }
 
 type DocumentInput struct {

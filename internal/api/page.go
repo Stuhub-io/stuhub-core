@@ -11,23 +11,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type DocumentHandler struct {
-	documentService *page.Service
-	AuthMiddleware  *middleware.AuthMiddleware
+type PageHandler struct {
+	pageService    *page.Service
+	AuthMiddleware *middleware.AuthMiddleware
 }
 
-type NewDocumentHandlerParams struct {
-	Router          *gin.RouterGroup
-	AuthMiddleware  *middleware.AuthMiddleware
-	DocumentService *page.Service
+type NewPageHandlerParams struct {
+	Router         *gin.RouterGroup
+	AuthMiddleware *middleware.AuthMiddleware
+	PageService    *page.Service
 }
 
-func UseDocumentHandle(params NewDocumentHandlerParams) {
-	handler := &DocumentHandler{
-		documentService: params.DocumentService,
-		AuthMiddleware:  params.AuthMiddleware,
+func UsePageHandle(params NewPageHandlerParams) {
+	handler := &PageHandler{
+		pageService:    params.PageService,
+		AuthMiddleware: params.AuthMiddleware,
 	}
-	router := params.Router.Group("/document-services")
+	router := params.Router.Group("/page-services")
 	authMiddleware := params.AuthMiddleware
 
 	router.Use(authMiddleware.Authenticated())
@@ -38,14 +38,14 @@ func UseDocumentHandle(params NewDocumentHandlerParams) {
 	router.DELETE("/pages/:"+docutils.PagePkIDParam, decorators.CurrentUser(handler.ArchivePage))
 }
 
-func (h *DocumentHandler) GetPage(c *gin.Context, user *domain.User) {
+func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
 	pageID, ok := docutils.GetPageIDParam(c)
 	if !ok {
 		response.BindError(c, "pageID is missing or invalid")
 		return
 	}
 
-	page, err := h.documentService.GetPageDetailByID(pageID)
+	page, err := h.pageService.GetPageDetailByID(pageID)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -54,14 +54,14 @@ func (h *DocumentHandler) GetPage(c *gin.Context, user *domain.User) {
 	response.WithData(c, 200, page)
 }
 
-func (h *DocumentHandler) GetPages(c *gin.Context, user *domain.User) {
+func (h *PageHandler) GetPages(c *gin.Context, user *domain.User) {
 	var query request.GetPagesQuery
 	if ok, verr := request.Validate(c, &query); !ok {
 		response.BindError(c, verr.Error())
 		return
 	}
 
-	pages, err := h.documentService.GetPagesByOrgPkID(domain.PageListQuery{
+	pages, err := h.pageService.GetPagesByOrgPkID(domain.PageListQuery{
 		OrgPkID:        query.OrgPkID,
 		ViewTypes:      query.ViewTypes,
 		ParentPagePkID: query.ParentPagePkID,
@@ -81,7 +81,7 @@ func (h *DocumentHandler) GetPages(c *gin.Context, user *domain.User) {
 	})
 }
 
-func (h *DocumentHandler) CreateDocument(c *gin.Context, user *domain.User) {
+func (h *PageHandler) CreateDocument(c *gin.Context, user *domain.User) {
 	var body request.CreatePageBody
 
 	if ok, verr := request.Validate(c, &body); !ok {
@@ -93,7 +93,7 @@ func (h *DocumentHandler) CreateDocument(c *gin.Context, user *domain.User) {
 		body.Document.JsonContent = "{}"
 	}
 
-	page, err := h.documentService.CreatePage(domain.PageInput{
+	page, err := h.pageService.CreatePage(domain.PageInput{
 		Name:             body.Name,
 		ParentPagePkID:   body.ParentPagePkID,
 		ViewType:         body.ViewType,
@@ -110,7 +110,7 @@ func (h *DocumentHandler) CreateDocument(c *gin.Context, user *domain.User) {
 	response.WithData(c, 200, page)
 }
 
-func (h *DocumentHandler) UpdatePage(c *gin.Context, user *domain.User) {
+func (h *PageHandler) UpdatePage(c *gin.Context, user *domain.User) {
 	pagePkID, ok := docutils.GetPagePkIDParam(c)
 	if !ok {
 		response.BindError(c, "pagePkID is missing or invalid")
@@ -127,7 +127,7 @@ func (h *DocumentHandler) UpdatePage(c *gin.Context, user *domain.User) {
 		body.Document.JsonContent = "{}"
 	}
 
-	document, err := h.documentService.UpdatePageByPkID(pagePkID, domain.PageUpdateInput{
+	document, err := h.pageService.UpdatePageByPkID(pagePkID, domain.PageUpdateInput{
 		Name:           body.Name,
 		ParentPagePkID: body.ParentPagePkID,
 		ViewType:       body.ViewType,
@@ -141,5 +141,23 @@ func (h *DocumentHandler) UpdatePage(c *gin.Context, user *domain.User) {
 	response.WithData(c, 200, document)
 }
 
-func (h *DocumentHandler) ArchivePage(c *gin.Context, user *domain.User) {
+func (h *PageHandler) ArchivePage(c *gin.Context, user *domain.User) {
+	// if pagePkID, ok := docutils.GetPagePkIDParam(c); !ok {
+	// 	response.BindError(c, "pagePkID is missing or invalid")
+	// 	return
+	// }
 }
+
+// TODO: Implement this function
+// func (h *PageHandler) UpdatePageContent(c *gin.Context, user *domain.User) {
+// 	if pagePkID, ok := docutils.GetPagePkIDParam(c); !ok {
+// 		response.BindError(c, "pagePkID is missing or invalid")
+// 		return
+// 	}
+// 	var body request.UpdatePageContent
+// 	if ok, verr := request.Validate(c, &body); !ok {
+// 		response.BindError(c, verr.Error())
+// 		return
+// 	}
+// 	document, err := h.pageService.UpdatePageByPkID()
+// }

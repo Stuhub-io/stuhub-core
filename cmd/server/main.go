@@ -130,7 +130,7 @@ func main() {
 		RemoteRoute:                  remoteRoute,
 		OrganizationInviteRepository: organizationInviteRepository,
 	})
-	documentService := page.NewService(page.NewServiceParams{
+	pageService := page.NewService(page.NewServiceParams{
 		Config:         cfg,
 		PageRepository: PageRepository,
 	})
@@ -152,10 +152,10 @@ func main() {
 			AuthMiddleware: authMiddleware,
 			OrgService:     orgService,
 		})
-		api.UseDocumentHandle((api.NewDocumentHandlerParams{
-			Router:          v1,
-			AuthMiddleware:  authMiddleware,
-			DocumentService: documentService,
+		api.UsePageHandle((api.NewPageHandlerParams{
+			Router:         v1,
+			AuthMiddleware: authMiddleware,
+			PageService:    pageService,
 		}))
 	}
 

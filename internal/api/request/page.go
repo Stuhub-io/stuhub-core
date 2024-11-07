@@ -32,3 +32,7 @@ type UpdatePageBody struct {
 		JsonContent string `json:"json_content"`
 	} `json:"document,omitempty"`
 }
+
+type UpdatePageContent struct {
+	JsonContent string `json:"json_content" binding:"required" `
+}
