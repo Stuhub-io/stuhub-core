@@ -1,4 +1,4 @@
-package document
+package page
 
 import (
 	"context"
@@ -10,18 +10,18 @@ import (
 
 type Service struct {
 	cfg           config.Config
-	docRepository ports.DocumentRepository
+	docRepository ports.PageRepository
 }
 
 type NewServiceParams struct {
 	config.Config
-	ports.DocumentRepository
+	ports.PageRepository
 }
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
 		cfg:           params.Config,
-		docRepository: params.DocumentRepository,
+		docRepository: params.PageRepository,
 	}
 }
 

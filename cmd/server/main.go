@@ -12,8 +12,8 @@ import (
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/services/auth"
-	"github.com/Stuhub-io/core/services/document"
 	"github.com/Stuhub-io/core/services/organization"
+	"github.com/Stuhub-io/core/services/page"
 	"github.com/Stuhub-io/core/services/user"
 	_ "github.com/Stuhub-io/docs"
 	"github.com/Stuhub-io/internal/api"
@@ -92,7 +92,7 @@ func main() {
 		Cfg:            cfg,
 		UserRepository: userRepository,
 	})
-	documentRepository := postgres.NewDocRepository(postgres.NewDocRepositoryParams{
+	PageRepository := postgres.NewDocRepository(postgres.NewDocRepositoryParams{
 		Cfg:   cfg,
 		Store: dbStore,
 	})
@@ -130,9 +130,9 @@ func main() {
 		RemoteRoute:                  remoteRoute,
 		OrganizationInviteRepository: organizationInviteRepository,
 	})
-	documentService := document.NewService(document.NewServiceParams{
-		Config:             cfg,
-		DocumentRepository: documentRepository,
+	documentService := page.NewService(page.NewServiceParams{
+		Config:         cfg,
+		PageRepository: PageRepository,
 	})
 
 	// handlers

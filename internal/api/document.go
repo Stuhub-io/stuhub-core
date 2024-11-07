@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/Stuhub-io/core/domain"
-	"github.com/Stuhub-io/core/services/document"
+	"github.com/Stuhub-io/core/services/page"
 	"github.com/Stuhub-io/internal/api/decorators"
 	"github.com/Stuhub-io/internal/api/middleware"
 	"github.com/Stuhub-io/internal/api/request"
@@ -12,14 +12,14 @@ import (
 )
 
 type DocumentHandler struct {
-	documentService *document.Service
+	documentService *page.Service
 	AuthMiddleware  *middleware.AuthMiddleware
 }
 
 type NewDocumentHandlerParams struct {
 	Router          *gin.RouterGroup
 	AuthMiddleware  *middleware.AuthMiddleware
-	DocumentService *document.Service
+	DocumentService *page.Service
 }
 
 func UseDocumentHandle(params NewDocumentHandlerParams) {

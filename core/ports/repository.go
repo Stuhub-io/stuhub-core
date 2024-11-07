@@ -33,7 +33,7 @@ type OrganizationRepository interface {
 	SetOrgMemberActivatedAt(ctx context.Context, pkID int64, activatedAt time.Time) (*domain.OrganizationMember, *domain.Error)
 }
 
-type DocumentRepository interface {
+type PageRepository interface {
 	List(ctx context.Context, query domain.PageListQuery) ([]domain.Page, *domain.Error)
 	Update(ctx context.Context, pagePkID int64, page domain.PageUpdateInput) (*domain.Page, *domain.Error)
 	CreatePage(ctx context.Context, page domain.PageInput) (*domain.Page, *domain.Error)
