@@ -31,14 +31,14 @@ func UseDocumentHandle(params NewDocumentHandlerParams) {
 	authMiddleware := params.AuthMiddleware
 
 	router.Use(authMiddleware.Authenticated())
-	router.GET("/documents", decorators.CurrentUser(handler.GetDocuments))
-	router.POST("/documents", decorators.CurrentUser(handler.CreateDocument))
-	router.GET("/documents/id/:"+docutils.PageIDParam, decorators.CurrentUser(handler.GetDocument))
-	router.PUT(("/documents/:" + docutils.PagePkIDParam), decorators.CurrentUser(handler.UpdateDocument))
-	router.DELETE("/documents"+docutils.PagePkIDParam, decorators.CurrentUser(handler.ArchiveDocument))
+	router.GET("/pages", decorators.CurrentUser(handler.GetPages))
+	router.POST("/pages", decorators.CurrentUser(handler.CreateDocument))
+	router.GET("/pages/id/:"+docutils.PageIDParam, decorators.CurrentUser(handler.GetPage))
+	router.PUT(("/pages/:" + docutils.PagePkIDParam), decorators.CurrentUser(handler.UpdatePage))
+	router.DELETE("/pages/:"+docutils.PagePkIDParam, decorators.CurrentUser(handler.ArchivePage))
 }
 
-func (h *DocumentHandler) GetDocument(c *gin.Context, user *domain.User) {
+func (h *DocumentHandler) GetPage(c *gin.Context, user *domain.User) {
 	pageID, ok := docutils.GetPageIDParam(c)
 	if !ok {
 		response.BindError(c, "pageID is missing or invalid")
@@ -54,7 +54,7 @@ func (h *DocumentHandler) GetDocument(c *gin.Context, user *domain.User) {
 	response.WithData(c, 200, page)
 }
 
-func (h *DocumentHandler) GetDocuments(c *gin.Context, user *domain.User) {
+func (h *DocumentHandler) GetPages(c *gin.Context, user *domain.User) {
 	var query request.GetPagesQuery
 	if ok, verr := request.Validate(c, &query); !ok {
 		response.BindError(c, verr.Error())
@@ -110,7 +110,7 @@ func (h *DocumentHandler) CreateDocument(c *gin.Context, user *domain.User) {
 	response.WithData(c, 200, page)
 }
 
-func (h *DocumentHandler) UpdateDocument(c *gin.Context, user *domain.User) {
+func (h *DocumentHandler) UpdatePage(c *gin.Context, user *domain.User) {
 	pagePkID, ok := docutils.GetPagePkIDParam(c)
 	if !ok {
 		response.BindError(c, "pagePkID is missing or invalid")
@@ -141,5 +141,5 @@ func (h *DocumentHandler) UpdateDocument(c *gin.Context, user *domain.User) {
 	response.WithData(c, 200, document)
 }
 
-func (h *DocumentHandler) ArchiveDocument(c *gin.Context, user *domain.User) {
+func (h *DocumentHandler) ArchivePage(c *gin.Context, user *domain.User) {
 }
