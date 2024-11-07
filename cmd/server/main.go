@@ -12,10 +12,8 @@ import (
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/services/auth"
-	"github.com/Stuhub-io/core/services/document"
 	"github.com/Stuhub-io/core/services/organization"
 	"github.com/Stuhub-io/core/services/page"
-	"github.com/Stuhub-io/core/services/space"
 	"github.com/Stuhub-io/core/services/user"
 	_ "github.com/Stuhub-io/docs"
 	"github.com/Stuhub-io/internal/api"
@@ -94,15 +92,7 @@ func main() {
 		Cfg:            cfg,
 		UserRepository: userRepository,
 	})
-	spaceRepository := postgres.NewSpaceRepository(postgres.NewSpaceRepositoryParams{
-		Cfg:   cfg,
-		Store: dbStore,
-	})
-	pageRepository := postgres.NewPageRepository(postgres.NewPageRepositoryParams{
-		Cfg:   cfg,
-		Store: dbStore,
-	})
-	documentRepository := postgres.NewDocRepository(postgres.NewDocRepositoryParams{
+	PageRepository := postgres.NewDocRepository(postgres.NewDocRepositoryParams{
 		Cfg:   cfg,
 		Store: dbStore,
 	})
@@ -138,22 +128,11 @@ func main() {
 		Hasher:                       hasher,
 		Mailer:                       mailer,
 		RemoteRoute:                  remoteRoute,
-		SpaceRepository:              spaceRepository,
 		OrganizationInviteRepository: organizationInviteRepository,
-	})
-	spaceService := space.NewService(space.NewServiceParams{
-		Config:          cfg,
-		SpaceRepository: spaceRepository,
 	})
 	pageService := page.NewService(page.NewServiceParams{
 		Config:         cfg,
-		PageRepository: pageRepository,
-		Logger:         logger,
-	})
-	documentService := document.NewService(document.NewServiceParams{
-		Config:             cfg,
-		PageRepository:     pageRepository,
-		DocumentRepository: documentRepository,
+		PageRepository: PageRepository,
 	})
 
 	// handlers
@@ -173,21 +152,10 @@ func main() {
 			AuthMiddleware: authMiddleware,
 			OrgService:     orgService,
 		})
-		api.UseSpaceHandler(api.NewSpaceHandlerParams{
-			Router:         v1,
-			AuthMiddleware: authMiddleware,
-			SpaceService:   spaceService,
-		})
-		api.UsePageHanlder(api.NewPageHandlerParams{
+		api.UsePageHandle((api.NewPageHandlerParams{
 			Router:         v1,
 			AuthMiddleware: authMiddleware,
 			PageService:    pageService,
-		})
-		api.UseDocumentHandle((api.NewDocumentHandlerParams{
-			Router:          v1,
-			AuthMiddleware:  authMiddleware,
-			DocumentService: documentService,
-			PageService:     pageService,
 		}))
 	}
 

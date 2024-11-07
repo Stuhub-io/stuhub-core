@@ -1,14 +1,12 @@
 version: "0.1"
 database:
-  dsn: postgresql://postgres.pffgcpdbpguxxjcryaku:stuhubadmin3@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=disable
+  dsn: "postgresql://maroon14stuhub:ZFn2XRrRWGBsQ3MTFriekf5gSgsiodQQ@dpg-csjmqcu8ii6s73d5ttl0-a.singapore-postgres.render.com:5432/stuhub"
   db: "postgres"
   tables:
     [
       "users",
       "organizations",
       "organization_member",
-      "spaces",
-      "space_member",
       "pages",
       "documents",
       "organization_invites",

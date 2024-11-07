@@ -14,7 +14,7 @@ const TableNameUser = "users"
 type User struct {
 	Pkid        int64      `gorm:"column:pkid;type:bigint;primaryKey;autoIncrement:true" json:"pkid"`
 	ID          string     `gorm:"column:id;type:uuid;not null;default:uuid_generate_v4()" json:"id"`
-	Email       string     `gorm:"column:email;type:character varying(255);not null;uniqueIndex:users_email_partial_key,priority:1" json:"email"`
+	Email       string     `gorm:"column:email;type:character varying(255);not null" json:"email"`
 	Password    *string    `gorm:"column:password;type:character varying(128)" json:"password"`
 	FirstName   string     `gorm:"column:first_name;type:character varying(255);not null" json:"first_name"`
 	LastName    string     `gorm:"column:last_name;type:character varying(255);not null" json:"last_name"`

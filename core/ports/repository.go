@@ -33,28 +33,13 @@ type OrganizationRepository interface {
 	SetOrgMemberActivatedAt(ctx context.Context, pkID int64, activatedAt time.Time) (*domain.OrganizationMember, *domain.Error)
 }
 
-type SpaceRepository interface {
-	CreateSpace(ctx context.Context, orgPkID int64, ownerPkID int64, isPrivate bool, name, description string) (*domain.Space, *domain.Error)
-	GetSpacesByOrgPkID(ctx context.Context, orgPkID int64) ([]domain.Space, *domain.Error)
-}
-
 type PageRepository interface {
-	CreatePage(ctx context.Context, spacePkID int64, name string, viewType string, ParentPagePkID *int64, nodeID string) (*domain.Page, *domain.Error)
-	GetPagesBySpacePkID(ctx context.Context, spacePkID int64, excludeArchived bool) ([]domain.Page, *domain.Error)
-	DeletePageByPkID(ctx context.Context, pagePkID int64, userPkID int64) (*domain.Page, *domain.Error)
-	GetPageByID(ctx context.Context, pageID string) (*domain.Page, *domain.Error)
-	UpdatePageByID(ctx context.Context, pageID string, page domain.PageInput) (*domain.Page, *domain.Error)
-	ArchivedPageByID(ctx context.Context, pageID string) (*domain.Page, *domain.Error)
-	GetPagesByNodeID(ctx context.Context, nodeID []string) ([]domain.Page, *domain.Error)
-	BulkCreatePages(ctx context.Context, pages []domain.PageInput) ([]domain.Page, *domain.Error)
-	BulkArchivePages(ctx context.Context, pagePkIDs []int64) *domain.Error
-}
-
-type DocumentRepository interface {
-	CreateDocument(ctx context.Context, pagePkID int64, JsonContent string) (*domain.Document, *domain.Error)
-	GetOrCreateDocumentByPagePkID(ctx context.Context, pagePkID int64) (*domain.Document, *domain.Error)
-	GetDocumentByPkID(ctx context.Context, pkID int64) (*domain.Document, *domain.Error)
-	UpdateDocument(ctx context.Context, pagePkID int64, content string) (*domain.Document, *domain.Error)
+	List(ctx context.Context, query domain.PageListQuery) ([]domain.Page, *domain.Error)
+	Update(ctx context.Context, pagePkID int64, page domain.PageUpdateInput) (*domain.Page, *domain.Error)
+	CreatePage(ctx context.Context, page domain.PageInput) (*domain.Page, *domain.Error)
+	GetByID(ctx context.Context, pageID string) (*domain.Page, *domain.Error)
+	UpdateContent(ctx context.Context, pagePkID int64, content string) (*domain.Page, *domain.Error)
+	Archive(ctx context.Context, pagePkID int64) (*domain.Page, *domain.Error)
 }
 
 type OrganizationInviteRepository interface {

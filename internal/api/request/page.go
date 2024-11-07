@@ -1,30 +1,38 @@
 package request
 
+import "github.com/Stuhub-io/core/domain"
+
+// page
 type CreatePageBody struct {
-	SpacePkID      int64  `json:"space_pkid" binding:"required"`
-	ViewType       string `json:"view_type" binding:"required"`
-	Name           string `json:"name,omitempty"`
-	ParentPagePkID *int64 `json:"parent_page_pkid,omitempty"`
-	NodeID         string `json:"node_id,omitempty"`
-	CoverImage     string `json:"cover_image,omitempty"`
+	OrgPkID        int64               `json:"org_pkid" binding:"required"`
+	ViewType       domain.PageViewType `json:"view_type" binding:"required"`
+	Name           string              `json:"name,omitempty"`
+	ParentPagePkID *int64              `json:"parent_page_pkid,omitempty"`
+	CoverImage     string              `json:"cover_image,omitempty"`
+	Document       struct {
+		JsonContent string `json:"json_content,omitempty"`
+	} `json:"document,omitempty"`
 }
 
-type GetPagesBySpacePkIDParams struct {
-	SpacePkID int64 `form:"space_pkid" binding:"required"`
+type GetPagesQuery struct {
+	OrgPkID        int64                 `json:"org_pkid" form:"org_pkid" binding:"required" `
+	ViewTypes      []domain.PageViewType `json:"view_types,omitempty" form:"view_types,omitempty"`
+	ParentPagePkID *int64                `json:"parent_page_pkid,omitempty" form:"parent_page_pkid,omitempty"`
+	IsArchived     *bool                 `json:"is_archived,omitempty" form:"is_archived,omitempty"`
+	PaginationRequest
 }
 
 type UpdatePageBody struct {
-	Name           string `json:"name"`
-	ViewType       string `json:"view_type" binding:"required"`
-	ParentPagePkID *int64 `json:"parent_page_pkid,omitempty"`
-	CoverImage     string `json:"cover_image,omitempty"`
-	NodeID         string `json:"node_id,omitempty"`
+	OrgPkID        *int64               `json:"org_pkid,omitempty"`
+	ViewType       *domain.PageViewType `json:"view_type,omitempty"`
+	Name           *string              `json:"name,omitempty"`
+	ParentPagePkID *int64               `json:"parent_page_pkid,omitempty"`
+	CoverImage     *string              `json:"cover_image,omitempty"`
+	Document       *struct {
+		JsonContent string `json:"json_content"`
+	} `json:"document,omitempty"`
 }
 
-type BulkGetOrCreateByNodeIDBody struct {
-	PageInputs []CreatePageBody `json:"page_inputs" binding:"required"`
-}
-
-type BulkArchivePagesBody struct {
-	PagePkIDs []int64 `json:"page_pkids" binding:"required"`
+type UpdatePageContent struct {
+	JsonContent string `json:"json_content" binding:"required" `
 }

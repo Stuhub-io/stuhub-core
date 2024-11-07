@@ -55,7 +55,7 @@ hosted-pg-up:
 	@ docker compose -f local-hosted-pg.yml up --build -d --remove-orphans
 
 # ~~~ Database ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-POSTGRESQL_DSN = postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable
+POSTGRESQL_DSN = postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)
 
 # NOTE: run command with ENV = production for production database
 migrate-up:
@@ -68,17 +68,20 @@ migrate-create:
 	@ read -p "Please provide name for the migration: " Name; \
     migrate create -ext sql -dir misc/migrations $${Name}
 
+migrate-force:
+	@ migrate -database $(POSTGRESQL_DSN) -path=misc/migrations --verbose force $(VERSION)
+
 migrate-drop:
 	@ migrate  -database $(POSTGRESQL_DSN) -path=misc/migrations drop
 
 gen-struct:
 	@ gentool -c ./gen.yaml
 
-gen-struct-hosted:
+gen-struct-staging:
 	@ gentool -c ./gen-hosted-pg.yaml
 
 open-db: # CLI for open db using tablePlus only
-	@ open $(POSTGRESQL_DSN)
+	open $(POSTGRESQL_DSN)
 
 # ~~~ Modules support ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 tidy:
@@ -113,7 +116,7 @@ swagger:
 swag-format:
 	swag fmt
 
-.PHONY: migrate-up migrate-down migrate-create migrate-drop
+.PHONY: migrate-up migrate-down migrate-create migrate-drop migrate-force gen-struct gen-struct-hosted open-db
 
 RELEASE_BRANCH ?= main
 BETA_BRANCH ?= develop
