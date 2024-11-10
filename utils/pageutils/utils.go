@@ -1,4 +1,4 @@
-package docutils
+package pageutils
 
 import (
 	"strconv"
@@ -54,6 +54,7 @@ func TransformPageModelToDomain(model model.Page, ChildPages []domain.Page, Docu
 	if model.NodeID != nil {
 		nodeID = *model.NodeID
 	}
+
 	return &domain.Page{
 		PkID:             model.Pkid,
 		ID:               model.ID,
@@ -68,5 +69,6 @@ func TransformPageModelToDomain(model model.Page, ChildPages []domain.Page, Docu
 		NodeID:           nodeID,
 		ChildPages:       ChildPages,
 		Document:         Document,
+		Path:             model.Path,
 	}
 }
