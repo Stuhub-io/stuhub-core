@@ -19,6 +19,7 @@ type Page struct {
 	NodeID           string       `json:"node_id"`
 	ChildPages       []Page       `json:"child_pages"`
 	Document         *Document    `json:"document"`
+	Path             string       `json:"path"`
 }
 
 type Document struct {
@@ -40,13 +41,16 @@ type PageInput struct {
 }
 
 type PageUpdateInput struct {
-	Name           *string       `json:"name"`
-	ParentPagePkID *int64        `json:"parent_page_pkid"`
-	ViewType       *PageViewType `json:"view_type"`
-	CoverImage     *string       `json:"cover_image"`
-	Document       *struct {
+	Name       *string       `json:"name"`
+	ViewType   *PageViewType `json:"view_type"`
+	CoverImage *string       `json:"cover_image"`
+	Document   *struct {
 		JsonContent string `json:"json_content"`
 	} `json:"document"`
+}
+
+type PageMoveInput struct {
+	ParentPagePkID *int64 `json:"parent_page_pkid"`
 }
 
 type DocumentInput struct {

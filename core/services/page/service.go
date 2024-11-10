@@ -49,6 +49,17 @@ func (s *Service) GetPageDetailByID(pageID string) (d *domain.Page, e *domain.Er
 }
 
 func (s *Service) ArchivedPageByPkID(pagePkID int64) (d *domain.Page, e *domain.Error) {
+	// Recursive archive all children
 	d, e = s.docRepository.Archive(context.Background(), pagePkID)
+	return d, e
+}
+
+func (s *Service) UpdatePageContentByPkID(pagePkID int64, content domain.DocumentInput) (d *domain.Page, e *domain.Error) {
+	d, e = s.docRepository.UpdateContent(context.Background(), pagePkID, content)
+	return d, e
+}
+
+func (s *Service) MovePageByPkID(pagePkID int64, moveInput domain.PageMoveInput) (d *domain.Page, e *domain.Error) {
+	d, e = s.docRepository.Move(context.Background(), pagePkID, moveInput.ParentPagePkID)
 	return d, e
 }

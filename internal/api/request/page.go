@@ -23,14 +23,17 @@ type GetPagesQuery struct {
 }
 
 type UpdatePageBody struct {
-	OrgPkID        *int64               `json:"org_pkid,omitempty"`
-	ViewType       *domain.PageViewType `json:"view_type,omitempty"`
-	Name           *string              `json:"name,omitempty"`
-	ParentPagePkID *int64               `json:"parent_page_pkid,omitempty"`
-	CoverImage     *string              `json:"cover_image,omitempty"`
-	Document       *struct {
+	OrgPkID    *int64               `json:"org_pkid,omitempty"`
+	ViewType   *domain.PageViewType `json:"view_type,omitempty"`
+	Name       *string              `json:"name,omitempty"`
+	CoverImage *string              `json:"cover_image,omitempty"`
+	Document   *struct {
 		JsonContent string `json:"json_content"`
 	} `json:"document,omitempty"`
+}
+
+type MovePageBody struct {
+	ParentPagePkID *int64 `json:"parent_page_pkid,omitempty"`
 }
 
 type UpdatePageContent struct {
