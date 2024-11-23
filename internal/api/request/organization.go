@@ -3,20 +3,20 @@ package request
 import "github.com/Stuhub-io/core/services/organization"
 
 type CreateOrgBody struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description" binding:"required"`
-	Avatar      string `json:"avatar" binding:"required"`
+	Name        string `binding:"required" json:"name"`
+	Description string `binding:"required" json:"description"`
+	Avatar      string `binding:"required" json:"avatar"`
 }
 
 type GetOrgBySlugParams struct {
-	Slug string `form:"slug" binding:"required"`
+	Slug string `binding:"required" form:"slug"`
 }
 
 type InviteMembersByEmailParams struct {
-	OrgInfo organization.OrgInviteInfo     `json:"org_info" binding:"required"`
-	Infos   []organization.EmailInviteInfo `json:"infos" binding:"required"`
+	OrgInfo organization.OrgInviteInfo     `binding:"required" json:"org_info"`
+	Infos   []organization.EmailInviteInfo `binding:"required" json:"infos"`
 }
 
 type ValidateOrgInvitationParams struct {
-	Token string `json:"token" binding:"required"`
+	Token string `binding:"required" json:"token"`
 }

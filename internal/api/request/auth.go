@@ -1,28 +1,28 @@
 package request
 
 type RegisterByEmailBody struct {
-	Email string `json:"email" binding:"required,email"`
+	Email string `binding:"required,email" json:"email"`
 }
 
 type ValidateEmailTokenBody struct {
-	Token string `json:"token" binding:"required"`
+	Token string `binding:"required" json:"token"`
 }
 
 type SetUserPasswordBody struct {
-	Email       string `json:"email" binding:"required,email"`
-	Password    string `json:"password" binding:"required"`
-	ActionToken string `json:"action_token" binding:"required"`
+	Email       string `binding:"required,email" json:"email"`
+	Password    string `binding:"required"       json:"password"`
+	ActionToken string `binding:"required"       json:"action_token"`
 }
 
 type AuthenUserByEmailPasswordBody struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+	Email    string `binding:"required,email" json:"email"`
+	Password string `binding:"required"       json:"password"`
 }
 
 type AuthenUserByGoogleBody struct {
-	Token string `json:"token" binding:"required"`
+	Token string `binding:"required" json:"token"`
 }
 
 type GetUserByTokenQuery struct {
-	AccessToken string `json:"access_token" binding:"required"`
+	AccessToken string `binding:"required" json:"access_token"`
 }

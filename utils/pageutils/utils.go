@@ -72,3 +72,10 @@ func TransformPageModelToDomain(model model.Page, ChildPages []domain.Page, Docu
 		Path:             model.Path,
 	}
 }
+
+func AppendPath(path string, id string) string {
+	if path == "" {
+		return id
+	}
+	return path + "/" + id
+}

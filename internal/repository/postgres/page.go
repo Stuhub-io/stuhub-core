@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
@@ -54,7 +55,7 @@ func (r *DocRepository) List(ctx context.Context, q domain.PageListQuery) ([]dom
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	var domainPages []domain.Page = make([]domain.Page, 0, len(pages))
+	domainPages := make([]domain.Page, 0, len(pages))
 	for _, page := range pages {
 		domainPages = append(domainPages, *pageutils.TransformPageModelToDomain(page, nil, nil))
 	}
@@ -99,7 +100,7 @@ func (r *DocRepository) CreatePage(ctx context.Context, pageInput domain.PageInp
 		if err := r.store.DB().Where("pkid = ?", pageInput.ParentPagePkID).First(&parentPage).Error; err != nil {
 			return nil, domain.NewErr("Parent Page not found", domain.BadRequestCode)
 		}
-		path = parentPage.Path + "/" + parentPage.ID
+		path = pageutils.AppendPath(parentPage.Path, parentPage.ID)
 	}
 
 	newPage := model.Page{
@@ -195,7 +196,41 @@ func (r *DocRepository) UpdateContent(ctx context.Context, pagePkID int64, conte
 }
 
 func (r *DocRepository) Archive(ctx context.Context, pagePkID int64) (*domain.Page, *domain.Error) {
-	return nil, nil
+	var page = model.Page{}
+	if dbErr := r.store.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
+		return nil, domain.NewErr(dbErr.Error(), domain.BadRequestCode)
+	}
+
+	now := time.Now()
+	page.ArchivedAt = &now
+
+	tx, done := r.store.NewTransaction()
+
+	descendantPath := pageutils.AppendPath(page.Path, page.ID)
+
+	// Archive current page
+	if dbErr := tx.DB().Clauses(clause.Locking{
+		Strength: clause.LockingStrengthShare,
+	}, clause.Returning{}).Select("ArchivedAt").Save(&page).Error; dbErr != nil {
+		return nil, done(dbErr)
+	}
+
+	// Archive childrens
+	if dbErr := tx.DB().Clauses(clause.Locking{
+		Strength: clause.LockingStrengthShare,
+	}, clause.Returning{}).
+		Model(&model.Page{}).
+		Where("path LIKE ?", descendantPath+"%").
+		Select("ArchivedAt").
+		Updates(model.Page{
+			ArchivedAt: &now,
+		}).Error; dbErr != nil {
+		return nil, done(dbErr)
+	}
+
+	done(nil)
+
+	return pageutils.TransformPageModelToDomain(page, nil, nil), nil
 }
 
 func (r *DocRepository) Move(ctx context.Context, pagePkID int64, parentPagePkID *int64) (*domain.Page, *domain.Error) {
@@ -213,15 +248,13 @@ func (r *DocRepository) Move(ctx context.Context, pagePkID int64, parentPagePkID
 
 	// get new path
 	newPath := ""
-	parentPagePath := ""
 
 	if parentPagePkID != nil {
 		var parentPage model.Page
-		if dbErr := tx.DB().Where("pkid = ?", pagePkID).First(&parentPage).Error; dbErr != nil {
+		if dbErr := tx.DB().Where("pkid = ?", parentPagePkID).First(&parentPage).Error; dbErr != nil {
 			return nil, doneTx(dbErr)
 		}
-		parentPagePath = parentPage.Path
-		newPath = parentPagePath + "/" + parentPage.ID
+		newPath = pageutils.AppendPath(parentPage.Path, parentPage.ID)
 	}
 
 	// update page path
@@ -234,8 +267,11 @@ func (r *DocRepository) Move(ctx context.Context, pagePkID int64, parentPagePkID
 		return nil, doneTx(dbErr)
 	}
 
+	descendantPath := pageutils.AppendPath(page.Path, page.ID)
+	descendantOldPath := pageutils.AppendPath(oldPath, page.ID)
+
 	// batch update descendants
-	bErr := tx.DB().Model(&model.Page{}).Where("path LIKE ?", page.Path+"%").Update("path", gorm.Expr("replace(path, ?, ?)", oldPath, newPath)).Error
+	bErr := tx.DB().Model(&model.Page{}).Where("path LIKE ?", descendantOldPath+"%").Update("path", gorm.Expr("replace(path, ?, ?)", descendantOldPath, descendantPath)).Error
 	if bErr != nil {
 		return nil, doneTx(bErr)
 	}

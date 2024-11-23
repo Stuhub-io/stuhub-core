@@ -1,11 +1,11 @@
 package request
 
 type GetUserByEmail struct {
-	Email string `json:"email" binding:"required,email"`
+	Email string `binding:"required,email" json:"email"`
 }
 
 type UpdateUserInfoBody struct {
-	LastName  string `json:"last_name" binding:"required"`
-	FirstName string `json:"first_name" binding:"required"`
+	LastName  string `binding:"required" json:"last_name"`
+	FirstName string `binding:"required" json:"first_name"`
 	Avatar    string `json:"avatar"`
 }
