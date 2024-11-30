@@ -1,36 +1,14 @@
 package pageutils
 
 import (
-	"strconv"
-
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/internal/repository/model"
-	"github.com/gin-gonic/gin"
 )
 
-const (
-	PagePkIDParam = "pagePkID"
-	PageIDParam   = "pageID"
-)
-
-func GetPageIDParam(c *gin.Context) (string, bool) {
-	pageID := c.Params.ByName(PageIDParam)
-	if pageID == "" {
-		return "", false
+func TransformDocModelToDomain(doc *model.Document) *domain.Document {
+	if doc == nil {
+		return nil
 	}
-	return pageID, true
-}
-
-func GetPagePkIDParam(c *gin.Context) (int64, bool) {
-	pagePkID := c.Params.ByName(PagePkIDParam)
-	if pagePkID == "" {
-		return int64(-1), false
-	}
-	docPkID, _ := strconv.Atoi(pagePkID)
-	return int64(docPkID), true
-}
-
-func TransformDocModalToDomain(doc model.Document) *domain.Document {
 	jsonContent := ""
 	if doc.JSONContent != nil {
 		jsonContent = *doc.JSONContent
@@ -45,7 +23,12 @@ func TransformDocModalToDomain(doc model.Document) *domain.Document {
 	}
 }
 
-func TransformPageModelToDomain(model model.Page, ChildPages []domain.Page, Document *domain.Document) *domain.Page {
+type PageBodyParams struct {
+	Document *domain.Document
+	Asset    *domain.Asset
+}
+
+func TransformPageModelToDomain(model model.Page, ChildPages []domain.Page, pageBody PageBodyParams) *domain.Page {
 	archivedAt := ""
 	if model.ArchivedAt != nil {
 		archivedAt = model.ArchivedAt.String()
@@ -68,14 +51,34 @@ func TransformPageModelToDomain(model model.Page, ChildPages []domain.Page, Docu
 		ArchivedAt:       archivedAt,
 		NodeID:           nodeID,
 		ChildPages:       ChildPages,
-		Document:         Document,
+		Document:         pageBody.Document,
+		Asset:            pageBody.Asset,
 		Path:             model.Path,
 	}
 }
 
-func AppendPath(path string, id string) string {
-	if path == "" {
-		return id
+func TransformAssetModalToDomain(asset *model.Asset) *domain.Asset {
+	if asset == nil {
+		return nil
 	}
-	return path + "/" + id
+	extension := ""
+	if asset.Extension != nil {
+		extension = *asset.Extension
+	}
+
+	size := int64(0)
+	if asset.Size != nil {
+		size = *asset.Size
+	}
+
+	return &domain.Asset{
+		PkID:       asset.Pkid,
+		PagePkID:   asset.PagePkid,
+		URL:        asset.URL,
+		CreatedAt:  asset.CreatedAt.String(),
+		UpdatedAt:  asset.UpdatedAt.String(),
+		Thumbnails: domain.AssetThumbnailFromString(asset.Thumbnails),
+		Extension:  extension,
+		Size:       size,
+	}
 }

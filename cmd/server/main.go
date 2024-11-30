@@ -92,7 +92,7 @@ func main() {
 		Cfg:            cfg,
 		UserRepository: userRepository,
 	})
-	PageRepository := postgres.NewDocRepository(postgres.NewDocRepositoryParams{
+	PageRepository := postgres.NewPageRepository(postgres.NewPageRepositoryParams{
 		Cfg:   cfg,
 		Store: dbStore,
 	})

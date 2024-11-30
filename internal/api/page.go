@@ -38,6 +38,9 @@ func UsePageHandle(params NewPageHandlerParams) {
 	router.PUT("/pages/:"+pageutils.PagePkIDParam+"/content", decorators.CurrentUser(handler.UpdatePageContent))
 	router.PUT("/pages/:"+pageutils.PagePkIDParam+"/move", decorators.CurrentUser(handler.MovePage))
 	router.DELETE("/pages/:"+pageutils.PagePkIDParam, decorators.CurrentUser(handler.ArchivePage))
+
+	// asssets
+	router.POST("pages/assets", decorators.CurrentUser(handler.CreateAsset))
 }
 
 func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
@@ -84,7 +87,7 @@ func (h *PageHandler) GetPages(c *gin.Context, user *domain.User) {
 }
 
 func (h *PageHandler) CreateDocument(c *gin.Context, user *domain.User) {
-	var body request.CreatePageBody
+	var body request.CreateDocumentBody
 
 	if ok, verr := request.Validate(c, &body); !ok {
 		response.BindError(c, verr.Error())
@@ -95,13 +98,15 @@ func (h *PageHandler) CreateDocument(c *gin.Context, user *domain.User) {
 		body.Document.JsonContent = "{}"
 	}
 
-	page, err := h.pageService.CreatePage(domain.PageInput{
-		Name:             body.Name,
-		ParentPagePkID:   body.ParentPagePkID,
-		ViewType:         body.ViewType,
-		CoverImage:       body.CoverImage,
-		OrganizationPkID: body.OrgPkID,
-		Document:         domain.DocumentInput(body.Document),
+	page, err := h.pageService.CreateDocumentPage(domain.DocumentPageInput{
+		PageInput: domain.PageInput{
+			Name:             body.Name,
+			ParentPagePkID:   body.ParentPagePkID,
+			ViewType:         body.ViewType,
+			CoverImage:       body.CoverImage,
+			OrganizationPkID: body.OrgPkID,
+		},
+		Document: domain.DocumentInput(body.Document),
 	})
 
 	if err != nil {
@@ -154,7 +159,7 @@ func (h *PageHandler) UpdatePageContent(c *gin.Context, user *domain.User) {
 		return
 	}
 
-	document, err := h.pageService.UpdatePageContentByPkID(pagePkID, domain.DocumentInput{
+	document, err := h.pageService.UpdateDocumentContentByPkID(pagePkID, domain.DocumentInput{
 		JsonContent: body.JsonContent,
 	})
 	if err != nil {
@@ -196,5 +201,39 @@ func (h *PageHandler) MovePage(c *gin.Context, user *domain.User) {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
 	}
+	response.WithData(c, 200, page)
+}
+
+// Assets
+
+func (h *PageHandler) CreateAsset(c *gin.Context, user *domain.User) {
+	var body request.CreateAssetBody
+
+	if ok, verr := request.Validate(c, &body); !ok {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	page, err := h.pageService.CreateAssetPage(domain.AssetPageInput{
+		PageInput: domain.PageInput{
+			Name:             body.Name,
+			ParentPagePkID:   body.ParentPagePkID,
+			ViewType:         body.ViewType,
+			CoverImage:       body.CoverImage,
+			OrganizationPkID: body.OrgPkID,
+		},
+		Asset: domain.AssetInput{
+			URL:        body.Asset.Url,
+			Size:       body.Asset.Size,
+			Extension:  body.Asset.Extension,
+			Thumbnails: body.Asset.Thumbnails,
+		},
+	})
+
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
 	response.WithData(c, 200, page)
 }

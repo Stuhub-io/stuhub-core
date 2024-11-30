@@ -37,10 +37,15 @@ type PageRepository interface {
 	List(ctx context.Context, query domain.PageListQuery) ([]domain.Page, *domain.Error)
 	Update(ctx context.Context, pagePkID int64, page domain.PageUpdateInput) (*domain.Page, *domain.Error)
 	Move(ctx context.Context, pagePkID int64, parentPagePkID *int64) (*domain.Page, *domain.Error)
-	CreatePage(ctx context.Context, page domain.PageInput) (*domain.Page, *domain.Error)
 	GetByID(ctx context.Context, pageID string) (*domain.Page, *domain.Error)
-	UpdateContent(ctx context.Context, pagePkID int64, content domain.DocumentInput) (*domain.Page, *domain.Error)
 	Archive(ctx context.Context, pagePkID int64) (*domain.Page, *domain.Error)
+
+	// Document Page
+	CreateDocumentPage(ctx context.Context, page domain.DocumentPageInput) (*domain.Page, *domain.Error)
+	UpdateContent(ctx context.Context, pagePkID int64, content domain.DocumentInput) (*domain.Page, *domain.Error)
+
+	// Asset Page
+	CreateAsset(ctx context.Context, asset domain.AssetPageInput) (*domain.Page, *domain.Error)
 }
 
 type OrganizationInviteRepository interface {

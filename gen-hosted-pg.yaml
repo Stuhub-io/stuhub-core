@@ -10,6 +10,7 @@ database:
       "pages",
       "documents",
       "organization_invites",
+      "assets",
     ]
   outPath: "./internal/repository/model"
   withUnitTest: false
