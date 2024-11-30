@@ -62,7 +62,7 @@ migrate-up:
 	@ migrate -database $(POSTGRESQL_DSN) -path=misc/migrations --verbose up
 
 migrate-down:
-	@ migrate -database $(POSTGRESQL_DSN) -path=misc/migrations --verbose down
+	@ migrate -database $(POSTGRESQL_DSN) -path=misc/migrations --verbose down $(VERSION)
 
 migrate-create:
 	@ read -p "Please provide name for the migration: " Name; \
@@ -79,6 +79,9 @@ gen-struct:
 
 gen-struct-staging:
 	@ gentool -c ./gen-hosted-pg.yaml
+
+dump-schema:
+	@pg_dump -h $(POSTGRES_HOST) -p $(POSTGRES_PORT) -d $(POSTGRES_DB) -U $(POSTGRES_USER) -s -F p -E UTF-8 -f misc/dump/$(POSTGRES_DB).sql
 
 open-db: # CLI for open db using tablePlus only
 	open $(POSTGRESQL_DSN)
