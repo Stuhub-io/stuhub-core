@@ -12,12 +12,13 @@ type Error struct {
 }
 
 const (
-	InternalServerErrCode = http.StatusInternalServerError
-	NotFoundCode          = http.StatusNotFound
-	BadRequestCode        = http.StatusBadRequest
-	UnauthorizedCode      = http.StatusUnauthorized
-	ConflictCode          = http.StatusConflict
-	ForbiddenCode         = http.StatusForbidden
+	InternalServerErrCode        = http.StatusInternalServerError
+	NotFoundCode                 = http.StatusNotFound
+	BadRequestCode               = http.StatusBadRequest
+	UnauthorizedCode             = http.StatusUnauthorized
+	ConflictCode                 = http.StatusConflict
+	ForbiddenCode                = http.StatusForbidden
+	ResourceInvalidOrExpiredCode = http.StatusGone
 )
 
 const (
@@ -186,8 +187,8 @@ var (
 
 var (
 	ErrSpaceMemberOrPageNotFound = &Error{
-		Code: NotFoundCode,
-		Error: NotFoundErr,
+		Code:    NotFoundCode,
+		Error:   NotFoundErr,
 		Message: "The member or page does not exist",
 	}
 )

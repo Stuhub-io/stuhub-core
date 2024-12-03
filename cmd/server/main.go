@@ -58,7 +58,7 @@ func main() {
 
 	logger := logger.NewLogrusLogger()
 
-	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug)
+	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug, logger)
 
 	redisCache := redis.Must(cfg.RedisUrl)
 

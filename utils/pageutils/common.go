@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	PagePkIDParam = "pagePkID"
-	PageIDParam   = "pageID"
+	PagePkIDParam      = "pagePkID"
+	PageIDParam        = "pageID"
+	PublicTokenIDParam = "publicTokenID"
 )
 
 func GetPageIDParam(c *gin.Context) (string, bool) {
@@ -26,6 +27,14 @@ func GetPagePkIDParam(c *gin.Context) (int64, bool) {
 	}
 	docPkID, _ := strconv.Atoi(pagePkID)
 	return int64(docPkID), true
+}
+
+func GetPublicTokenIDParam(c *gin.Context) (string, bool) {
+	publicTokenID := c.Params.ByName(PublicTokenIDParam)
+	if publicTokenID == "" {
+		return "", false
+	}
+	return publicTokenID, true
 }
 
 func AppendPath(path string, id string) string {

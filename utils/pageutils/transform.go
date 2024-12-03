@@ -82,3 +82,17 @@ func TransformAssetModalToDomain(asset *model.Asset) *domain.Asset {
 		Size:       size,
 	}
 }
+
+func TransformPagePublicTokenModelToDomain(model model.PublicToken) *domain.PagePublicToken {
+	archivedAt := ""
+	if model.ArchivedAt != nil {
+		archivedAt = model.ArchivedAt.String()
+	}
+	return &domain.PagePublicToken{
+		PkID:       model.Pkid,
+		ArchivedAt: archivedAt,
+		PagePkID:   model.PagePkid,
+		ID:         model.ID,
+		CreatedAt:  model.CreatedAt.String(),
+	}
+}

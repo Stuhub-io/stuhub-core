@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// default path to env for runing without DOCKER
+// default path to env for runing without DOCKER.
 const DEFAULT_ENV_PATH = "build/staging/api"
 const DEFAULT_ENV_FILENAME = ".env"
 

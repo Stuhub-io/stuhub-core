@@ -79,7 +79,7 @@ func (r *PageRepository) Update(ctx context.Context, pagePkID int64, updateInput
 		page.CoverImage = *updateInput.CoverImage
 	}
 
-	dbErr := r.store.DB().Clauses(clause.Returning{}).Select("Name", "ViewType", "CorverImage").Save(&page).Error
+	dbErr := r.store.DB().Clauses(clause.Returning{}).Select("Name", "ViewType", "CoverImage").Save(&page).Error
 	if dbErr != nil {
 		return nil, domain.ErrDatabaseMutation
 	}
@@ -91,9 +91,18 @@ func (r *PageRepository) Update(ctx context.Context, pagePkID int64, updateInput
 	), nil
 }
 
-func (r *PageRepository) GetByID(ctx context.Context, pageID string) (*domain.Page, *domain.Error) {
+func (r *PageRepository) GetByID(ctx context.Context, pageID string, pagePkID *int64) (*domain.Page, *domain.Error) {
 	var page model.Page
-	if dbErr := r.store.DB().Where("id = ?", pageID).First(&page).Error; dbErr != nil {
+
+	query := r.store.DB().Model(&page)
+
+	if pageID != "" {
+		query = query.Where("id = ?", pageID)
+	} else {
+		query = query.Where("pkid = ?", *pagePkID)
+	}
+
+	if dbErr := query.First(&page).Error; dbErr != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
 

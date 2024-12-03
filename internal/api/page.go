@@ -39,6 +39,11 @@ func UsePageHandle(params NewPageHandlerParams) {
 	router.PUT("/pages/:"+pageutils.PagePkIDParam+"/move", decorators.CurrentUser(handler.MovePage))
 	router.DELETE("/pages/:"+pageutils.PagePkIDParam, decorators.CurrentUser(handler.ArchivePage))
 
+	// public page
+	router.POST("pages/id/:"+pageutils.PageIDParam+"/public-token", decorators.CurrentUser(handler.CreatePagePublicToken))
+	router.DELETE("pages/id/:"+pageutils.PageIDParam+"/public-token", decorators.CurrentUser(handler.ArchiveAllPagePublicToken))
+	router.GET("pages/public-token/:"+pageutils.PublicTokenIDParam, handler.GetPageByToken)
+
 	// asssets
 	router.POST("pages/assets", decorators.CurrentUser(handler.CreateAsset))
 }
@@ -50,7 +55,7 @@ func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
 		return
 	}
 
-	page, err := h.pageService.GetPageDetailByID(pageID)
+	page, err := h.pageService.GetPageDetailByID(pageID, "")
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -230,6 +235,55 @@ func (h *PageHandler) CreateAsset(c *gin.Context, user *domain.User) {
 		},
 	})
 
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 200, page)
+}
+
+// public Page.
+func (h *PageHandler) CreatePagePublicToken(c *gin.Context, user *domain.User) {
+	pageID, ok := pageutils.GetPageIDParam(c)
+	if !ok {
+		response.BindError(c, "pageID is missing or invalid")
+		return
+	}
+
+	token, err := h.pageService.CreatePublicPageToken(pageID)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 200, token)
+}
+
+func (h *PageHandler) ArchiveAllPagePublicToken(c *gin.Context, user *domain.User) {
+	pageID, ok := pageutils.GetPageIDParam(c)
+	if !ok {
+		response.BindError(c, "pageID is missing or invalid")
+		return
+	}
+
+	err := h.pageService.ArchiveAllPublicPageToken(pageID)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 200, nil)
+}
+
+func (h *PageHandler) GetPageByToken(c *gin.Context) {
+	tokenID, ok := pageutils.GetPublicTokenIDParam(c)
+	if !ok {
+		response.BindError(c, "token is missing or invalid")
+		return
+	}
+
+	page, err := h.pageService.GetPageDetailByID("", tokenID)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
