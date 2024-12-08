@@ -37,10 +37,10 @@ func (s *Service) UpdatePageByPkID(pagePkID int64, updateInput domain.PageUpdate
 	return d, e
 }
 
-func (s *Service) GetPageDetailByID(pageID string, tokenID string) (d *domain.Page, e *domain.Error) {
+func (s *Service) GetPageDetailByID(pageID string, publicTokenID string) (d *domain.Page, e *domain.Error) {
 	var PagePkID *int64
 	if pageID == "" {
-		token, err := s.pageRepository.GetPublicTokenByID(context.Background(), tokenID)
+		token, err := s.pageRepository.GetPublicTokenByID(context.Background(), publicTokenID)
 		if token.ArchivedAt != "" {
 			return nil, domain.NewErr("Public page is expired", domain.ResourceInvalidOrExpiredCode)
 		}

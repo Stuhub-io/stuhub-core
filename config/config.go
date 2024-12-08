@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// default path to env for runing without DOCKER.
+// default path to env for running without DOCKER.
 const DEFAULT_ENV_PATH = "build/staging/api"
 const DEFAULT_ENV_FILENAME = ".env"
 
@@ -44,6 +44,10 @@ type Config struct {
 	HashPwSecretKey string
 
 	// Kafka KafkaConfig
+	// Cloudinary
+	CloudinarySecretKey string
+	CloudinaryApiKey    string
+	CloudinaryBaseURL   string
 }
 
 type KafkaConfig struct {
@@ -104,6 +108,10 @@ func generateConfigFromViper(v *viper.Viper) Config {
 		SendgridEmailFrom:               v.GetString("SENDGRID_EMAIL_FROM"),
 
 		HashPwSecretKey: v.GetString("HASH_PW_SECRET_KEY"),
+
+		CloudinarySecretKey: v.GetString("CLOUDINARY_SECRET_KEY"),
+		CloudinaryApiKey:    v.GetString("CLOUDINARY_API_KEY"),
+		CloudinaryBaseURL:   v.GetString("CLOUDINARY_BASE_URL"),
 	}
 }
 

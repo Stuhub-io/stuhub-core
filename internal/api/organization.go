@@ -44,7 +44,7 @@ func UseOrganizationHandler(params NewOrganizationHandlerParams) {
 
 func (h *OrganizationHandler) CreateOrganization(c *gin.Context, user *domain.User) {
 	var body request.CreateOrgBody
-	if ok, vr := request.Validate(c, &body); !ok {
+	if vr := request.Validate(c, &body); vr != nil {
 		response.BindError(c, vr.Error())
 		return
 	}
@@ -76,7 +76,7 @@ func (h *OrganizationHandler) GetJoinedOrgs(c *gin.Context, user *domain.User) {
 
 func (h *OrganizationHandler) GetOrgBySlug(c *gin.Context, user *domain.User) {
 	var params request.GetOrgBySlugParams
-	if ok, vr := request.Validate(c, &params); !ok {
+	if vr := request.Validate(c, &params); vr != nil {
 		response.BindError(c, vr.Error())
 		return
 	}
@@ -108,7 +108,7 @@ func (h *OrganizationHandler) GetInviteDetails(c *gin.Context) {
 
 func (h *OrganizationHandler) InviteMembersByEmail(c *gin.Context, user *domain.User) {
 	var params request.InviteMembersByEmailParams
-	if ok, vr := request.Validate(c, &params); !ok {
+	if vr := request.Validate(c, &params); vr != nil {
 		response.BindError(c, vr.Error())
 		return
 	}
@@ -128,7 +128,7 @@ func (h *OrganizationHandler) InviteMembersByEmail(c *gin.Context, user *domain.
 
 func (h *OrganizationHandler) ValidateOrgInvitation(c *gin.Context, user *domain.User) {
 	var params request.ValidateOrgInvitationParams
-	if ok, vr := request.Validate(c, &params); !ok {
+	if vr := request.Validate(c, &params); vr != nil {
 		response.BindError(c, vr.Error())
 		return
 	}

@@ -66,7 +66,7 @@ func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
 
 func (h *PageHandler) GetPages(c *gin.Context, user *domain.User) {
 	var query request.GetPagesQuery
-	if ok, verr := request.Validate(c, &query); !ok {
+	if verr := request.Validate(c, &query); verr != nil {
 		response.BindError(c, verr.Error())
 		return
 	}
@@ -76,6 +76,7 @@ func (h *PageHandler) GetPages(c *gin.Context, user *domain.User) {
 		ViewTypes:      query.ViewTypes,
 		ParentPagePkID: query.ParentPagePkID,
 		Offset:         int(query.PaginationRequest.Page * query.PaginationRequest.Size),
+		IsAll:          query.All,
 		Limit:          int(query.PaginationRequest.Size),
 		IsArchived:     query.IsArchived,
 	})
@@ -94,7 +95,7 @@ func (h *PageHandler) GetPages(c *gin.Context, user *domain.User) {
 func (h *PageHandler) CreateDocument(c *gin.Context, user *domain.User) {
 	var body request.CreateDocumentBody
 
-	if ok, verr := request.Validate(c, &body); !ok {
+	if verr := request.Validate(c, &body); verr != nil {
 		response.BindError(c, verr.Error())
 		return
 	}
@@ -130,7 +131,7 @@ func (h *PageHandler) UpdatePage(c *gin.Context, user *domain.User) {
 	}
 
 	var body request.UpdatePageBody
-	if ok, verr := request.Validate(c, &body); !ok {
+	if verr := request.Validate(c, &body); verr != nil {
 		response.BindError(c, verr.Error())
 		return
 	}
@@ -159,7 +160,7 @@ func (h *PageHandler) UpdatePageContent(c *gin.Context, user *domain.User) {
 		response.BindError(c, "pagePkID is missing or invalid")
 	}
 	var body request.UpdatePageContent
-	if ok, verr := request.Validate(c, &body); !ok {
+	if verr := request.Validate(c, &body); verr != nil {
 		response.BindError(c, verr.Error())
 		return
 	}
@@ -194,7 +195,7 @@ func (h *PageHandler) MovePage(c *gin.Context, user *domain.User) {
 	}
 
 	var body request.MovePageBody
-	if ok, verr := request.Validate(c, &body); !ok {
+	if verr := request.Validate(c, &body); verr != nil {
 		response.BindError(c, verr.Error())
 		return
 	}
@@ -214,7 +215,7 @@ func (h *PageHandler) MovePage(c *gin.Context, user *domain.User) {
 func (h *PageHandler) CreateAsset(c *gin.Context, user *domain.User) {
 	var body request.CreateAssetBody
 
-	if ok, verr := request.Validate(c, &body); !ok {
+	if verr := request.Validate(c, &body); verr != nil {
 		response.BindError(c, verr.Error())
 		return
 	}

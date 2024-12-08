@@ -25,7 +25,7 @@ func main() {
 
 	dbStore := store.NewDBStore(postgresDB, cacheStore)
 
-	result := dbStore.DB().Exec("ALTER TABLE \"public_token\" DROP CONSTRAINT IF EXISTS public_token_page_pkid_key;")
+	result := dbStore.DB().Exec("ALTER TABLE \"assets\" ALTER COLUMN \"extension\" TYPE VARCHAR(100)")
 	if result.Error != nil {
 		panic(result.Error)
 	}

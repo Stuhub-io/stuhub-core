@@ -23,6 +23,7 @@ type GetPagesQuery struct {
 	ViewTypes      []domain.PageViewType `form:"view_types,omitempty"       json:"view_types,omitempty"`
 	ParentPagePkID *int64                `form:"parent_page_pkid,omitempty" json:"parent_page_pkid,omitempty"`
 	IsArchived     *bool                 `form:"is_archived,omitempty"      json:"is_archived,omitempty"`
+	All            bool                  `form:"all,omitempty"              json:"all,omitempty"`
 	PaginationRequest
 }
 
@@ -51,5 +52,5 @@ type CreateAssetBody struct {
 		Size       int64                 `json:"size"`
 		Extension  string                `json:"extension"`
 		Thumbnails domain.AssetThumbnail `json:"thumbnails"`
-	} `json:"asset"`
+	} `binding:"required" json:"asset"`
 }

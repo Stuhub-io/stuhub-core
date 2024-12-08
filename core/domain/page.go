@@ -50,6 +50,7 @@ type PageListQuery struct {
 	IsArchived     *bool          `json:"is_archived"`
 	Offset         int            `json:"offset"`
 	Limit          int            `json:"limit"`
+	IsAll          bool           `json:"all"`
 }
 
 type PageViewType int
@@ -85,6 +86,8 @@ func PageViewFromString(val string) PageViewType {
 		return PageViewTypeDoc
 	case "folder":
 		return PageViewTypeFolder
+	case "asset":
+		return PageViewTypeAsset
 	default:
 		return PageViewTypeDoc
 	}

@@ -55,7 +55,7 @@ func (h *UserHandler) GetUserById(c *gin.Context, user *domain.User) {
 
 func (h *UserHandler) GetUserByEmail(c *gin.Context) {
 	var body request.GetUserByEmail
-	if ok, vr := request.Validate(c, &body); !ok {
+	if vr := request.Validate(c, &body); vr != nil {
 		response.BindError(c, vr.Error())
 		return
 	}
@@ -71,7 +71,7 @@ func (h *UserHandler) GetUserByEmail(c *gin.Context) {
 
 func (h UserHandler) UpdateUserInfo(c *gin.Context, user *domain.User) {
 	var body request.UpdateUserInfoBody
-	if ok, vr := request.Validate(c, &body); !ok {
+	if vr := request.Validate(c, &body); vr != nil {
 		response.BindError(c, vr.Error())
 		return
 	}

@@ -6,7 +6,14 @@ import (
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/pageutils"
+	"gorm.io/gorm"
 )
+
+type PageResult struct {
+	model.Page
+	Asset *model.Asset    `gorm:"foreignKey:page_pkid"`
+	Doc   *model.Document `gorm:"foreignKey:page_pkid"`
+}
 
 func (r *PageRepository) initPageModel(ctx context.Context, pageInput domain.PageInput) (*model.Page, *domain.Error) {
 	path := ""
@@ -28,4 +35,9 @@ func (r *PageRepository) initPageModel(ctx context.Context, pageInput domain.Pag
 		Path:           path,
 	}
 	return &newPage, nil
+}
+
+func (*PageRepository) preloadPageResult(q *gorm.DB) *gorm.DB {
+	// Preload Asset and Doc
+	return q.Preload("Asset").Preload("Doc")
 }

@@ -31,34 +31,42 @@ func NewPageRepository(params NewPageRepositoryParams) *PageRepository {
 }
 
 func (r *PageRepository) List(ctx context.Context, q domain.PageListQuery) ([]domain.Page, *domain.Error) {
-	var pages []model.Page
-	query := r.store.DB().Where("org_pkid = ?", q.OrgPkID)
+	var results []PageResult
+	query := r.preloadPageResult(r.store.DB()).
+		Where("org_pkid = ?", q.OrgPkID)
 
-	// Filter by Archived
 	if q.IsArchived != nil {
-		query = query.Where("archived_at IS NULL = ?", !*q.IsArchived)
+		if *q.IsArchived {
+			query = query.Where("pages.archived_at IS NOT NULL")
+		} else {
+			query = query.Where("pages.archived_at IS NULL")
+		}
+	}
+	if !q.IsAll {
+		if q.ParentPagePkID != nil {
+			query = query.Where("pages.parent_page_pkid = ?", *q.ParentPagePkID)
+		} else {
+			query = query.Where("pages.parent_page_pkid IS NULL")
+		}
+	}
+	if (len(q.ViewTypes)) > 0 {
+		query = query.Where("pages.view_type IN ?", q.ViewTypes)
 	}
 
-	// Filter By Parent Page
-	if q.ParentPagePkID != nil {
-		query = query.Where("parent_page_pkid = ?", *q.ParentPagePkID)
-	}
+	query = query.Order("pages.updated_at desc").Offset(q.Offset).Limit(q.Limit)
 
-	if len(q.ViewTypes) > 0 {
-		query = query.Where("view_type IN ?", q.ViewTypes)
-	}
-
-	query = query.Order("created_at desc").Offset(q.Offset).Limit(q.Limit)
-
-	err := query.Find(&pages).Error
-	if err != nil {
+	if err := query.Find(&results).Error; err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	domainPages := make([]domain.Page, 0, len(pages))
-	for _, page := range pages {
-		domainPages = append(domainPages, *pageutils.TransformPageModelToDomain(page, nil, pageutils.PageBodyParams{}))
+	domainPages := make([]domain.Page, 0, len(results))
+	for _, result := range results {
+		domainPages = append(domainPages, *pageutils.TransformPageModelToDomain(result.Page, nil, pageutils.PageBodyParams{
+			Document: pageutils.TransformDocModelToDomain(result.Doc),
+			Asset:    pageutils.TransformAssetModalToDomain(result.Asset),
+		}))
 	}
+
 	return domainPages, nil
 }
 
@@ -92,9 +100,9 @@ func (r *PageRepository) Update(ctx context.Context, pagePkID int64, updateInput
 }
 
 func (r *PageRepository) GetByID(ctx context.Context, pageID string, pagePkID *int64) (*domain.Page, *domain.Error) {
-	var page model.Page
+	var page PageResult
 
-	query := r.store.DB().Model(&page)
+	query := r.preloadPageResult(r.store.DB().Model(&page))
 
 	if pageID != "" {
 		query = query.Where("id = ?", pageID)
@@ -106,43 +114,25 @@ func (r *PageRepository) GetByID(ctx context.Context, pageID string, pagePkID *i
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	var childPages []model.Page
-	if dbErr := r.store.DB().Where("parent_page_pkid = ?", page.Pkid).Find(&childPages).Error; dbErr != nil {
+	var childPages []PageResult
+	if dbErr := r.preloadPageResult(r.store.DB()).Where("parent_page_pkid = ?", page.Pkid).Order("pages.updated_at desc").Find(&childPages).Error; dbErr != nil {
 		return nil, domain.ErrDatabaseQuery
-	}
-
-	var pageInstance struct {
-		Doc   *model.Document
-		Asset *model.Asset
-	}
-	switch domain.PageViewFromString(page.ViewType) {
-	case domain.PageViewTypeDoc:
-		var doc model.Document
-		if dbErr := r.store.DB().Where("page_pkid = ?", page.Pkid).First(&doc).Error; dbErr != nil {
-			return nil, domain.ErrDatabaseQuery
-		}
-		pageInstance.Doc = &doc
-	case domain.PageViewTypeAsset:
-		var asset model.Asset
-		if dbErr := r.store.DB().Where("page_pkid = ?", page.Pkid).First(&asset).Error; dbErr != nil {
-			return nil, domain.ErrDatabaseQuery
-		}
-		pageInstance.Asset = &asset
-	case domain.PageViewTypeFolder:
-		// Do nothing
 	}
 
 	childPagesDomain := make([]domain.Page, len((childPages)))
 	for i := 0; i < len(childPages); i++ {
-		childPagesDomain[i] = *pageutils.TransformPageModelToDomain(childPages[i], nil, pageutils.PageBodyParams{})
+		childPagesDomain[i] = *pageutils.TransformPageModelToDomain(childPages[i].Page, nil, pageutils.PageBodyParams{
+			Document: pageutils.TransformDocModelToDomain(childPages[i].Doc),
+			Asset:    pageutils.TransformAssetModalToDomain(childPages[i].Asset),
+		})
 	}
 
 	return pageutils.TransformPageModelToDomain(
-		page,
+		page.Page,
 		childPagesDomain,
 		pageutils.PageBodyParams{
-			Document: pageutils.TransformDocModelToDomain(pageInstance.Doc),
-			Asset:    pageutils.TransformAssetModalToDomain(pageInstance.Asset),
+			Document: pageutils.TransformDocModelToDomain(page.Doc),
+			Asset:    pageutils.TransformAssetModalToDomain(page.Asset),
 		},
 	), nil
 }
