@@ -1,25 +1,29 @@
 package postgres
 
 import (
+	"fmt"
+
 	"github.com/Stuhub-io/logger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 )
 
-func open(dsn string, isDebug bool) (*gorm.DB, error) {
+func open(dsn string, isDebug bool, logger logger.Logger) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  dsn,
 		PreferSimpleProtocol: true,
 	}), &gorm.Config{})
 
+	fmt.Println(dsn)
+
 	if err != nil {
-		logger.L.Fatalf(err, "failed to open database connection")
+		logger.Fatalf(err, "failed to open database connection")
 
 		return nil, err
 	}
 
-	logger.L.Info("database connected")
+	logger.Info("database connected")
 
 	if isDebug {
 		db.Logger = gormlogger.Default.LogMode(gormlogger.Info)
@@ -28,8 +32,8 @@ func open(dsn string, isDebug bool) (*gorm.DB, error) {
 	return db, nil
 }
 
-func Must(dsn string, isDebug bool) *gorm.DB {
-	db, err := open(dsn, isDebug)
+func Must(dsn string, isDebug bool, l logger.Logger) *gorm.DB {
+	db, err := open(dsn, isDebug, l)
 	if err != nil {
 		panic(err)
 	}

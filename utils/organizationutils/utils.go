@@ -13,7 +13,7 @@ type MemberWithUser struct {
 
 type OrganizationWithMembers struct {
 	model.Organization
-	Owner   model.User       `gorm:"foreignKey:owner_id" json:"owner"`
+	Owner   model.User       `gorm:"foreignKey:owner_id"          json:"owner"`
 	Members []MemberWithUser `gorm:"foreignKey:organization_pkid" json:"members"` // Consider JSON tag for future use
 }
 

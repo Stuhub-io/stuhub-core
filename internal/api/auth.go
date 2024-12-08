@@ -37,7 +37,7 @@ func UseAuthHandler(params NewAuthHandlerParams) {
 func (h *AuthHandler) AuthenByEmailStepOne(c *gin.Context) {
 	var body request.RegisterByEmailBody
 
-	if ok, vr := request.Validate(c, &body); !ok {
+	if vr := request.Validate(c, &body); vr != nil {
 		response.BindError(c, vr.Error())
 		return
 	}
@@ -55,7 +55,7 @@ func (h *AuthHandler) AuthenByEmailStepOne(c *gin.Context) {
 
 func (h *AuthHandler) ValidateEmailToken(c *gin.Context) {
 	var body request.ValidateEmailTokenBody
-	if ok, vr := request.Validate(c, &body); !ok {
+	if vr := request.Validate(c, &body); vr != nil {
 		response.BindError(c, vr.Error())
 		return
 	}
@@ -71,7 +71,7 @@ func (h *AuthHandler) ValidateEmailToken(c *gin.Context) {
 
 func (h *AuthHandler) SetPassword(c *gin.Context) {
 	var body request.SetUserPasswordBody
-	if ok, vr := request.Validate(c, &body); !ok {
+	if vr := request.Validate(c, &body); vr != nil {
 		response.BindError(c, vr.Error())
 		return
 	}
@@ -91,7 +91,7 @@ func (h *AuthHandler) SetPassword(c *gin.Context) {
 
 func (h *AuthHandler) AuthenUserByEmailPassword(c *gin.Context) {
 	var body request.AuthenUserByEmailPasswordBody
-	if ok, vr := request.Validate(c, &body); !ok {
+	if vr := request.Validate(c, &body); vr != nil {
 		response.BindError(c, vr.Error())
 		return
 	}
@@ -117,7 +117,7 @@ func (h *AuthHandler) AuthenUserByEmailPassword(c *gin.Context) {
 
 func (h *AuthHandler) AuthenUserByGoogle(c *gin.Context) {
 	var body request.AuthenUserByGoogleBody
-	if ok, vr := request.Validate(c, &body); !ok {
+	if vr := request.Validate(c, &body); vr != nil {
 		response.BindError(c, vr.Error())
 		return
 	}
@@ -135,7 +135,7 @@ func (h *AuthHandler) AuthenUserByGoogle(c *gin.Context) {
 
 func (h *AuthHandler) GetUserByAccessToken(c *gin.Context) {
 	var query request.GetUserByTokenQuery
-	if ok, vr := request.Validate(c, &query); !ok {
+	if vr := request.Validate(c, &query); vr != nil {
 		response.BindError(c, vr.Error())
 		return
 	}

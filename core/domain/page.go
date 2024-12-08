@@ -19,25 +19,16 @@ type Page struct {
 	NodeID           string       `json:"node_id"`
 	ChildPages       []Page       `json:"child_pages"`
 	Document         *Document    `json:"document"`
+	Asset            *Asset       `json:"asset"`
 	Path             string       `json:"path"`
 }
 
-type Document struct {
-	PkID        int64  `json:"pkid"`
-	Content     string `json:"content"`
-	JsonContent string `json:"json_content"`
-	UpdatedAt   string `json:"updated_at"`
-	CreatedAt   string `json:"created_at"`
-	PagePkID    int64  `json:"page_pkid"`
-}
-
 type PageInput struct {
-	Name             string        `json:"name"`
-	ParentPagePkID   *int64        `json:"parent_page_pkid"`
-	ViewType         PageViewType  `json:"view_type"`
-	CoverImage       string        `json:"cover_image"`
-	OrganizationPkID int64         `json:"organization_pkid"`
-	Document         DocumentInput `json:"document"`
+	Name             string       `json:"name"`
+	ParentPagePkID   *int64       `json:"parent_page_pkid"`
+	ViewType         PageViewType `json:"view_type"`
+	CoverImage       string       `json:"cover_image"`
+	OrganizationPkID int64        `json:"organization_pkid"`
 }
 
 type PageUpdateInput struct {
@@ -52,11 +43,6 @@ type PageUpdateInput struct {
 type PageMoveInput struct {
 	ParentPagePkID *int64 `json:"parent_page_pkid"`
 }
-
-type DocumentInput struct {
-	JsonContent string `json:"json_content"`
-}
-
 type PageListQuery struct {
 	OrgPkID        int64          `json:"org_pkid"`
 	ViewTypes      []PageViewType `json:"view_type"`
@@ -64,6 +50,7 @@ type PageListQuery struct {
 	IsArchived     *bool          `json:"is_archived"`
 	Offset         int            `json:"offset"`
 	Limit          int            `json:"limit"`
+	IsAll          bool           `json:"all"`
 }
 
 type PageViewType int
@@ -71,10 +58,11 @@ type PageViewType int
 const (
 	PageViewTypeDoc PageViewType = iota + 1
 	PageViewTypeFolder
+	PageViewTypeAsset
 )
 
 func (r PageViewType) String() string {
-	return [...]string{"document", "folder"}[r-1]
+	return [...]string{"document", "folder", "asset"}[r-1]
 }
 
 func (r *PageViewType) UnmarshalJSON(data []byte) error {
@@ -84,12 +72,11 @@ func (r *PageViewType) UnmarshalJSON(data []byte) error {
 	}
 
 	switch PageViewType(value) {
-	case PageViewTypeDoc, PageViewTypeFolder:
+	case PageViewTypeDoc, PageViewTypeFolder, PageViewTypeAsset:
 		*r = PageViewType(value)
 		return nil
-
 	default:
-		return errors.New("invalid view_type, must be 1(document) or 2(folder)")
+		return errors.New("invalid view_type, must be 1(document) | 2(folder) | 3(asset)")
 	}
 }
 
@@ -99,6 +86,8 @@ func PageViewFromString(val string) PageViewType {
 		return PageViewTypeDoc
 	case "folder":
 		return PageViewTypeFolder
+	case "asset":
+		return PageViewTypeAsset
 	default:
 		return PageViewTypeDoc
 	}

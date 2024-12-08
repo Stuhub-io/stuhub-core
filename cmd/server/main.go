@@ -14,6 +14,7 @@ import (
 	"github.com/Stuhub-io/core/services/auth"
 	"github.com/Stuhub-io/core/services/organization"
 	"github.com/Stuhub-io/core/services/page"
+	"github.com/Stuhub-io/core/services/upload"
 	"github.com/Stuhub-io/core/services/user"
 	_ "github.com/Stuhub-io/docs"
 	"github.com/Stuhub-io/internal/api"
@@ -27,6 +28,7 @@ import (
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/postgres"
 	"github.com/Stuhub-io/internal/token"
+	"github.com/Stuhub-io/internal/uploader"
 	"github.com/Stuhub-io/logger"
 	"github.com/gin-gonic/gin"
 
@@ -54,11 +56,12 @@ import (
 // @externalDocs.description	OpenAPI
 // @externalDocs.url			https://swagger.io/resources/open-api/
 func main() {
+
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
 
 	logger := logger.NewLogrusLogger()
 
-	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug)
+	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug, logger)
 
 	redisCache := redis.Must(cfg.RedisUrl)
 
@@ -92,7 +95,7 @@ func main() {
 		Cfg:            cfg,
 		UserRepository: userRepository,
 	})
-	PageRepository := postgres.NewDocRepository(postgres.NewDocRepositoryParams{
+	PageRepository := postgres.NewPageRepository(postgres.NewPageRepositoryParams{
 		Cfg:   cfg,
 		Store: dbStore,
 	})
@@ -100,6 +103,8 @@ func main() {
 		Cfg:   cfg,
 		Store: dbStore,
 	})
+
+	cloudinaryUploader := uploader.NewCloudinaryUploader(cfg)
 
 	// services
 	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{
@@ -135,6 +140,11 @@ func main() {
 		PageRepository: PageRepository,
 	})
 
+	uploadService := upload.NewUploadService(upload.NewUploadServiceParams{
+		Config:   cfg,
+		Uploader: cloudinaryUploader,
+	})
+
 	// handlers
 	v1 := r.Group("/v1")
 	{
@@ -157,6 +167,11 @@ func main() {
 			AuthMiddleware: authMiddleware,
 			PageService:    pageService,
 		}))
+		api.UseUploadHandler(api.NewUploadHandlerParams{
+			Router:         v1,
+			AuthMiddleware: authMiddleware,
+			UploadService:  uploadService,
+		})
 	}
 
 	r.GET("/", func(c *gin.Context) {

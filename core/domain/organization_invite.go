@@ -13,4 +13,4 @@ type OrganizationInvite struct {
 	ExpiredAt        time.Time     `json:"expired_at"`
 }
 
-const OrgInvitationExpiredTime time.Duration = time.Minute * 15 //15m
+const OrgInvitationExpiredTime time.Duration = time.Minute * 15 // 15m

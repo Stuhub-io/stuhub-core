@@ -9,7 +9,11 @@ type CreatePageBody struct {
 	Name           string              `json:"name,omitempty"`
 	ParentPagePkID *int64              `json:"parent_page_pkid,omitempty"`
 	CoverImage     string              `json:"cover_image,omitempty"`
-	Document       struct {
+}
+
+type CreateDocumentBody struct {
+	CreatePageBody
+	Document struct {
 		JsonContent string `json:"json_content,omitempty"`
 	} `json:"document,omitempty"`
 }
@@ -19,6 +23,7 @@ type GetPagesQuery struct {
 	ViewTypes      []domain.PageViewType `form:"view_types,omitempty"       json:"view_types,omitempty"`
 	ParentPagePkID *int64                `form:"parent_page_pkid,omitempty" json:"parent_page_pkid,omitempty"`
 	IsArchived     *bool                 `form:"is_archived,omitempty"      json:"is_archived,omitempty"`
+	All            bool                  `form:"all,omitempty"              json:"all,omitempty"`
 	PaginationRequest
 }
 
@@ -38,4 +43,14 @@ type MovePageBody struct {
 
 type UpdatePageContent struct {
 	JsonContent string `binding:"required" json:"json_content"`
+}
+
+type CreateAssetBody struct {
+	CreatePageBody
+	Asset struct {
+		Url        string                `json:"url"`
+		Size       int64                 `json:"size"`
+		Extension  string                `json:"extension"`
+		Thumbnails domain.AssetThumbnail `json:"thumbnails"`
+	} `binding:"required" json:"asset"`
 }

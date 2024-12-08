@@ -10,6 +10,8 @@ database:
       "pages",
       "documents",
       "organization_invites",
+      "assets",
+      "public_token"
     ]
   outPath: "./internal/repository/model"
   withUnitTest: false

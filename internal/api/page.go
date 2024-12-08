@@ -38,6 +38,14 @@ func UsePageHandle(params NewPageHandlerParams) {
 	router.PUT("/pages/:"+pageutils.PagePkIDParam+"/content", decorators.CurrentUser(handler.UpdatePageContent))
 	router.PUT("/pages/:"+pageutils.PagePkIDParam+"/move", decorators.CurrentUser(handler.MovePage))
 	router.DELETE("/pages/:"+pageutils.PagePkIDParam, decorators.CurrentUser(handler.ArchivePage))
+
+	// public page
+	router.POST("pages/id/:"+pageutils.PageIDParam+"/public-token", decorators.CurrentUser(handler.CreatePagePublicToken))
+	router.DELETE("pages/id/:"+pageutils.PageIDParam+"/public-token", decorators.CurrentUser(handler.ArchiveAllPagePublicToken))
+	router.GET("pages/public-token/:"+pageutils.PublicTokenIDParam, handler.GetPageByToken)
+
+	// asssets
+	router.POST("pages/assets", decorators.CurrentUser(handler.CreateAsset))
 }
 
 func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
@@ -47,7 +55,7 @@ func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
 		return
 	}
 
-	page, err := h.pageService.GetPageDetailByID(pageID)
+	page, err := h.pageService.GetPageDetailByID(pageID, "")
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -58,7 +66,7 @@ func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
 
 func (h *PageHandler) GetPages(c *gin.Context, user *domain.User) {
 	var query request.GetPagesQuery
-	if ok, verr := request.Validate(c, &query); !ok {
+	if verr := request.Validate(c, &query); verr != nil {
 		response.BindError(c, verr.Error())
 		return
 	}
@@ -68,6 +76,7 @@ func (h *PageHandler) GetPages(c *gin.Context, user *domain.User) {
 		ViewTypes:      query.ViewTypes,
 		ParentPagePkID: query.ParentPagePkID,
 		Offset:         int(query.PaginationRequest.Page * query.PaginationRequest.Size),
+		IsAll:          query.All,
 		Limit:          int(query.PaginationRequest.Size),
 		IsArchived:     query.IsArchived,
 	})
@@ -84,9 +93,9 @@ func (h *PageHandler) GetPages(c *gin.Context, user *domain.User) {
 }
 
 func (h *PageHandler) CreateDocument(c *gin.Context, user *domain.User) {
-	var body request.CreatePageBody
+	var body request.CreateDocumentBody
 
-	if ok, verr := request.Validate(c, &body); !ok {
+	if verr := request.Validate(c, &body); verr != nil {
 		response.BindError(c, verr.Error())
 		return
 	}
@@ -95,13 +104,15 @@ func (h *PageHandler) CreateDocument(c *gin.Context, user *domain.User) {
 		body.Document.JsonContent = "{}"
 	}
 
-	page, err := h.pageService.CreatePage(domain.PageInput{
-		Name:             body.Name,
-		ParentPagePkID:   body.ParentPagePkID,
-		ViewType:         body.ViewType,
-		CoverImage:       body.CoverImage,
-		OrganizationPkID: body.OrgPkID,
-		Document:         domain.DocumentInput(body.Document),
+	page, err := h.pageService.CreateDocumentPage(domain.DocumentPageInput{
+		PageInput: domain.PageInput{
+			Name:             body.Name,
+			ParentPagePkID:   body.ParentPagePkID,
+			ViewType:         body.ViewType,
+			CoverImage:       body.CoverImage,
+			OrganizationPkID: body.OrgPkID,
+		},
+		Document: domain.DocumentInput(body.Document),
 	})
 
 	if err != nil {
@@ -120,7 +131,7 @@ func (h *PageHandler) UpdatePage(c *gin.Context, user *domain.User) {
 	}
 
 	var body request.UpdatePageBody
-	if ok, verr := request.Validate(c, &body); !ok {
+	if verr := request.Validate(c, &body); verr != nil {
 		response.BindError(c, verr.Error())
 		return
 	}
@@ -149,12 +160,12 @@ func (h *PageHandler) UpdatePageContent(c *gin.Context, user *domain.User) {
 		response.BindError(c, "pagePkID is missing or invalid")
 	}
 	var body request.UpdatePageContent
-	if ok, verr := request.Validate(c, &body); !ok {
+	if verr := request.Validate(c, &body); verr != nil {
 		response.BindError(c, verr.Error())
 		return
 	}
 
-	document, err := h.pageService.UpdatePageContentByPkID(pagePkID, domain.DocumentInput{
+	document, err := h.pageService.UpdateDocumentContentByPkID(pagePkID, domain.DocumentInput{
 		JsonContent: body.JsonContent,
 	})
 	if err != nil {
@@ -184,7 +195,7 @@ func (h *PageHandler) MovePage(c *gin.Context, user *domain.User) {
 	}
 
 	var body request.MovePageBody
-	if ok, verr := request.Validate(c, &body); !ok {
+	if verr := request.Validate(c, &body); verr != nil {
 		response.BindError(c, verr.Error())
 		return
 	}
@@ -196,5 +207,88 @@ func (h *PageHandler) MovePage(c *gin.Context, user *domain.User) {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
 	}
+	response.WithData(c, 200, page)
+}
+
+// Assets
+
+func (h *PageHandler) CreateAsset(c *gin.Context, user *domain.User) {
+	var body request.CreateAssetBody
+
+	if verr := request.Validate(c, &body); verr != nil {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	page, err := h.pageService.CreateAssetPage(domain.AssetPageInput{
+		PageInput: domain.PageInput{
+			Name:             body.Name,
+			ParentPagePkID:   body.ParentPagePkID,
+			ViewType:         body.ViewType,
+			CoverImage:       body.CoverImage,
+			OrganizationPkID: body.OrgPkID,
+		},
+		Asset: domain.AssetInput{
+			URL:        body.Asset.Url,
+			Size:       body.Asset.Size,
+			Extension:  body.Asset.Extension,
+			Thumbnails: body.Asset.Thumbnails,
+		},
+	})
+
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 200, page)
+}
+
+// public Page.
+func (h *PageHandler) CreatePagePublicToken(c *gin.Context, user *domain.User) {
+	pageID, ok := pageutils.GetPageIDParam(c)
+	if !ok {
+		response.BindError(c, "pageID is missing or invalid")
+		return
+	}
+
+	token, err := h.pageService.CreatePublicPageToken(pageID)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 200, token)
+}
+
+func (h *PageHandler) ArchiveAllPagePublicToken(c *gin.Context, user *domain.User) {
+	pageID, ok := pageutils.GetPageIDParam(c)
+	if !ok {
+		response.BindError(c, "pageID is missing or invalid")
+		return
+	}
+
+	err := h.pageService.ArchiveAllPublicPageToken(pageID)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 200, nil)
+}
+
+func (h *PageHandler) GetPageByToken(c *gin.Context) {
+	tokenID, ok := pageutils.GetPublicTokenIDParam(c)
+	if !ok {
+		response.BindError(c, "token is missing or invalid")
+		return
+	}
+
+	page, err := h.pageService.GetPageDetailByID("", tokenID)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
 	response.WithData(c, 200, page)
 }

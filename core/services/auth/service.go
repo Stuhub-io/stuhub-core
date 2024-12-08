@@ -42,7 +42,7 @@ func NewService(params NewServiceParams) *Service {
 	}
 }
 
-// Send Magic Link if User not set password
+// Send Magic Link if User not set password.
 func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEmailStepOneResp, *domain.Error) {
 	email := dto.Email
 	user, err := s.userRepository.GetOrCreateUserByEmail(context.Background(), email, s.hasher.GenerateSalt())
@@ -91,7 +91,7 @@ func (s *Service) MakeValidateEmailAuth(token string) string {
 	return baseUrl + "?token=" + token
 }
 
-// FIXME: return token
+// FIXME: return token.
 func (s *Service) ValidateEmailAuth(token string) (*ValidateEmailTokenResp, *domain.Error) {
 	payload, err := s.tokenMaker.DecodeToken(token)
 	if err != nil {
