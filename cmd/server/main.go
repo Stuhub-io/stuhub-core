@@ -20,7 +20,6 @@ import (
 	"github.com/Stuhub-io/internal/api"
 	"github.com/Stuhub-io/internal/api/middleware"
 	"github.com/Stuhub-io/internal/cache"
-	"github.com/Stuhub-io/internal/cache/redis"
 	"github.com/Stuhub-io/internal/hasher"
 	"github.com/Stuhub-io/internal/mailer"
 	"github.com/Stuhub-io/internal/oauth"
@@ -55,6 +54,15 @@ import (
 
 // @externalDocs.description	OpenAPI
 // @externalDocs.url			https://swagger.io/resources/open-api/
+
+type TempCache struct{}
+
+func (TempCache) Set(key string, value any, duration time.Duration) error { return nil }
+func (TempCache) Get(key string) (string, error)                          { return "", nil }
+func (TempCache) Delete(key string) error {
+	return nil
+}
+
 func main() {
 
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
@@ -63,11 +71,12 @@ func main() {
 
 	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug, logger)
 
-	redisCache := redis.Must(cfg.RedisUrl)
+	tempCache := TempCache{}
+	// redisCache := redis.Must(cfg.RedisUrl)
 
 	tokenMaker := token.Must(cfg.SecretKey)
 
-	cacheStore := cache.NewCacheStore(redisCache)
+	cacheStore := cache.NewCacheStore(tempCache)
 	dbStore := store.NewDBStore(postgresDB, cacheStore)
 
 	hasher := hasher.NewScrypt([]byte(cfg.HashPwSecretKey))

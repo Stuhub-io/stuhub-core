@@ -2,14 +2,20 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/internal/cache"
-	"github.com/Stuhub-io/internal/cache/redis"
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/postgres"
 	"github.com/Stuhub-io/logger"
 )
+
+type TempCache struct{}
+
+func (TempCache) Set(key string, value any, duration time.Duration) error { return nil }
+func (TempCache) Get(key string) (string, error)                          { return "", nil }
+func (TempCache) Delete(key string) error                                 { return nil }
 
 func main() {
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
@@ -20,8 +26,9 @@ func main() {
 
 	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug, logger)
 
-	redisCache := redis.Must(cfg.RedisUrl)
-	cacheStore := cache.NewCacheStore(redisCache)
+	// redisCache := redis.Must(cfg.RedisUrl)
+	tempCache := TempCache{}
+	cacheStore := cache.NewCacheStore(tempCache)
 
 	dbStore := store.NewDBStore(postgresDB, cacheStore)
 
