@@ -15,7 +15,10 @@ type PageResult struct {
 	Doc   *model.Document `gorm:"foreignKey:page_pkid"`
 }
 
-func (r *PageRepository) initPageModel(ctx context.Context, pageInput domain.PageInput) (*model.Page, *domain.Error) {
+func (r *PageRepository) initPageModel(
+	ctx context.Context,
+	pageInput domain.PageInput,
+) (*model.Page, *domain.Error) {
 	path := ""
 	// get path
 	if pageInput.ParentPagePkID != nil {
@@ -30,6 +33,7 @@ func (r *PageRepository) initPageModel(ctx context.Context, pageInput domain.Pag
 		Name:           pageInput.Name,
 		CoverImage:     pageInput.CoverImage,
 		OrgPkid:        &pageInput.OrganizationPkID,
+		AuthorPkid:     pageInput.AuthorPkID,
 		ParentPagePkid: pageInput.ParentPagePkID,
 		ViewType:       pageInput.ViewType.String(),
 		Path:           path,

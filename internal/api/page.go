@@ -35,13 +35,22 @@ func UsePageHandle(params NewPageHandlerParams) {
 	router.POST("/pages", decorators.CurrentUser(handler.CreateDocument))
 	router.GET("/pages/id/:"+pageutils.PageIDParam, decorators.CurrentUser(handler.GetPage))
 	router.PUT(("/pages/:" + pageutils.PagePkIDParam), decorators.CurrentUser(handler.UpdatePage))
-	router.PUT("/pages/:"+pageutils.PagePkIDParam+"/content", decorators.CurrentUser(handler.UpdatePageContent))
+	router.PUT(
+		"/pages/:"+pageutils.PagePkIDParam+"/content",
+		decorators.CurrentUser(handler.UpdatePageContent),
+	)
 	router.PUT("/pages/:"+pageutils.PagePkIDParam+"/move", decorators.CurrentUser(handler.MovePage))
 	router.DELETE("/pages/:"+pageutils.PagePkIDParam, decorators.CurrentUser(handler.ArchivePage))
 
 	// public page
-	router.POST("pages/id/:"+pageutils.PageIDParam+"/public-token", decorators.CurrentUser(handler.CreatePagePublicToken))
-	router.DELETE("pages/id/:"+pageutils.PageIDParam+"/public-token", decorators.CurrentUser(handler.ArchiveAllPagePublicToken))
+	router.POST(
+		"pages/id/:"+pageutils.PageIDParam+"/public-token",
+		decorators.CurrentUser(handler.CreatePagePublicToken),
+	)
+	router.DELETE(
+		"pages/id/:"+pageutils.PageIDParam+"/public-token",
+		decorators.CurrentUser(handler.ArchiveAllPagePublicToken),
+	)
 	router.GET("pages/public-token/:"+pageutils.PublicTokenIDParam, handler.GetPageByToken)
 
 	// asssets
@@ -110,6 +119,7 @@ func (h *PageHandler) CreateDocument(c *gin.Context, user *domain.User) {
 			ParentPagePkID:   body.ParentPagePkID,
 			ViewType:         body.ViewType,
 			CoverImage:       body.CoverImage,
+			AuthorPkID:       user.PkID,
 			OrganizationPkID: body.OrgPkID,
 		},
 		Document: domain.DocumentInput(body.Document),
@@ -226,6 +236,7 @@ func (h *PageHandler) CreateAsset(c *gin.Context, user *domain.User) {
 			ParentPagePkID:   body.ParentPagePkID,
 			ViewType:         body.ViewType,
 			CoverImage:       body.CoverImage,
+			AuthorPkID:       user.PkID,
 			OrganizationPkID: body.OrgPkID,
 		},
 		Asset: domain.AssetInput{

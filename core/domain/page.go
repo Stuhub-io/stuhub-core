@@ -10,6 +10,7 @@ type Page struct {
 	ID               string       `json:"id"`
 	Name             string       `json:"name"`
 	ParentPagePkID   *int64       `json:"parent_page_pkid"`
+	AuthorPkID       int64        `json:"author_pkid"`
 	OrganizationPkID int64        `json:"organization_pkid"`
 	CreatedAt        string       `json:"created_at"`
 	UpdatedAt        string       `json:"updated_at"`
@@ -28,6 +29,7 @@ type PageInput struct {
 	ParentPagePkID   *int64       `json:"parent_page_pkid"`
 	ViewType         PageViewType `json:"view_type"`
 	CoverImage       string       `json:"cover_image"`
+	AuthorPkID       int64        `json:"author_pkid"`
 	OrganizationPkID int64        `json:"organization_pkid"`
 }
 
@@ -91,4 +93,8 @@ func PageViewFromString(val string) PageViewType {
 	default:
 		return PageViewTypeDoc
 	}
+}
+
+func (p *Page) IsAuthor(authorPkID int64) bool {
+	return p.AuthorPkID == authorPkID
 }

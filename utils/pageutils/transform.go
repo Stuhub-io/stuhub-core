@@ -28,7 +28,11 @@ type PageBodyParams struct {
 	Asset    *domain.Asset
 }
 
-func TransformPageModelToDomain(model model.Page, ChildPages []domain.Page, pageBody PageBodyParams) *domain.Page {
+func TransformPageModelToDomain(
+	model model.Page,
+	ChildPages []domain.Page,
+	pageBody PageBodyParams,
+) *domain.Page {
 	archivedAt := ""
 	if model.ArchivedAt != nil {
 		archivedAt = model.ArchivedAt.String()
@@ -42,6 +46,7 @@ func TransformPageModelToDomain(model model.Page, ChildPages []domain.Page, page
 		PkID:             model.Pkid,
 		ID:               model.ID,
 		OrganizationPkID: *model.OrgPkid,
+		AuthorPkID:       model.AuthorPkid,
 		Name:             model.Name,
 		ParentPagePkID:   model.ParentPagePkid,
 		CreatedAt:        model.CreatedAt.String(),
