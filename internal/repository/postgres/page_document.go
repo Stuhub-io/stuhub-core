@@ -9,7 +9,10 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func (r *PageRepository) CreateDocumentPage(ctx context.Context, pageInput domain.DocumentPageInput) (*domain.Page, *domain.Error) {
+func (r *PageRepository) CreateDocumentPage(
+	ctx context.Context,
+	pageInput domain.DocumentPageInput,
+) (*domain.Page, *domain.Error) {
 
 	newPage, iErr := r.initPageModel(ctx, pageInput.PageInput)
 	if iErr != nil {
@@ -49,7 +52,11 @@ func (r *PageRepository) CreateDocumentPage(ctx context.Context, pageInput domai
 	), nil
 }
 
-func (r *PageRepository) UpdateContent(ctx context.Context, pagePkID int64, content domain.DocumentInput) (*domain.Page, *domain.Error) {
+func (r *PageRepository) UpdateContent(
+	ctx context.Context,
+	pagePkID int64,
+	content domain.DocumentInput,
+) (*domain.Page, *domain.Error) {
 	var page = model.Page{}
 	if dbErr := r.store.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
 		return nil, domain.NewErr(dbErr.Error(), domain.BadRequestCode)
