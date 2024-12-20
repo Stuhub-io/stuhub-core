@@ -4,11 +4,11 @@ import "github.com/Stuhub-io/core/domain"
 
 // page.
 type CreatePageBody struct {
-	OrgPkID        int64               `binding:"required"                json:"org_pkid"`
-	ViewType       domain.PageViewType `binding:"required"                json:"view_type"`
-	Name           string              `json:"name,omitempty"`
-	ParentPagePkID *int64              `json:"parent_page_pkid,omitempty"`
-	CoverImage     string              `json:"cover_image,omitempty"`
+	OrgPkID        int64               `binding:"required" json:"org_pkid"`
+	ViewType       domain.PageViewType `binding:"required" json:"view_type"`
+	Name           string              `                   json:"name,omitempty"`
+	ParentPagePkID *int64              `                   json:"parent_page_pkid,omitempty"`
+	CoverImage     string              `                   json:"cover_image,omitempty"`
 }
 
 type CreateDocumentBody struct {
@@ -19,11 +19,11 @@ type CreateDocumentBody struct {
 }
 
 type GetPagesQuery struct {
-	OrgPkID        int64                 `binding:"required"                form:"org_pkid"                   json:"org_pkid"`
-	ViewTypes      []domain.PageViewType `form:"view_types,omitempty"       json:"view_types,omitempty"`
-	ParentPagePkID *int64                `form:"parent_page_pkid,omitempty" json:"parent_page_pkid,omitempty"`
-	IsArchived     *bool                 `form:"is_archived,omitempty"      json:"is_archived,omitempty"`
-	All            bool                  `form:"all,omitempty"              json:"all,omitempty"`
+	OrgPkID        int64                 `binding:"required" form:"org_pkid"                   json:"org_pkid"`
+	ViewTypes      []domain.PageViewType `                   form:"view_types,omitempty"       json:"view_types,omitempty"`
+	ParentPagePkID *int64                `                   form:"parent_page_pkid,omitempty" json:"parent_page_pkid,omitempty"`
+	IsArchived     *bool                 `                   form:"is_archived,omitempty"      json:"is_archived,omitempty"`
+	All            bool                  `                   form:"all,omitempty"              json:"all,omitempty"`
 	PaginationRequest
 }
 
@@ -53,4 +53,9 @@ type CreateAssetBody struct {
 		Extension  string                `json:"extension"`
 		Thumbnails domain.AssetThumbnail `json:"thumbnails"`
 	} `binding:"required" json:"asset"`
+}
+
+type UpdatePageGeneralAccessBody struct {
+	IsGeneralAccess *bool                  `binding:"required" json:"is_general_access"`
+	GeneralRole     domain.PageGeneralRole `binding:"required" json:"general_role,omitempty"`
 }

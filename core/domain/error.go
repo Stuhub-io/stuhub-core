@@ -178,9 +178,12 @@ var (
 	}
 	ErrExistOrgMember = func(userPkID int64) *Error {
 		return &Error{
-			Code:    BadRequestCode,
-			Error:   BadRequestErr,
-			Message: fmt.Sprintf("The member with the ID '%d' already exist in this organization.", userPkID),
+			Code:  BadRequestCode,
+			Error: BadRequestErr,
+			Message: fmt.Sprintf(
+				"The member with the ID '%d' already exist in this organization.",
+				userPkID,
+			),
 		}
 	}
 )
@@ -190,6 +193,14 @@ var (
 		Code:    NotFoundCode,
 		Error:   NotFoundErr,
 		Message: "The member or page does not exist",
+	}
+)
+
+var (
+	ErrUpdatePageGeneralAccess = &Error{
+		Code:    InternalServerErrCode,
+		Error:   InternalServerErr,
+		Message: "Fail to update page general access",
 	}
 )
 

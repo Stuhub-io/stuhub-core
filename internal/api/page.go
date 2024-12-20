@@ -36,6 +36,10 @@ func UsePageHandle(params NewPageHandlerParams) {
 	router.GET("/pages/id/:"+pageutils.PageIDParam, decorators.CurrentUser(handler.GetPage))
 	router.PUT(("/pages/:" + pageutils.PagePkIDParam), decorators.CurrentUser(handler.UpdatePage))
 	router.PUT(
+		("/pages/:" + pageutils.PagePkIDParam + "/general-access"),
+		decorators.CurrentUser(handler.UpdatePageGeneralAccess),
+	)
+	router.PUT(
 		"/pages/:"+pageutils.PagePkIDParam+"/content",
 		decorators.CurrentUser(handler.UpdatePageContent),
 	)
@@ -286,6 +290,31 @@ func (h *PageHandler) ArchiveAllPagePublicToken(c *gin.Context, user *domain.Use
 	}
 
 	response.WithData(c, 200, nil)
+}
+
+func (h *PageHandler) UpdatePageGeneralAccess(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	var body request.UpdatePageGeneralAccessBody
+	if verr := request.Validate(c, &body); verr != nil {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	page, err := h.pageService.UpdateGeneralAccess(pagePkID, domain.PageGeneralAccessUpdateInput{
+		IsGeneralAccess: *body.IsGeneralAccess,
+		GeneralRole:     body.GeneralRole,
+	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 200, page)
 }
 
 func (h *PageHandler) GetPageByToken(c *gin.Context) {

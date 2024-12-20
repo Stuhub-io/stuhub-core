@@ -32,12 +32,18 @@ func (s *Service) GetPagesByOrgPkID(query domain.PageListQuery) (d []domain.Page
 	return d, e
 }
 
-func (s *Service) UpdatePageByPkID(pagePkID int64, updateInput domain.PageUpdateInput) (d *domain.Page, e *domain.Error) {
+func (s *Service) UpdatePageByPkID(
+	pagePkID int64,
+	updateInput domain.PageUpdateInput,
+) (d *domain.Page, e *domain.Error) {
 	d, e = s.pageRepository.Update(context.Background(), pagePkID, updateInput)
 	return d, e
 }
 
-func (s *Service) GetPageDetailByID(pageID string, publicTokenID string) (d *domain.Page, e *domain.Error) {
+func (s *Service) GetPageDetailByID(
+	pageID string,
+	publicTokenID string,
+) (d *domain.Page, e *domain.Error) {
 	var PagePkID *int64
 	if pageID == "" {
 		token, err := s.pageRepository.GetPublicTokenByID(context.Background(), publicTokenID)
@@ -59,12 +65,17 @@ func (s *Service) ArchivedPageByPkID(pagePkID int64) (d *domain.Page, e *domain.
 	return d, e
 }
 
-func (s *Service) MovePageByPkID(pagePkID int64, moveInput domain.PageMoveInput) (d *domain.Page, e *domain.Error) {
+func (s *Service) MovePageByPkID(
+	pagePkID int64,
+	moveInput domain.PageMoveInput,
+) (d *domain.Page, e *domain.Error) {
 	d, e = s.pageRepository.Move(context.Background(), pagePkID, moveInput.ParentPagePkID)
 	return d, e
 }
 
-func (s *Service) CreatePublicPageToken(pageID string) (d *domain.PagePublicToken, e *domain.Error) {
+func (s *Service) CreatePublicPageToken(
+	pageID string,
+) (d *domain.PagePublicToken, e *domain.Error) {
 	page, err := s.pageRepository.GetByID(context.Background(), pageID, nil)
 	if err != nil {
 		return nil, domain.ErrDatabaseQuery
@@ -82,8 +93,27 @@ func (s *Service) ArchiveAllPublicPageToken(pageID string) (e *domain.Error) {
 	return e
 }
 
+func (s *Service) UpdateGeneralAccess(
+	pagePkID int64,
+	updateInput domain.PageGeneralAccessUpdateInput,
+) (*domain.Page, *domain.Error) {
+	_, err := s.pageRepository.GetByID(context.Background(), "", &pagePkID)
+	if err != nil {
+		return nil, err
+	}
+
+	page, err := s.pageRepository.UpdateGeneralAccess(context.Background(), pagePkID, updateInput)
+	if err != nil {
+		return nil, err
+	}
+
+	return page, nil
+}
+
 // Document Controller.
-func (s *Service) CreateDocumentPage(pageInput domain.DocumentPageInput) (*domain.Page, *domain.Error) {
+func (s *Service) CreateDocumentPage(
+	pageInput domain.DocumentPageInput,
+) (*domain.Page, *domain.Error) {
 	page, err := s.pageRepository.CreateDocumentPage(context.Background(), pageInput)
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation
@@ -91,7 +121,10 @@ func (s *Service) CreateDocumentPage(pageInput domain.DocumentPageInput) (*domai
 	return page, nil
 }
 
-func (s *Service) UpdateDocumentContentByPkID(pagePkID int64, content domain.DocumentInput) (d *domain.Page, e *domain.Error) {
+func (s *Service) UpdateDocumentContentByPkID(
+	pagePkID int64,
+	content domain.DocumentInput,
+) (d *domain.Page, e *domain.Error) {
 	d, e = s.pageRepository.UpdateContent(context.Background(), pagePkID, content)
 	return d, e
 }

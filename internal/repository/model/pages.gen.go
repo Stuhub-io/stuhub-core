@@ -25,7 +25,7 @@ type Page struct {
 	OrgPkid         *int64     `gorm:"column:org_pkid;type:bigint" json:"org_pkid"`
 	Path            string     `gorm:"column:path;type:text;not null" json:"path"`
 	IsGeneralAccess bool       `gorm:"column:is_general_access;type:boolean;not null" json:"is_general_access"`
-	GeneralRole     *string    `gorm:"column:general_role;type:character varying(20);default:viewer" json:"general_role"`
+	GeneralRole     string     `gorm:"column:general_role;type:character varying(20);not null;default:viewer" json:"general_role"`
 	AuthorPkid      int64      `gorm:"column:author_pkid;type:bigint;not null" json:"author_pkid"`
 }
 

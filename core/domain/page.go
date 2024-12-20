@@ -22,6 +22,8 @@ type Page struct {
 	Document         *Document    `json:"document"`
 	Asset            *Asset       `json:"asset"`
 	Path             string       `json:"path"`
+	IsGeneralAccess  bool         `json:"is_general_access"`
+	GeneralRole      string       `json:"general_role"`
 }
 
 type PageInput struct {
@@ -53,6 +55,11 @@ type PageListQuery struct {
 	Offset         int            `json:"offset"`
 	Limit          int            `json:"limit"`
 	IsAll          bool           `json:"all"`
+}
+
+type PageGeneralAccessUpdateInput struct {
+	IsGeneralAccess bool            `json:"is_general_access"`
+	GeneralRole     PageGeneralRole `json:"general_role"`
 }
 
 type PageViewType int
@@ -92,6 +99,43 @@ func PageViewFromString(val string) PageViewType {
 		return PageViewTypeAsset
 	default:
 		return PageViewTypeDoc
+	}
+}
+
+type PageGeneralRole int
+
+const (
+	PageViewer PageGeneralRole = iota + 1
+	PageEditor
+)
+
+func (r PageGeneralRole) String() string {
+	return [...]string{"viewer", "editor"}[r-1]
+}
+
+func (r *PageGeneralRole) UnmarshalJSON(data []byte) error {
+	var value int
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+
+	switch PageGeneralRole(value) {
+	case PageViewer, PageEditor:
+		*r = PageGeneralRole(value)
+		return nil
+	default:
+		return errors.New("invalid view_type, must be 1(viewer) | 2(editor)")
+	}
+}
+
+func PageGeneralRoleFromString(val string) PageGeneralRole {
+	switch val {
+	case "viewer":
+		return PageViewer
+	case "editor":
+		return PageEditor
+	default:
+		return PageViewer
 	}
 }
 

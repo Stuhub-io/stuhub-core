@@ -59,6 +59,8 @@ func TransformPageModelToDomain(
 		Document:         pageBody.Document,
 		Asset:            pageBody.Asset,
 		Path:             model.Path,
+		IsGeneralAccess:  model.IsGeneralAccess,
+		GeneralRole:      model.GeneralRole,
 	}
 }
 
