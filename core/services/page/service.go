@@ -201,7 +201,7 @@ func (s *Service) GetPageRoleUsers(
 		return nil, domain.ErrUnauthorized
 	}
 
-	pageRoleUsers, err := s.pageRepository.GetAllRoleUsersByPkId(
+	pageRoleUsers, err := s.pageRepository.GetAllRoleUsersByPagePkId(
 		context.Background(),
 		input.PagePkID,
 	)

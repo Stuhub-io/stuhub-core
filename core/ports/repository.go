@@ -122,7 +122,7 @@ type PageRepository interface {
 		ctx context.Context,
 		pagePkID, userPkID int64,
 	) (*domain.PageRoleUser, *domain.Error)
-	GetAllRoleUsersByPkId(
+	GetAllRoleUsersByPagePkId(
 		ctx context.Context,
 		pagePkID int64,
 	) ([]domain.PageRoleUser, *domain.Error)

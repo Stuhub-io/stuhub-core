@@ -55,7 +55,7 @@ func (r *PageRepository) GetOneRoleUserByUserPkId(
 	), nil
 }
 
-func (r *PageRepository) GetAllRoleUsersByPkId(
+func (r *PageRepository) GetAllRoleUsersByPagePkId(
 	ctx context.Context,
 	pagePkID int64,
 ) ([]domain.PageRoleUser, *domain.Error) {
