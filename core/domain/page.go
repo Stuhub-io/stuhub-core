@@ -58,8 +58,8 @@ type PageListQuery struct {
 }
 
 type PageGeneralAccessUpdateInput struct {
-	IsGeneralAccess bool            `json:"is_general_access"`
-	GeneralRole     PageGeneralRole `json:"general_role"`
+	IsGeneralAccess bool     `json:"is_general_access"`
+	GeneralRole     PageRole `json:"general_role"`
 }
 
 type PageViewType int
@@ -102,33 +102,33 @@ func PageViewFromString(val string) PageViewType {
 	}
 }
 
-type PageGeneralRole int
+type PageRole int
 
 const (
-	PageViewer PageGeneralRole = iota + 1
+	PageViewer PageRole = iota + 1
 	PageEditor
 )
 
-func (r PageGeneralRole) String() string {
+func (r PageRole) String() string {
 	return [...]string{"viewer", "editor"}[r-1]
 }
 
-func (r *PageGeneralRole) UnmarshalJSON(data []byte) error {
+func (r *PageRole) UnmarshalJSON(data []byte) error {
 	var value int
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
 
-	switch PageGeneralRole(value) {
+	switch PageRole(value) {
 	case PageViewer, PageEditor:
-		*r = PageGeneralRole(value)
+		*r = PageRole(value)
 		return nil
 	default:
 		return errors.New("invalid view_type, must be 1(viewer) | 2(editor)")
 	}
 }
 
-func PageGeneralRoleFromString(val string) PageGeneralRole {
+func PageRoleFromString(val string) PageRole {
 	switch val {
 	case "viewer":
 		return PageViewer

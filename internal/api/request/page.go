@@ -56,6 +56,6 @@ type CreateAssetBody struct {
 }
 
 type UpdatePageGeneralAccessBody struct {
-	IsGeneralAccess *bool                  `binding:"required" json:"is_general_access"`
-	GeneralRole     domain.PageGeneralRole `binding:"required" json:"general_role,omitempty"`
+	IsGeneralAccess *bool           `binding:"required" json:"is_general_access"`
+	GeneralRole     domain.PageRole `binding:"required" json:"general_role,omitempty"`
 }
