@@ -1,0 +1,2 @@
+ALTER TABLE "pages"
+ADD COLUMN "is_general_access" BOOLEAN NOT NULL DEFAULT FALSE;

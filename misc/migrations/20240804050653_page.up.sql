@@ -20,4 +20,4 @@ CREATE TABLE IF NOT EXISTS "pages" (
         ON DELETE CASCADE
 );
 
-CREATE INDEX idx_parent_page_pkid ON "pages" (parent_page_pkid);
+CREATE INDEX IF NOT EXISTS idx_parent_page_pkid ON "pages" (parent_page_pkid);

@@ -8,10 +8,11 @@ database:
       "organizations",
       "organization_member",
       "pages",
+      "page_roles",
       "documents",
       "organization_invites",
       "assets",
-      "public_token"
+      "public_token",
     ]
   outPath: "./internal/repository/model"
   withUnitTest: false

@@ -12,6 +12,16 @@ type SendSendGridMailPayload struct {
 	Content    string
 }
 
+type SendSendGridMailCustomTemplatePayload struct {
+	FromName         string
+	ToName           string
+	ToAddress        string
+	TemplateHTMLName string
+	Data             map[string]string
+	Subject          string
+}
+
 type Mailer interface {
 	SendMail(payload SendSendGridMailPayload) *domain.Error
+	SendMailCustomTemplate(payload SendSendGridMailCustomTemplatePayload) *domain.Error
 }

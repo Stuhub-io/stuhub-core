@@ -10,6 +10,7 @@ type Page struct {
 	ID               string       `json:"id"`
 	Name             string       `json:"name"`
 	ParentPagePkID   *int64       `json:"parent_page_pkid"`
+	AuthorPkID       int64        `json:"author_pkid"`
 	OrganizationPkID int64        `json:"organization_pkid"`
 	CreatedAt        string       `json:"created_at"`
 	UpdatedAt        string       `json:"updated_at"`
@@ -21,6 +22,17 @@ type Page struct {
 	Document         *Document    `json:"document"`
 	Asset            *Asset       `json:"asset"`
 	Path             string       `json:"path"`
+	IsGeneralAccess  bool         `json:"is_general_access"`
+	GeneralRole      string       `json:"general_role"`
+}
+
+type PageRoleUser struct {
+	PkID      int64  `json:"pkid"`
+	PagePkID  int64  `json:"page_pkid"`
+	User      User   `json:"user"`
+	Role      string `json:"role"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 type PageInput struct {
@@ -28,6 +40,7 @@ type PageInput struct {
 	ParentPagePkID   *int64       `json:"parent_page_pkid"`
 	ViewType         PageViewType `json:"view_type"`
 	CoverImage       string       `json:"cover_image"`
+	AuthorPkID       int64        `json:"author_pkid"`
 	OrganizationPkID int64        `json:"organization_pkid"`
 }
 
@@ -51,6 +64,37 @@ type PageListQuery struct {
 	Offset         int            `json:"offset"`
 	Limit          int            `json:"limit"`
 	IsAll          bool           `json:"all"`
+}
+
+type PageGeneralAccessUpdateInput struct {
+	AuthorPkID      int64    `json:"author_pkid"`
+	IsGeneralAccess bool     `json:"is_general_access"`
+	GeneralRole     PageRole `json:"general_role"`
+}
+
+type PageRoleCreateInput struct {
+	AuthorPkID int64    `json:"author_pkid"`
+	PagePkID   int64    `json:"page_pkid"`
+	UserPkID   int64    `json:"user_pkid"`
+	Role       PageRole `json:"role"`
+}
+
+type PageRoleUpdateInput struct {
+	AuthorPkID int64    `json:"author_pkid"`
+	PagePkID   int64    `json:"page_pkid"`
+	UserPkID   int64    `json:"user_pkid"`
+	Role       PageRole `json:"role"`
+}
+
+type PageRoleDeleteInput struct {
+	AuthorPkID int64 `json:"author_pkid"`
+	PagePkID   int64 `json:"page_pkid"`
+	UserPkID   int64 `json:"user_pkid"`
+}
+
+type PageRoleGetAllInput struct {
+	AuthorPkID int64 `json:"author_pkid"`
+	PagePkID   int64 `json:"page_pkid"`
 }
 
 type PageViewType int
@@ -91,4 +135,45 @@ func PageViewFromString(val string) PageViewType {
 	default:
 		return PageViewTypeDoc
 	}
+}
+
+type PageRole int
+
+const (
+	PageViewer PageRole = iota + 1
+	PageEditor
+)
+
+func (r PageRole) String() string {
+	return [...]string{"viewer", "editor"}[r-1]
+}
+
+func (r *PageRole) UnmarshalJSON(data []byte) error {
+	var value int
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+
+	switch PageRole(value) {
+	case PageViewer, PageEditor:
+		*r = PageRole(value)
+		return nil
+	default:
+		return errors.New("invalid view_type, must be 1(viewer) | 2(editor)")
+	}
+}
+
+func PageRoleFromString(val string) PageRole {
+	switch val {
+	case "viewer":
+		return PageViewer
+	case "editor":
+		return PageEditor
+	default:
+		return PageViewer
+	}
+}
+
+func (p *Page) IsAuthor(authorPkID int64) bool {
+	return p.AuthorPkID == authorPkID
 }

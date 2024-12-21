@@ -1,0 +1,7 @@
+ALTER TABLE pages
+ADD COLUMN author_pkid BIGINT NOT NULL;
+
+ALTER TABLE pages
+ADD CONSTRAINT fk_page_author
+FOREIGN KEY (author_pkid) REFERENCES users(pkid)
+ON DELETE CASCADE; 

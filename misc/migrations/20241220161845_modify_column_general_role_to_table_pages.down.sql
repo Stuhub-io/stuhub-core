@@ -1,0 +1,2 @@
+ALTER TABLE "pages"
+ALTER COLUMN "general_role" DROP NOT NULL;

@@ -35,17 +35,48 @@ func UsePageHandle(params NewPageHandlerParams) {
 	router.POST("/pages", decorators.CurrentUser(handler.CreateDocument))
 	router.GET("/pages/id/:"+pageutils.PageIDParam, decorators.CurrentUser(handler.GetPage))
 	router.PUT(("/pages/:" + pageutils.PagePkIDParam), decorators.CurrentUser(handler.UpdatePage))
-	router.PUT("/pages/:"+pageutils.PagePkIDParam+"/content", decorators.CurrentUser(handler.UpdatePageContent))
+	router.PUT(
+		("/pages/:" + pageutils.PagePkIDParam + "/general-access"),
+		decorators.CurrentUser(handler.UpdatePageGeneralAccess),
+	)
+	router.PUT(
+		"/pages/:"+pageutils.PagePkIDParam+"/content",
+		decorators.CurrentUser(handler.UpdatePageContent),
+	)
 	router.PUT("/pages/:"+pageutils.PagePkIDParam+"/move", decorators.CurrentUser(handler.MovePage))
 	router.DELETE("/pages/:"+pageutils.PagePkIDParam, decorators.CurrentUser(handler.ArchivePage))
 
 	// public page
-	router.POST("pages/id/:"+pageutils.PageIDParam+"/public-token", decorators.CurrentUser(handler.CreatePagePublicToken))
-	router.DELETE("pages/id/:"+pageutils.PageIDParam+"/public-token", decorators.CurrentUser(handler.ArchiveAllPagePublicToken))
+	router.POST(
+		"pages/id/:"+pageutils.PageIDParam+"/public-token",
+		decorators.CurrentUser(handler.CreatePagePublicToken),
+	)
+	router.DELETE(
+		"pages/id/:"+pageutils.PageIDParam+"/public-token",
+		decorators.CurrentUser(handler.ArchiveAllPagePublicToken),
+	)
 	router.GET("pages/public-token/:"+pageutils.PublicTokenIDParam, handler.GetPageByToken)
 
 	// asssets
 	router.POST("pages/assets", decorators.CurrentUser(handler.CreateAsset))
+
+	// page roles
+	router.POST(
+		("/pages/:" + pageutils.PagePkIDParam + "/roles"),
+		decorators.CurrentUser(handler.AddPageRoleUser),
+	)
+	router.GET(
+		("/pages/:" + pageutils.PagePkIDParam + "/roles"),
+		decorators.CurrentUser(handler.GetAllRoleUsers),
+	)
+	router.PATCH(
+		("/pages/:" + pageutils.PagePkIDParam + "/roles"),
+		decorators.CurrentUser(handler.UpdatePageRoleUser),
+	)
+	router.DELETE(
+		("/pages/:" + pageutils.PagePkIDParam + "/roles"),
+		decorators.CurrentUser(handler.DeletePageRoleUser),
+	)
 }
 
 func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
@@ -110,6 +141,7 @@ func (h *PageHandler) CreateDocument(c *gin.Context, user *domain.User) {
 			ParentPagePkID:   body.ParentPagePkID,
 			ViewType:         body.ViewType,
 			CoverImage:       body.CoverImage,
+			AuthorPkID:       user.PkID,
 			OrganizationPkID: body.OrgPkID,
 		},
 		Document: domain.DocumentInput(body.Document),
@@ -226,6 +258,7 @@ func (h *PageHandler) CreateAsset(c *gin.Context, user *domain.User) {
 			ParentPagePkID:   body.ParentPagePkID,
 			ViewType:         body.ViewType,
 			CoverImage:       body.CoverImage,
+			AuthorPkID:       user.PkID,
 			OrganizationPkID: body.OrgPkID,
 		},
 		Asset: domain.AssetInput{
@@ -277,6 +310,32 @@ func (h *PageHandler) ArchiveAllPagePublicToken(c *gin.Context, user *domain.Use
 	response.WithData(c, 200, nil)
 }
 
+func (h *PageHandler) UpdatePageGeneralAccess(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	var body request.UpdatePageGeneralAccessBody
+	if verr := request.Validate(c, &body); verr != nil {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	page, err := h.pageService.UpdateGeneralAccess(pagePkID, domain.PageGeneralAccessUpdateInput{
+		AuthorPkID:      user.PkID,
+		IsGeneralAccess: *body.IsGeneralAccess,
+		GeneralRole:     body.GeneralRole,
+	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 200, page)
+}
+
 func (h *PageHandler) GetPageByToken(c *gin.Context) {
 	tokenID, ok := pageutils.GetPublicTokenIDParam(c)
 	if !ok {
@@ -291,4 +350,105 @@ func (h *PageHandler) GetPageByToken(c *gin.Context) {
 	}
 
 	response.WithData(c, 200, page)
+}
+
+// Page Roles
+
+func (h *PageHandler) AddPageRoleUser(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	var body request.AddPageRoleUserBody
+	if verr := request.Validate(c, &body); verr != nil {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	page, err := h.pageService.AddPageRoleUser(domain.PageRoleCreateInput{
+		AuthorPkID: user.PkID,
+		PagePkID:   pagePkID,
+		UserPkID:   body.UserPkID,
+		Role:       body.Role,
+	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 201, page)
+}
+
+func (h *PageHandler) GetAllRoleUsers(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	page, err := h.pageService.GetPageRoleUsers(domain.PageRoleGetAllInput{
+		AuthorPkID: user.PkID,
+		PagePkID:   pagePkID,
+	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 200, page)
+}
+
+func (h *PageHandler) UpdatePageRoleUser(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	var body request.UpdatePageRoleUserBody
+	if verr := request.Validate(c, &body); verr != nil {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	err := h.pageService.UpdatePageRoleUser(domain.PageRoleUpdateInput{
+		AuthorPkID: user.PkID,
+		PagePkID:   pagePkID,
+		UserPkID:   body.UserPkID,
+		Role:       body.Role,
+	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithMessage(c, 200, "Role's updated successfully!")
+}
+
+func (h *PageHandler) DeletePageRoleUser(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	var body request.DeletePageRoleUserBody
+	if verr := request.Validate(c, &body); verr != nil {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	err := h.pageService.DeletePageRoleUser(domain.PageRoleDeleteInput{
+		AuthorPkID: user.PkID,
+		PagePkID:   pagePkID,
+		UserPkID:   body.UserPkID,
+	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithMessage(c, 200, "Role's deleted successfully!")
 }

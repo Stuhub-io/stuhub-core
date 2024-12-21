@@ -3,6 +3,7 @@ package pageutils
 import (
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/internal/repository/model"
+	"github.com/Stuhub-io/utils/userutils"
 )
 
 func TransformDocModelToDomain(doc *model.Document) *domain.Document {
@@ -28,7 +29,11 @@ type PageBodyParams struct {
 	Asset    *domain.Asset
 }
 
-func TransformPageModelToDomain(model model.Page, ChildPages []domain.Page, pageBody PageBodyParams) *domain.Page {
+func TransformPageModelToDomain(
+	model model.Page,
+	ChildPages []domain.Page,
+	pageBody PageBodyParams,
+) *domain.Page {
 	archivedAt := ""
 	if model.ArchivedAt != nil {
 		archivedAt = model.ArchivedAt.String()
@@ -42,6 +47,7 @@ func TransformPageModelToDomain(model model.Page, ChildPages []domain.Page, page
 		PkID:             model.Pkid,
 		ID:               model.ID,
 		OrganizationPkID: *model.OrgPkid,
+		AuthorPkID:       model.AuthorPkid,
 		Name:             model.Name,
 		ParentPagePkID:   model.ParentPagePkid,
 		CreatedAt:        model.CreatedAt.String(),
@@ -54,6 +60,26 @@ func TransformPageModelToDomain(model model.Page, ChildPages []domain.Page, page
 		Document:         pageBody.Document,
 		Asset:            pageBody.Asset,
 		Path:             model.Path,
+		IsGeneralAccess:  model.IsGeneralAccess,
+		GeneralRole:      model.GeneralRole,
+	}
+}
+
+type PageRoleWithUser struct {
+	model.PageRole
+	User model.User `gorm:"foreignKey:user_pkid" json:"user"` // Define foreign key relationship
+}
+
+func TransformPageRoleModelToDomain(
+	model PageRoleWithUser,
+) *domain.PageRoleUser {
+	return &domain.PageRoleUser{
+		PkID:      model.Pkid,
+		PagePkID:  model.PagePkid,
+		User:      *userutils.TransformUserModelToDomain(model.User),
+		Role:      model.Role,
+		CreatedAt: model.CreatedAt.String(),
+		UpdatedAt: model.UpdatedAt.String(),
 	}
 }
 

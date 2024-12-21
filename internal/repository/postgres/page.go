@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/Stuhub-io/config"
@@ -30,7 +31,10 @@ func NewPageRepository(params NewPageRepositoryParams) *PageRepository {
 	}
 }
 
-func (r *PageRepository) List(ctx context.Context, q domain.PageListQuery) ([]domain.Page, *domain.Error) {
+func (r *PageRepository) List(
+	ctx context.Context,
+	q domain.PageListQuery,
+) ([]domain.Page, *domain.Error) {
 	var results []PageResult
 	query := r.preloadPageResult(r.store.DB()).
 		Where("org_pkid = ?", q.OrgPkID)
@@ -61,16 +65,23 @@ func (r *PageRepository) List(ctx context.Context, q domain.PageListQuery) ([]do
 
 	domainPages := make([]domain.Page, 0, len(results))
 	for _, result := range results {
-		domainPages = append(domainPages, *pageutils.TransformPageModelToDomain(result.Page, nil, pageutils.PageBodyParams{
-			Document: pageutils.TransformDocModelToDomain(result.Doc),
-			Asset:    pageutils.TransformAssetModalToDomain(result.Asset),
-		}))
+		domainPages = append(
+			domainPages,
+			*pageutils.TransformPageModelToDomain(result.Page, nil, pageutils.PageBodyParams{
+				Document: pageutils.TransformDocModelToDomain(result.Doc),
+				Asset:    pageutils.TransformAssetModalToDomain(result.Asset),
+			}),
+		)
 	}
 
 	return domainPages, nil
 }
 
-func (r *PageRepository) Update(ctx context.Context, pagePkID int64, updateInput domain.PageUpdateInput) (*domain.Page, *domain.Error) {
+func (r *PageRepository) Update(
+	ctx context.Context,
+	pagePkID int64,
+	updateInput domain.PageUpdateInput,
+) (*domain.Page, *domain.Error) {
 	var page = model.Page{}
 	if dbErr := r.store.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
 		return nil, domain.NewErr("Page not found", domain.BadRequestCode)
@@ -87,7 +98,11 @@ func (r *PageRepository) Update(ctx context.Context, pagePkID int64, updateInput
 		page.CoverImage = *updateInput.CoverImage
 	}
 
-	dbErr := r.store.DB().Clauses(clause.Returning{}).Select("Name", "ViewType", "CoverImage").Save(&page).Error
+	dbErr := r.store.DB().
+		Clauses(clause.Returning{}).
+		Select("Name", "ViewType", "CoverImage").
+		Save(&page).
+		Error
 	if dbErr != nil {
 		return nil, domain.ErrDatabaseMutation
 	}
@@ -99,7 +114,11 @@ func (r *PageRepository) Update(ctx context.Context, pagePkID int64, updateInput
 	), nil
 }
 
-func (r *PageRepository) GetByID(ctx context.Context, pageID string, pagePkID *int64) (*domain.Page, *domain.Error) {
+func (r *PageRepository) GetByID(
+	ctx context.Context,
+	pageID string,
+	pagePkID *int64,
+) (*domain.Page, *domain.Error) {
 	var page PageResult
 
 	query := r.preloadPageResult(r.store.DB().Model(&page))
@@ -137,7 +156,10 @@ func (r *PageRepository) GetByID(ctx context.Context, pageID string, pagePkID *i
 	), nil
 }
 
-func (r *PageRepository) Archive(ctx context.Context, pagePkID int64) (*domain.Page, *domain.Error) {
+func (r *PageRepository) Archive(
+	ctx context.Context,
+	pagePkID int64,
+) (*domain.Page, *domain.Error) {
 	var page = model.Page{}
 	if dbErr := r.store.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
 		return nil, domain.NewErr(dbErr.Error(), domain.BadRequestCode)
@@ -175,7 +197,11 @@ func (r *PageRepository) Archive(ctx context.Context, pagePkID int64) (*domain.P
 	return pageutils.TransformPageModelToDomain(page, nil, pageutils.PageBodyParams{}), nil
 }
 
-func (r *PageRepository) Move(ctx context.Context, pagePkID int64, parentPagePkID *int64) (*domain.Page, *domain.Error) {
+func (r *PageRepository) Move(
+	ctx context.Context,
+	pagePkID int64,
+	parentPagePkID *int64,
+) (*domain.Page, *domain.Error) {
 
 	var page model.Page
 
@@ -213,13 +239,36 @@ func (r *PageRepository) Move(ctx context.Context, pagePkID int64, parentPagePkI
 	descendantOldPath := pageutils.AppendPath(oldPath, page.ID)
 
 	// batch update descendants
-	bErr := tx.DB().Model(&model.Page{}).Where("path LIKE ?", descendantOldPath+"%").Update("path", gorm.Expr("replace(path, ?, ?)", descendantOldPath, descendantPath)).Error
+	bErr := tx.DB().
+		Model(&model.Page{}).
+		Where("path LIKE ?", descendantOldPath+"%").
+		Update("path", gorm.Expr("replace(path, ?, ?)", descendantOldPath, descendantPath)).
+		Error
 	if bErr != nil {
 		return nil, doneTx(bErr)
 	}
 
 	doneTx(nil)
 	// Commit Tx
+
+	return pageutils.TransformPageModelToDomain(page, nil, pageutils.PageBodyParams{}), nil
+}
+
+func (r *PageRepository) UpdateGeneralAccess(
+	ctx context.Context,
+	pagePkID int64,
+	updateInput domain.PageGeneralAccessUpdateInput,
+) (*domain.Page, *domain.Error) {
+	page := model.Page{
+		Pkid:            pagePkID,
+		IsGeneralAccess: updateInput.IsGeneralAccess,
+		GeneralRole:     updateInput.GeneralRole.String(),
+	}
+
+	if dbErr := r.store.DB().Clauses(clause.Returning{}).Select("IsGeneralAccess", "GeneralRole").Save(&page).Error; dbErr != nil {
+		fmt.Print(dbErr)
+		return nil, domain.ErrUpdatePageGeneralAccess
+	}
 
 	return pageutils.TransformPageModelToDomain(page, nil, pageutils.PageBodyParams{}), nil
 }
