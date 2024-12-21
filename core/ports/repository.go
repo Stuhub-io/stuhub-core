@@ -126,6 +126,14 @@ type PageRepository interface {
 		ctx context.Context,
 		pagePkID int64,
 	) ([]domain.PageRoleUser, *domain.Error)
+	UpdatePageRole(
+		ctx context.Context,
+		updateInput domain.PageRoleUpdateInput,
+	) *domain.Error
+	DeletePageRole(
+		ctx context.Context,
+		updateInput domain.PageRoleDeleteInput,
+	) *domain.Error
 }
 
 type OrganizationInviteRepository interface {

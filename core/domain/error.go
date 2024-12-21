@@ -148,6 +148,11 @@ var (
 		Error:   InternalServerErr,
 		Message: "Failed to process sending email. Please try again!",
 	}
+	ErrInvalidTemplate = &Error{
+		Code:    BadRequestCode,
+		Error:   BadRequestErr,
+		Message: "Failed to parse email template. Please try again!",
+	}
 )
 
 var (

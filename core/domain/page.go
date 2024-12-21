@@ -79,6 +79,19 @@ type PageRoleCreateInput struct {
 	Role       PageRole `json:"role"`
 }
 
+type PageRoleUpdateInput struct {
+	AuthorPkID int64    `json:"author_pkid"`
+	PagePkID   int64    `json:"page_pkid"`
+	UserPkID   int64    `json:"user_pkid"`
+	Role       PageRole `json:"role"`
+}
+
+type PageRoleDeleteInput struct {
+	AuthorPkID int64 `json:"author_pkid"`
+	PagePkID   int64 `json:"page_pkid"`
+	UserPkID   int64 `json:"user_pkid"`
+}
+
 type PageRoleGetAllInput struct {
 	AuthorPkID int64 `json:"author_pkid"`
 	PagePkID   int64 `json:"page_pkid"`

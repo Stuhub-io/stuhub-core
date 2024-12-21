@@ -6,22 +6,26 @@ import (
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
+	"github.com/Stuhub-io/utils/userutils"
 )
 
 type Service struct {
 	cfg            config.Config
 	pageRepository ports.PageRepository
+	mailer         ports.Mailer
 }
 
 type NewServiceParams struct {
 	config.Config
 	ports.PageRepository
+	ports.Mailer
 }
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
 		cfg:            params.Config,
 		pageRepository: params.PageRepository,
+		mailer:         params.Mailer,
 	}
 }
 
@@ -175,7 +179,7 @@ func (s *Service) AddPageRoleUser(
 	exisingPageRoleUser, _ := s.pageRepository.GetOneRoleUserByUserPkId(
 		context.Background(),
 		input.PagePkID,
-		input.AuthorPkID,
+		input.UserPkID,
 	)
 	if exisingPageRoleUser != nil {
 		return nil, domain.ErrExisitingPageRoleUser
@@ -184,6 +188,23 @@ func (s *Service) AddPageRoleUser(
 	pageRoleUser, err := s.pageRepository.CreatePageRole(context.Background(), input)
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation
+	}
+
+	err = s.mailer.SendMailCustomTemplate(ports.SendSendGridMailCustomTemplatePayload{
+		FromName: "Stuhub.IO",
+		ToName: userutils.GetUserFullName(
+			pageRoleUser.User.FirstName,
+			pageRoleUser.User.LastName,
+		),
+		ToAddress:        pageRoleUser.User.Email,
+		TemplateHTMLName: "share_people",
+		Data: map[string]string{
+			"url": pageRoleUser.Role, // TODO: build share link
+		},
+		Subject: "Share with you",
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return pageRoleUser, nil
@@ -210,4 +231,60 @@ func (s *Service) GetPageRoleUsers(
 	}
 
 	return pageRoleUsers, nil
+}
+
+func (s *Service) UpdatePageRoleUser(
+	input domain.PageRoleUpdateInput,
+) *domain.Error {
+	exisingPage, err := s.pageRepository.GetByID(context.Background(), "", &input.PagePkID)
+	if err != nil {
+		return err
+	}
+
+	if !exisingPage.IsAuthor(input.AuthorPkID) {
+		return domain.ErrUnauthorized
+	}
+
+	if exisingPage.AuthorPkID == input.UserPkID {
+		return domain.ErrNotFound
+	}
+
+	exisingPageRoleUser, _ := s.pageRepository.GetOneRoleUserByUserPkId(
+		context.Background(),
+		input.PagePkID,
+		input.UserPkID,
+	)
+	if exisingPageRoleUser == nil {
+		return domain.ErrNotFound
+	}
+
+	return s.pageRepository.UpdatePageRole(context.Background(), input)
+}
+
+func (s *Service) DeletePageRoleUser(
+	input domain.PageRoleDeleteInput,
+) *domain.Error {
+	exisingPage, err := s.pageRepository.GetByID(context.Background(), "", &input.PagePkID)
+	if err != nil {
+		return err
+	}
+
+	if !exisingPage.IsAuthor(input.AuthorPkID) {
+		return domain.ErrUnauthorized
+	}
+
+	if exisingPage.AuthorPkID == input.UserPkID {
+		return domain.ErrNotFound
+	}
+
+	exisingPageRoleUser, _ := s.pageRepository.GetOneRoleUserByUserPkId(
+		context.Background(),
+		input.PagePkID,
+		input.UserPkID,
+	)
+	if exisingPageRoleUser == nil {
+		return domain.ErrNotFound
+	}
+
+	return s.pageRepository.DeletePageRole(context.Background(), input)
 }

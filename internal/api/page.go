@@ -69,6 +69,14 @@ func UsePageHandle(params NewPageHandlerParams) {
 		("/pages/:" + pageutils.PagePkIDParam + "/roles"),
 		decorators.CurrentUser(handler.GetAllRoleUsers),
 	)
+	router.PATCH(
+		("/pages/:" + pageutils.PagePkIDParam + "/roles"),
+		decorators.CurrentUser(handler.UpdatePageRoleUser),
+	)
+	router.DELETE(
+		("/pages/:" + pageutils.PagePkIDParam + "/roles"),
+		decorators.CurrentUser(handler.DeletePageRoleUser),
+	)
 }
 
 func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
@@ -390,4 +398,57 @@ func (h *PageHandler) GetAllRoleUsers(c *gin.Context, user *domain.User) {
 	}
 
 	response.WithData(c, 200, page)
+}
+
+func (h *PageHandler) UpdatePageRoleUser(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	var body request.UpdatePageRoleUserBody
+	if verr := request.Validate(c, &body); verr != nil {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	err := h.pageService.UpdatePageRoleUser(domain.PageRoleUpdateInput{
+		AuthorPkID: user.PkID,
+		PagePkID:   pagePkID,
+		UserPkID:   body.UserPkID,
+		Role:       body.Role,
+	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithMessage(c, 200, "Role's updated successfully!")
+}
+
+func (h *PageHandler) DeletePageRoleUser(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	var body request.DeletePageRoleUserBody
+	if verr := request.Validate(c, &body); verr != nil {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	err := h.pageService.DeletePageRoleUser(domain.PageRoleDeleteInput{
+		AuthorPkID: user.PkID,
+		PagePkID:   pagePkID,
+		UserPkID:   body.UserPkID,
+	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithMessage(c, 200, "Role's deleted successfully!")
 }

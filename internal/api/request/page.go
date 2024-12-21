@@ -64,3 +64,12 @@ type AddPageRoleUserBody struct {
 	UserPkID int64           `binding:"required" json:"user_pkid"`
 	Role     domain.PageRole `binding:"required" json:"role,omitempty"`
 }
+
+type UpdatePageRoleUserBody struct {
+	UserPkID int64           `binding:"required" json:"user_pkid"`
+	Role     domain.PageRole `binding:"required" json:"role,omitempty"`
+}
+
+type DeletePageRoleUserBody struct {
+	UserPkID int64 `binding:"required" json:"user_pkid"`
+}
