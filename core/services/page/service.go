@@ -97,12 +97,16 @@ func (s *Service) UpdateGeneralAccess(
 	pagePkID int64,
 	updateInput domain.PageGeneralAccessUpdateInput,
 ) (*domain.Page, *domain.Error) {
-	_, err := s.pageRepository.GetByID(context.Background(), "", &pagePkID)
+	page, err := s.pageRepository.GetByID(context.Background(), "", &pagePkID)
 	if err != nil {
 		return nil, err
 	}
 
-	page, err := s.pageRepository.UpdateGeneralAccess(context.Background(), pagePkID, updateInput)
+	if !page.IsAuthor(updateInput.AuthorPkID) {
+		return nil, domain.ErrUnauthorized
+	}
+
+	page, err = s.pageRepository.UpdateGeneralAccess(context.Background(), pagePkID, updateInput)
 	if err != nil {
 		return nil, err
 	}
@@ -148,4 +152,62 @@ func (s *Service) CreateAssetPage(assetInput domain.AssetPageInput) (*domain.Pag
 		return nil, domain.ErrDatabaseMutation
 	}
 	return page, nil
+}
+
+// Page Role
+
+func (s *Service) AddPageRoleUser(
+	input domain.PageRoleCreateInput,
+) (*domain.PageRoleUser, *domain.Error) {
+	exisingPage, err := s.pageRepository.GetByID(context.Background(), "", &input.PagePkID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !exisingPage.IsAuthor(input.AuthorPkID) {
+		return nil, domain.ErrUnauthorized
+	}
+
+	if exisingPage.AuthorPkID == input.UserPkID {
+		return nil, domain.ErrExisitingPageRoleUser
+	}
+
+	exisingPageRoleUser, _ := s.pageRepository.GetOneRoleUserByUserPkId(
+		context.Background(),
+		input.PagePkID,
+		input.AuthorPkID,
+	)
+	if exisingPageRoleUser != nil {
+		return nil, domain.ErrExisitingPageRoleUser
+	}
+
+	pageRoleUser, err := s.pageRepository.CreatePageRole(context.Background(), input)
+	if err != nil {
+		return nil, domain.ErrDatabaseMutation
+	}
+
+	return pageRoleUser, nil
+}
+
+func (s *Service) GetPageRoleUsers(
+	input domain.PageRoleGetAllInput,
+) ([]domain.PageRoleUser, *domain.Error) {
+	exisingPage, err := s.pageRepository.GetByID(context.Background(), "", &input.PagePkID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !exisingPage.IsAuthor(input.AuthorPkID) {
+		return nil, domain.ErrUnauthorized
+	}
+
+	pageRoleUsers, err := s.pageRepository.GetAllRoleUsersByPkId(
+		context.Background(),
+		input.PagePkID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return pageRoleUsers, nil
 }

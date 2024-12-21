@@ -59,3 +59,8 @@ type UpdatePageGeneralAccessBody struct {
 	IsGeneralAccess *bool           `binding:"required" json:"is_general_access"`
 	GeneralRole     domain.PageRole `binding:"required" json:"general_role,omitempty"`
 }
+
+type AddPageRoleUserBody struct {
+	UserPkID int64           `binding:"required" json:"user_pkid"`
+	Role     domain.PageRole `binding:"required" json:"role,omitempty"`
+}

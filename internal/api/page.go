@@ -59,6 +59,16 @@ func UsePageHandle(params NewPageHandlerParams) {
 
 	// asssets
 	router.POST("pages/assets", decorators.CurrentUser(handler.CreateAsset))
+
+	// page roles
+	router.POST(
+		("/pages/:" + pageutils.PagePkIDParam + "/roles"),
+		decorators.CurrentUser(handler.AddPageRoleUser),
+	)
+	router.GET(
+		("/pages/:" + pageutils.PagePkIDParam + "/roles"),
+		decorators.CurrentUser(handler.GetAllRoleUsers),
+	)
 }
 
 func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
@@ -306,6 +316,7 @@ func (h *PageHandler) UpdatePageGeneralAccess(c *gin.Context, user *domain.User)
 	}
 
 	page, err := h.pageService.UpdateGeneralAccess(pagePkID, domain.PageGeneralAccessUpdateInput{
+		AuthorPkID:      user.PkID,
 		IsGeneralAccess: *body.IsGeneralAccess,
 		GeneralRole:     body.GeneralRole,
 	})
@@ -325,6 +336,54 @@ func (h *PageHandler) GetPageByToken(c *gin.Context) {
 	}
 
 	page, err := h.pageService.GetPageDetailByID("", tokenID)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 200, page)
+}
+
+// Page Roles
+
+func (h *PageHandler) AddPageRoleUser(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	var body request.AddPageRoleUserBody
+	if verr := request.Validate(c, &body); verr != nil {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	page, err := h.pageService.AddPageRoleUser(domain.PageRoleCreateInput{
+		AuthorPkID: user.PkID,
+		PagePkID:   pagePkID,
+		UserPkID:   body.UserPkID,
+		Role:       body.Role,
+	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 201, page)
+}
+
+func (h *PageHandler) GetAllRoleUsers(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	page, err := h.pageService.GetPageRoleUsers(domain.PageRoleGetAllInput{
+		AuthorPkID: user.PkID,
+		PagePkID:   pagePkID,
+	})
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return

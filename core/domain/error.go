@@ -202,6 +202,11 @@ var (
 		Error:   InternalServerErr,
 		Message: "Fail to update page general access",
 	}
+	ErrExisitingPageRoleUser = &Error{
+		Code:    BadRequestCode,
+		Error:   BadRequestErr,
+		Message: "User's role has already added",
+	}
 )
 
 func NewErr(msg string, code int) *Error {

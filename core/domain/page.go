@@ -26,6 +26,15 @@ type Page struct {
 	GeneralRole      string       `json:"general_role"`
 }
 
+type PageRoleUser struct {
+	PkID      int64  `json:"pkid"`
+	PagePkID  int64  `json:"page_pkid"`
+	User      User   `json:"user"`
+	Role      string `json:"role"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
 type PageInput struct {
 	Name             string       `json:"name"`
 	ParentPagePkID   *int64       `json:"parent_page_pkid"`
@@ -58,8 +67,21 @@ type PageListQuery struct {
 }
 
 type PageGeneralAccessUpdateInput struct {
+	AuthorPkID      int64    `json:"author_pkid"`
 	IsGeneralAccess bool     `json:"is_general_access"`
 	GeneralRole     PageRole `json:"general_role"`
+}
+
+type PageRoleCreateInput struct {
+	AuthorPkID int64    `json:"author_pkid"`
+	PagePkID   int64    `json:"page_pkid"`
+	UserPkID   int64    `json:"user_pkid"`
+	Role       PageRole `json:"role"`
+}
+
+type PageRoleGetAllInput struct {
+	AuthorPkID int64 `json:"author_pkid"`
+	PagePkID   int64 `json:"page_pkid"`
 }
 
 type PageViewType int

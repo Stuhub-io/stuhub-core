@@ -3,6 +3,7 @@ package pageutils
 import (
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/internal/repository/model"
+	"github.com/Stuhub-io/utils/userutils"
 )
 
 func TransformDocModelToDomain(doc *model.Document) *domain.Document {
@@ -61,6 +62,24 @@ func TransformPageModelToDomain(
 		Path:             model.Path,
 		IsGeneralAccess:  model.IsGeneralAccess,
 		GeneralRole:      model.GeneralRole,
+	}
+}
+
+type PageRoleWithUser struct {
+	model.PageRole
+	User model.User `gorm:"foreignKey:user_pkid" json:"user"` // Define foreign key relationship
+}
+
+func TransformPageRoleModelToDomain(
+	model PageRoleWithUser,
+) *domain.PageRoleUser {
+	return &domain.PageRoleUser{
+		PkID:      model.Pkid,
+		PagePkID:  model.PagePkid,
+		User:      *userutils.TransformUserModelToDomain(model.User),
+		Role:      model.Role,
+		CreatedAt: model.CreatedAt.String(),
+		UpdatedAt: model.UpdatedAt.String(),
 	}
 }
 

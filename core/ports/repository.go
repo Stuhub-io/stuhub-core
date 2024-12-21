@@ -112,6 +112,20 @@ type PageRepository interface {
 
 	// Asset Page
 	CreateAsset(ctx context.Context, asset domain.AssetPageInput) (*domain.Page, *domain.Error)
+
+	// Page Role
+	CreatePageRole(
+		ctx context.Context,
+		createInput domain.PageRoleCreateInput,
+	) (*domain.PageRoleUser, *domain.Error)
+	GetOneRoleUserByUserPkId(
+		ctx context.Context,
+		pagePkID, userPkID int64,
+	) (*domain.PageRoleUser, *domain.Error)
+	GetAllRoleUsersByPkId(
+		ctx context.Context,
+		pagePkID int64,
+	) ([]domain.PageRoleUser, *domain.Error)
 }
 
 type OrganizationInviteRepository interface {
