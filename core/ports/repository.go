@@ -118,11 +118,11 @@ type PageRepository interface {
 		ctx context.Context,
 		createInput domain.PageRoleCreateInput,
 	) (*domain.PageRoleUser, *domain.Error)
-	GetOneRoleUserByUserPkId(
+	GetPageRoleByUserPkId(
 		ctx context.Context,
 		pagePkID, userPkID int64,
 	) (*domain.PageRoleUser, *domain.Error)
-	GetAllRoleUsersByPagePkId(
+	GetPageRoles(
 		ctx context.Context,
 		pagePkID int64,
 	) ([]domain.PageRoleUser, *domain.Error)

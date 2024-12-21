@@ -176,7 +176,7 @@ func (s *Service) AddPageRoleUser(
 		return nil, domain.ErrExisitingPageRoleUser
 	}
 
-	exisingPageRoleUser, _ := s.pageRepository.GetOneRoleUserByUserPkId(
+	exisingPageRoleUser, _ := s.pageRepository.GetPageRoleByUserPkId(
 		context.Background(),
 		input.PagePkID,
 		input.UserPkID,
@@ -222,7 +222,7 @@ func (s *Service) GetPageRoleUsers(
 		return nil, domain.ErrUnauthorized
 	}
 
-	pageRoleUsers, err := s.pageRepository.GetAllRoleUsersByPagePkId(
+	pageRoleUsers, err := s.pageRepository.GetPageRoles(
 		context.Background(),
 		input.PagePkID,
 	)
@@ -249,7 +249,7 @@ func (s *Service) UpdatePageRoleUser(
 		return domain.ErrNotFound
 	}
 
-	exisingPageRoleUser, _ := s.pageRepository.GetOneRoleUserByUserPkId(
+	exisingPageRoleUser, _ := s.pageRepository.GetPageRoleByUserPkId(
 		context.Background(),
 		input.PagePkID,
 		input.UserPkID,
@@ -277,7 +277,7 @@ func (s *Service) DeletePageRoleUser(
 		return domain.ErrNotFound
 	}
 
-	exisingPageRoleUser, _ := s.pageRepository.GetOneRoleUserByUserPkId(
+	exisingPageRoleUser, _ := s.pageRepository.GetPageRoleByUserPkId(
 		context.Background(),
 		input.PagePkID,
 		input.UserPkID,

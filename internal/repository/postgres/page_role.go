@@ -37,7 +37,7 @@ func (r *PageRepository) CreatePageRole(
 	), nil
 }
 
-func (r *PageRepository) GetOneRoleUserByUserPkId(
+func (r *PageRepository) GetPageRoleByUserPkId(
 	ctx context.Context,
 	pagePkID, userPkID int64,
 ) (*domain.PageRoleUser, *domain.Error) {
@@ -53,7 +53,7 @@ func (r *PageRepository) GetOneRoleUserByUserPkId(
 	), nil
 }
 
-func (r *PageRepository) GetAllRoleUsersByPagePkId(
+func (r *PageRepository) GetPageRoles(
 	ctx context.Context,
 	pagePkID int64,
 ) ([]domain.PageRoleUser, *domain.Error) {
