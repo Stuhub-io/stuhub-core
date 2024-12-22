@@ -121,7 +121,7 @@ func (r *PageRepository) GetByID(
 ) (*domain.Page, *domain.Error) {
 	var page PageResult
 
-	query := r.preloadPageResult(r.store.DB().Model(&page))
+	query := r.preloadPageResult(r.store.DB().Model(&page)).Preload("Page")
 
 	if pageID != "" {
 		query = query.Where("id = ?", pageID)
@@ -143,6 +143,7 @@ func (r *PageRepository) GetByID(
 		childPagesDomain[i] = *pageutils.TransformPageModelToDomain(childPages[i].Page, nil, pageutils.PageBodyParams{
 			Document: pageutils.TransformDocModelToDomain(childPages[i].Doc),
 			Asset:    pageutils.TransformAssetModalToDomain(childPages[i].Asset),
+			// Author:   userutils.TransformUserModelToDomain(childPages[i].Author),
 		})
 	}
 

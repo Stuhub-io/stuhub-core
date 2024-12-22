@@ -32,7 +32,17 @@ func main() {
 
 	dbStore := store.NewDBStore(postgresDB, cacheStore)
 
-	result := dbStore.DB().Exec("ALTER TABLE \"assets\" ALTER COLUMN \"extension\" TYPE VARCHAR(100)")
+	// modify the sql
+	result := dbStore.DB().Exec(`
+			ALTER TABLE pages
+			DROP CONSTRAINT IF EXISTS fk_page_author;
+
+			-- Add the foreign key constraint with ON DELETE SET NULL
+			ALTER TABLE pages
+			ADD CONSTRAINT fk_page_author
+			FOREIGN KEY (author_pkid) REFERENCES users(pkid)
+			ON DELETE SET NULL;
+	`)
 	if result.Error != nil {
 		panic(result.Error)
 	}

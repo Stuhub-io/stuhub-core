@@ -43,7 +43,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	return userutils.TransformUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(&user), nil
 }
 
 func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain.User, *domain.Error) {
@@ -62,7 +62,7 @@ func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	user := userutils.TransformUserModelToDomain(userModel)
+	user := userutils.TransformUserModelToDomain(&userModel)
 
 	// go func() {
 	// 	r.store.Cache().SetUser(user, time.Hour)
@@ -82,7 +82,7 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	return userutils.TransformUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(&user), nil
 }
 
 func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email string, salt string) (*domain.User, *domain.Error) {
@@ -104,7 +104,7 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 		}
 	}
 
-	return userutils.TransformUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(&user), nil
 }
 
 func (r *UserRepository) CreateUserWithGoogleInfo(ctx context.Context, email, salt, firstName, lastName, avatar string) (*domain.User, *domain.Error) {
@@ -122,7 +122,7 @@ func (r *UserRepository) CreateUserWithGoogleInfo(ctx context.Context, email, sa
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	return userutils.TransformUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(&user), nil
 }
 
 func (r *UserRepository) SetUserPassword(ctx context.Context, pkID int64, hashedPassword string) *domain.Error {
@@ -162,7 +162,7 @@ func (r *UserRepository) UpdateUserInfo(ctx context.Context, PkID int64, firstNa
 		return nil, domain.ErrDatabaseMutation
 	}
 
-	return userutils.TransformUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(&user), nil
 }
 
 func (r *UserRepository) SetUserActivatedAt(ctx context.Context, pkID int64, activatedAt time.Time) (*domain.User, *domain.Error) {
@@ -173,5 +173,5 @@ func (r *UserRepository) SetUserActivatedAt(ctx context.Context, pkID int64, act
 		return nil, domain.ErrDatabaseMutation
 	}
 
-	return userutils.TransformUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(&user), nil
 }

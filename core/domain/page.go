@@ -10,7 +10,7 @@ type Page struct {
 	ID               string       `json:"id"`
 	Name             string       `json:"name"`
 	ParentPagePkID   *int64       `json:"parent_page_pkid"`
-	AuthorPkID       int64        `json:"author_pkid"`
+	AuthorPkID       *int64       `json:"author_pkid"`
 	OrganizationPkID int64        `json:"organization_pkid"`
 	CreatedAt        string       `json:"created_at"`
 	UpdatedAt        string       `json:"updated_at"`
@@ -23,16 +23,17 @@ type Page struct {
 	Asset            *Asset       `json:"asset"`
 	Path             string       `json:"path"`
 	IsGeneralAccess  bool         `json:"is_general_access"`
-	GeneralRole      string       `json:"general_role"`
+	GeneralRole      PageRole     `json:"general_role"`
+	Author           *User        `json:"author"`
 }
 
 type PageRoleUser struct {
-	PkID      int64  `json:"pkid"`
-	PagePkID  int64  `json:"page_pkid"`
-	User      User   `json:"user"`
-	Role      string `json:"role"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	PkID      int64    `json:"pkid"`
+	PagePkID  int64    `json:"page_pkid"`
+	User      User     `json:"user"`
+	Role      PageRole `json:"role"`
+	CreatedAt string   `json:"created_at"`
+	UpdatedAt string   `json:"updated_at"`
 }
 
 type PageInput struct {
@@ -175,5 +176,8 @@ func PageRoleFromString(val string) PageRole {
 }
 
 func (p *Page) IsAuthor(authorPkID int64) bool {
-	return p.AuthorPkID == authorPkID
+	if p.AuthorPkID == nil {
+		return false
+	}
+	return *p.AuthorPkID == authorPkID
 }

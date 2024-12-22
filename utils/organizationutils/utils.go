@@ -28,7 +28,7 @@ func TransformOrganizationMemberModelToDomain(member MemberWithUser) *domain.Org
 		OrganizationPkID: member.OrganizationPkid,
 		UserPkID:         member.UserPkid,
 		Role:             member.Role,
-		User:             userutils.TransformUserModelToDomain(member.User),
+		User:             userutils.TransformUserModelToDomain(&member.User),
 		ActivatedAt:      activatedAt,
 		CreatedAt:        member.CreatedAt.String(),
 		UpdatedAt:        member.UpdatedAt.String(),
@@ -55,7 +55,7 @@ func TransformOrganizationModelToDomain(model OrganizationWithMembers) *domain.O
 		Avatar:      model.Avatar,
 		CreatedAt:   model.CreatedAt.String(),
 		UpdatedAt:   model.UpdatedAt.String(),
-		Owner:       userutils.TransformUserModelToDomain(model.Owner),
+		Owner:       userutils.TransformUserModelToDomain(&model.Owner),
 		Members:     TransformOrganizationMemberModelToDomain_Many(model.Members),
 	}
 }

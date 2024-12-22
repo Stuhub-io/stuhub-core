@@ -168,11 +168,12 @@ func (s *Service) AddPageRoleUser(
 		return nil, err
 	}
 
+	// FIXME: Extend to allow non owner to add user
 	if !exisingPage.IsAuthor(input.AuthorPkID) {
 		return nil, domain.ErrUnauthorized
 	}
 
-	if exisingPage.AuthorPkID == input.UserPkID {
+	if exisingPage.IsAuthor(input.UserPkID) {
 		return nil, domain.ErrExisitingPageRoleUser
 	}
 
@@ -199,7 +200,7 @@ func (s *Service) AddPageRoleUser(
 		ToAddress:        pageRoleUser.User.Email,
 		TemplateHTMLName: "share_people",
 		Data: map[string]string{
-			"url": pageRoleUser.Role, // TODO: build share link
+			"url": pageRoleUser.Role.String(), // TODO: build share link
 		},
 		Subject: "Share with you",
 	})
@@ -245,7 +246,7 @@ func (s *Service) UpdatePageRoleUser(
 		return domain.ErrUnauthorized
 	}
 
-	if exisingPage.AuthorPkID == input.UserPkID {
+	if exisingPage.IsAuthor(input.UserPkID) {
 		return domain.ErrNotFound
 	}
 
@@ -273,7 +274,7 @@ func (s *Service) DeletePageRoleUser(
 		return domain.ErrUnauthorized
 	}
 
-	if exisingPage.AuthorPkID == input.UserPkID {
+	if exisingPage.IsAuthor(input.UserPkID) {
 		return domain.ErrNotFound
 	}
 

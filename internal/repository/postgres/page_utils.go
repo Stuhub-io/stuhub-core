@@ -11,8 +11,9 @@ import (
 
 type PageResult struct {
 	model.Page
-	Asset *model.Asset    `gorm:"foreignKey:page_pkid"`
-	Doc   *model.Document `gorm:"foreignKey:page_pkid"`
+	Asset  *model.Asset    `gorm:"foreignKey:page_pkid"`
+	Doc    *model.Document `gorm:"foreignKey:page_pkid"`
+	Author *model.User     `gorm:"foreignKey:author_pkid"`
 }
 
 func (r *PageRepository) initPageModel(
@@ -33,7 +34,7 @@ func (r *PageRepository) initPageModel(
 		Name:           pageInput.Name,
 		CoverImage:     pageInput.CoverImage,
 		OrgPkid:        &pageInput.OrganizationPkID,
-		AuthorPkid:     pageInput.AuthorPkID,
+		AuthorPkid:     &pageInput.AuthorPkID,
 		ParentPagePkid: pageInput.ParentPagePkID,
 		ViewType:       pageInput.ViewType.String(),
 		Path:           path,

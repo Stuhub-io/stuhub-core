@@ -27,11 +27,12 @@ func TransformDocModelToDomain(doc *model.Document) *domain.Document {
 type PageBodyParams struct {
 	Document *domain.Document
 	Asset    *domain.Asset
+	Author   *domain.User
 }
 
 func TransformPageModelToDomain(
 	model model.Page,
-	ChildPages []domain.Page,
+	childPages []domain.Page,
 	pageBody PageBodyParams,
 ) *domain.Page {
 	archivedAt := ""
@@ -56,12 +57,13 @@ func TransformPageModelToDomain(
 		CoverImage:       model.CoverImage,
 		ArchivedAt:       archivedAt,
 		NodeID:           nodeID,
-		ChildPages:       ChildPages,
+		ChildPages:       childPages,
 		Document:         pageBody.Document,
 		Asset:            pageBody.Asset,
 		Path:             model.Path,
 		IsGeneralAccess:  model.IsGeneralAccess,
-		GeneralRole:      model.GeneralRole,
+		GeneralRole:      domain.PageRoleFromString(model.GeneralRole),
+		Author:           pageBody.Author,
 	}
 }
 
@@ -76,8 +78,8 @@ func TransformPageRoleModelToDomain(
 	return &domain.PageRoleUser{
 		PkID:      model.Pkid,
 		PagePkID:  model.PagePkid,
-		User:      *userutils.TransformUserModelToDomain(model.User),
-		Role:      model.Role,
+		User:      *userutils.TransformUserModelToDomain(&model.User),
+		Role:      domain.PageRoleFromString(model.Role),
 		CreatedAt: model.CreatedAt.String(),
 		UpdatedAt: model.UpdatedAt.String(),
 	}

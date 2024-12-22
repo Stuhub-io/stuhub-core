@@ -35,10 +35,7 @@ func UsePageHandle(params NewPageHandlerParams) {
 	router.POST("/pages", decorators.CurrentUser(handler.CreateDocument))
 	router.GET("/pages/id/:"+pageutils.PageIDParam, decorators.CurrentUser(handler.GetPage))
 	router.PUT(("/pages/:" + pageutils.PagePkIDParam), decorators.CurrentUser(handler.UpdatePage))
-	router.PUT(
-		("/pages/:" + pageutils.PagePkIDParam + "/general-access"),
-		decorators.CurrentUser(handler.UpdatePageGeneralAccess),
-	)
+
 	router.PUT(
 		"/pages/:"+pageutils.PagePkIDParam+"/content",
 		decorators.CurrentUser(handler.UpdatePageContent),
@@ -61,6 +58,10 @@ func UsePageHandle(params NewPageHandlerParams) {
 	router.POST("pages/assets", decorators.CurrentUser(handler.CreateAsset))
 
 	// page roles
+	router.PUT(
+		("/pages/:" + pageutils.PagePkIDParam + "/general-access"),
+		decorators.CurrentUser(handler.UpdatePageGeneralAccess),
+	)
 	router.POST(
 		("/pages/:" + pageutils.PagePkIDParam + "/roles"),
 		decorators.CurrentUser(handler.AddPageRoleUser),
@@ -388,7 +389,7 @@ func (h *PageHandler) GetAllRoleUsers(c *gin.Context, user *domain.User) {
 		return
 	}
 
-	page, err := h.pageService.GetPageRoleUsers(domain.PageRoleGetAllInput{
+	roles, err := h.pageService.GetPageRoleUsers(domain.PageRoleGetAllInput{
 		AuthorPkID: user.PkID,
 		PagePkID:   pagePkID,
 	})
@@ -397,7 +398,7 @@ func (h *PageHandler) GetAllRoleUsers(c *gin.Context, user *domain.User) {
 		return
 	}
 
-	response.WithData(c, 200, page)
+	response.WithData(c, 200, roles)
 }
 
 func (h *PageHandler) UpdatePageRoleUser(c *gin.Context, user *domain.User) {
