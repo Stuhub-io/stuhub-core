@@ -42,7 +42,22 @@ func (r *PageRepository) initPageModel(
 	return &newPage, nil
 }
 
-func (*PageRepository) preloadPageResult(q *gorm.DB) *gorm.DB {
+type PreloadPageResultParams struct {
+	Asset  bool
+	Doc    bool
+	Author bool
+}
+
+func (*PageRepository) preloadPageResult(q *gorm.DB, option PreloadPageResultParams) *gorm.DB {
 	// Preload Asset and Doc
-	return q.Preload("Asset").Preload("Doc")
+	if option.Asset {
+		q = q.Preload("Asset")
+	}
+	if option.Doc {
+		q = q.Preload("Doc")
+	}
+	if option.Author {
+		q = q.Preload("Author")
+	}
+	return q
 }

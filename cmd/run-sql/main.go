@@ -34,15 +34,11 @@ func main() {
 
 	// modify the sql
 	result := dbStore.DB().Exec(`
-			ALTER TABLE pages
-			DROP CONSTRAINT IF EXISTS fk_page_author;
-
-			-- Add the foreign key constraint with ON DELETE SET NULL
-			ALTER TABLE pages
-			ADD CONSTRAINT fk_page_author
-			FOREIGN KEY (author_pkid) REFERENCES users(pkid)
-			ON DELETE SET NULL;
+	ALTER TABLE page_roles 
+	ALTER COLUMN email SET NOT NULL;
 	`)
+	// ALTER TABLE page_roles
+	// ADD COLUMN IF NOT EXISTS email VARCHAR(255);
 	if result.Error != nil {
 		panic(result.Error)
 	}

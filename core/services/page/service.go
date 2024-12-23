@@ -173,14 +173,14 @@ func (s *Service) AddPageRoleUser(
 		return nil, domain.ErrUnauthorized
 	}
 
-	if exisingPage.IsAuthor(input.UserPkID) {
+	if exisingPage.IsEmailAuthor(input.Email) {
 		return nil, domain.ErrExisitingPageRoleUser
 	}
 
-	exisingPageRoleUser, _ := s.pageRepository.GetPageRoleByUserPkId(
+	exisingPageRoleUser, _ := s.pageRepository.GetPageRoleByEmail(
 		context.Background(),
 		input.PagePkID,
-		input.UserPkID,
+		input.Email,
 	)
 	if exisingPageRoleUser != nil {
 		return nil, domain.ErrExisitingPageRoleUser
@@ -246,14 +246,14 @@ func (s *Service) UpdatePageRoleUser(
 		return domain.ErrUnauthorized
 	}
 
-	if exisingPage.IsAuthor(input.UserPkID) {
+	if exisingPage.IsEmailAuthor(input.Email) {
 		return domain.ErrNotFound
 	}
 
-	exisingPageRoleUser, _ := s.pageRepository.GetPageRoleByUserPkId(
+	exisingPageRoleUser, _ := s.pageRepository.GetPageRoleByEmail(
 		context.Background(),
 		input.PagePkID,
-		input.UserPkID,
+		input.Email,
 	)
 	if exisingPageRoleUser == nil {
 		return domain.ErrNotFound
@@ -274,14 +274,14 @@ func (s *Service) DeletePageRoleUser(
 		return domain.ErrUnauthorized
 	}
 
-	if exisingPage.IsAuthor(input.UserPkID) {
+	if exisingPage.IsEmailAuthor(input.Email) {
 		return domain.ErrNotFound
 	}
 
-	exisingPageRoleUser, _ := s.pageRepository.GetPageRoleByUserPkId(
+	exisingPageRoleUser, _ := s.pageRepository.GetPageRoleByEmail(
 		context.Background(),
 		input.PagePkID,
-		input.UserPkID,
+		input.Email,
 	)
 	if exisingPageRoleUser == nil {
 		return domain.ErrNotFound

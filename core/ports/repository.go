@@ -9,6 +9,7 @@ import (
 )
 
 type UserRepository interface {
+	Search(ctx context.Context, query domain.UserSearchQuery) ([]domain.User, *domain.Error)
 	GetByID(ctx context.Context, id string) (*domain.User, *domain.Error)
 	GetUserByPkID(ctx context.Context, pkID int64) (*domain.User, *domain.Error)
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, *domain.Error)
@@ -118,9 +119,9 @@ type PageRepository interface {
 		ctx context.Context,
 		createInput domain.PageRoleCreateInput,
 	) (*domain.PageRoleUser, *domain.Error)
-	GetPageRoleByUserPkId(
+	GetPageRoleByEmail(
 		ctx context.Context,
-		pagePkID, userPkID int64,
+		pagePkID int64, email string,
 	) (*domain.PageRoleUser, *domain.Error)
 	GetPageRoles(
 		ctx context.Context,

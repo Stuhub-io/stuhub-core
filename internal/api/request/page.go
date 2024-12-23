@@ -61,15 +61,15 @@ type UpdatePageGeneralAccessBody struct {
 }
 
 type AddPageRoleUserBody struct {
-	UserPkID int64           `binding:"required" json:"user_pkid"`
-	Role     domain.PageRole `binding:"required" json:"role,omitempty"`
+	Role  domain.PageRole `binding:"required" json:"role,omitempty"`
+	Email string          `binding:"required" json:"email"`
 }
 
 type UpdatePageRoleUserBody struct {
-	UserPkID int64           `binding:"required" json:"user_pkid"`
-	Role     domain.PageRole `binding:"required" json:"role,omitempty"`
+	Email string          `binding:"required" json:"email"`
+	Role  domain.PageRole `binding:"required" json:"role,omitempty"`
 }
 
 type DeletePageRoleUserBody struct {
-	UserPkID int64 `binding:"required" json:"user_pkid"`
+	Email string `binding:"required" json:"email"`
 }

@@ -175,3 +175,32 @@ func (r *UserRepository) SetUserActivatedAt(ctx context.Context, pkID int64, act
 
 	return userutils.TransformUserModelToDomain(&user), nil
 }
+
+func (r *UserRepository) Search(ctx context.Context, input domain.UserSearchQuery) ([]domain.User, *domain.Error) {
+	var users []model.User
+
+	query := r.store.DB().Model(&model.User{})
+	if input.Search != "" {
+		query = query.Where("unaccent(CONCAT(first_name, ' ', last_name)) ILIKE unaccent(?)", "%"+input.Search+"%")
+	}
+
+	if input.OrganizationPkID != nil {
+		query = query.Joins("JOIN organization_members ON organization_members.user_pkid = users.pkid").Where("organization_members.organization_pkid = ?", *input.OrganizationPkID)
+	}
+
+	if len(input.Emails) > 0 {
+		query = query.Where("email IN (?)", input.Emails)
+	}
+
+	if err := query.Limit(input.Limit).Offset(input.Offset).Find(&users).Error; err != nil {
+		return nil, domain.ErrDatabaseQuery
+	}
+
+	resultUsers := make([]domain.User, 0, len(users))
+	for _, user := range users {
+		resultUsers = append(resultUsers, *userutils.TransformUserModelToDomain(&user))
+	}
+
+	// return domainUsers, nil
+	return resultUsers, nil
+}

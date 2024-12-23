@@ -10,6 +10,7 @@ import (
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/pageutils"
+	"github.com/Stuhub-io/utils/userutils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -36,7 +37,11 @@ func (r *PageRepository) List(
 	q domain.PageListQuery,
 ) ([]domain.Page, *domain.Error) {
 	var results []PageResult
-	query := r.preloadPageResult(r.store.DB()).
+	query := r.preloadPageResult(r.store.DB(), PreloadPageResultParams{
+		Asset:  true,
+		Doc:    true,
+		Author: true,
+	}).
 		Where("org_pkid = ?", q.OrgPkID)
 
 	if q.IsArchived != nil {
@@ -121,7 +126,11 @@ func (r *PageRepository) GetByID(
 ) (*domain.Page, *domain.Error) {
 	var page PageResult
 
-	query := r.preloadPageResult(r.store.DB().Model(&page)).Preload("Page")
+	query := r.preloadPageResult(r.store.DB().Model(&page), PreloadPageResultParams{
+		Asset:  true,
+		Doc:    true,
+		Author: true,
+	})
 
 	if pageID != "" {
 		query = query.Where("id = ?", pageID)
@@ -134,7 +143,10 @@ func (r *PageRepository) GetByID(
 	}
 
 	var childPages []PageResult
-	if dbErr := r.preloadPageResult(r.store.DB()).Where("parent_page_pkid = ?", page.Pkid).Order("pages.updated_at desc").Find(&childPages).Error; dbErr != nil {
+	if dbErr := r.preloadPageResult(r.store.DB(), PreloadPageResultParams{
+		Asset: true,
+		Doc:   true,
+	}).Where("parent_page_pkid = ?", page.Pkid).Order("pages.updated_at desc").Find(&childPages).Error; dbErr != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
 
@@ -143,7 +155,6 @@ func (r *PageRepository) GetByID(
 		childPagesDomain[i] = *pageutils.TransformPageModelToDomain(childPages[i].Page, nil, pageutils.PageBodyParams{
 			Document: pageutils.TransformDocModelToDomain(childPages[i].Doc),
 			Asset:    pageutils.TransformAssetModalToDomain(childPages[i].Asset),
-			// Author:   userutils.TransformUserModelToDomain(childPages[i].Author),
 		})
 	}
 
@@ -153,6 +164,7 @@ func (r *PageRepository) GetByID(
 		pageutils.PageBodyParams{
 			Document: pageutils.TransformDocModelToDomain(page.Doc),
 			Asset:    pageutils.TransformAssetModalToDomain(page.Asset),
+			Author:   userutils.TransformUserModelToDomain(page.Author),
 		},
 	), nil
 }

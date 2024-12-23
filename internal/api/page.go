@@ -371,7 +371,7 @@ func (h *PageHandler) AddPageRoleUser(c *gin.Context, user *domain.User) {
 	page, err := h.pageService.AddPageRoleUser(domain.PageRoleCreateInput{
 		AuthorPkID: user.PkID,
 		PagePkID:   pagePkID,
-		UserPkID:   body.UserPkID,
+		Email:      body.Email,
 		Role:       body.Role,
 	})
 	if err != nil {
@@ -417,7 +417,7 @@ func (h *PageHandler) UpdatePageRoleUser(c *gin.Context, user *domain.User) {
 	err := h.pageService.UpdatePageRoleUser(domain.PageRoleUpdateInput{
 		AuthorPkID: user.PkID,
 		PagePkID:   pagePkID,
-		UserPkID:   body.UserPkID,
+		Email:      body.Email,
 		Role:       body.Role,
 	})
 	if err != nil {
@@ -444,7 +444,7 @@ func (h *PageHandler) DeletePageRoleUser(c *gin.Context, user *domain.User) {
 	err := h.pageService.DeletePageRoleUser(domain.PageRoleDeleteInput{
 		AuthorPkID: user.PkID,
 		PagePkID:   pagePkID,
-		UserPkID:   body.UserPkID,
+		Email:      body.Email,
 	})
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)

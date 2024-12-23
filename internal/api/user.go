@@ -35,6 +35,7 @@ func UseUserHandler(params NewUserHandlerParams) {
 	router.GET("/:id", decorators.CurrentUser(handler.GetUserById))
 	router.POST("/find-by-email", handler.GetUserByEmail)
 	router.PATCH("/update-info", decorators.CurrentUser(handler.UpdateUserInfo))
+	router.POST("/search", decorators.CurrentUser(handler.SearchUsers))
 }
 
 // GetUserByID godoc
@@ -83,4 +84,27 @@ func (h UserHandler) UpdateUserInfo(c *gin.Context, user *domain.User) {
 	}
 
 	response.WithData(c, http.StatusOK, resp)
+}
+
+func (h UserHandler) SearchUsers(c *gin.Context, user *domain.User) {
+	var body request.SearchUsersBody
+	if vr := request.Validate(c, &body); vr != nil {
+		response.BindError(c, vr.Error())
+		return
+	}
+
+	users, err := h.userService.SearchUsers(domain.UserSearchQuery{
+		Search:           body.Search,
+		OrganizationPkID: body.OrgPkID,
+		Emails:           body.Emails,
+		Limit:            int(body.PaginationRequest.Size),
+		Offset:           int(body.PaginationRequest.Page * body.PaginationRequest.Size),
+	})
+
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, http.StatusOK, users)
 }

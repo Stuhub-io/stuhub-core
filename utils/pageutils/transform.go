@@ -69,7 +69,7 @@ func TransformPageModelToDomain(
 
 type PageRoleWithUser struct {
 	model.PageRole
-	User model.User `gorm:"foreignKey:user_pkid" json:"user"` // Define foreign key relationship
+	User *model.User `gorm:"foreignKey:user_pkid" json:"user"` // Define foreign key relationship
 }
 
 func TransformPageRoleModelToDomain(
@@ -78,7 +78,8 @@ func TransformPageRoleModelToDomain(
 	return &domain.PageRoleUser{
 		PkID:      model.Pkid,
 		PagePkID:  model.PagePkid,
-		User:      *userutils.TransformUserModelToDomain(&model.User),
+		User:      userutils.TransformUserModelToDomain(model.User),
+		Email:     model.Email,
 		Role:      domain.PageRoleFromString(model.Role),
 		CreatedAt: model.CreatedAt.String(),
 		UpdatedAt: model.UpdatedAt.String(),

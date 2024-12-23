@@ -3,6 +3,7 @@ package domain
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 )
 
 type Page struct {
@@ -30,7 +31,8 @@ type Page struct {
 type PageRoleUser struct {
 	PkID      int64    `json:"pkid"`
 	PagePkID  int64    `json:"page_pkid"`
-	User      User     `json:"user"`
+	User      *User    `json:"user"`
+	Email     string   `json:"email"`
 	Role      PageRole `json:"role"`
 	CreatedAt string   `json:"created_at"`
 	UpdatedAt string   `json:"updated_at"`
@@ -76,21 +78,21 @@ type PageGeneralAccessUpdateInput struct {
 type PageRoleCreateInput struct {
 	AuthorPkID int64    `json:"author_pkid"`
 	PagePkID   int64    `json:"page_pkid"`
-	UserPkID   int64    `json:"user_pkid"`
+	Email      string   `json:"email"`
 	Role       PageRole `json:"role"`
 }
 
 type PageRoleUpdateInput struct {
 	AuthorPkID int64    `json:"author_pkid"`
 	PagePkID   int64    `json:"page_pkid"`
-	UserPkID   int64    `json:"user_pkid"`
+	Email      string   `json:"email"`
 	Role       PageRole `json:"role"`
 }
 
 type PageRoleDeleteInput struct {
-	AuthorPkID int64 `json:"author_pkid"`
-	PagePkID   int64 `json:"page_pkid"`
-	UserPkID   int64 `json:"user_pkid"`
+	AuthorPkID int64  `json:"author_pkid"`
+	PagePkID   int64  `json:"page_pkid"`
+	Email      string `json:"email"`
 }
 
 type PageRoleGetAllInput struct {
@@ -173,6 +175,13 @@ func PageRoleFromString(val string) PageRole {
 	default:
 		return PageViewer
 	}
+}
+
+func (p *Page) IsEmailAuthor(email string) bool {
+	if p.Author == nil {
+		return false
+	}
+	return strings.EqualFold(p.Author.Email, email)
 }
 
 func (p *Page) IsAuthor(authorPkID int64) bool {
