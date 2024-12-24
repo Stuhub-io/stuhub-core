@@ -9,7 +9,7 @@ import (
 )
 
 type UserRepository interface {
-	Search(ctx context.Context, query domain.UserSearchQuery) ([]domain.User, *domain.Error)
+	Search(ctx context.Context, query domain.UserSearchQuery, currentUser *domain.User) ([]domain.User, *domain.Error)
 	GetByID(ctx context.Context, id string) (*domain.User, *domain.Error)
 	GetUserByPkID(ctx context.Context, pkID int64) (*domain.User, *domain.Error)
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, *domain.Error)

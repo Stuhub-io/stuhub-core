@@ -99,7 +99,7 @@ func (h UserHandler) SearchUsers(c *gin.Context, user *domain.User) {
 		Emails:           body.Emails,
 		Limit:            int(body.PaginationRequest.Size),
 		Offset:           int(body.PaginationRequest.Page * body.PaginationRequest.Size),
-	})
+	}, user)
 
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)

@@ -265,6 +265,7 @@ func (s *Service) UpdatePageRoleUser(
 func (s *Service) DeletePageRoleUser(
 	input domain.PageRoleDeleteInput,
 ) *domain.Error {
+
 	exisingPage, err := s.pageRepository.GetByID(context.Background(), "", &input.PagePkID)
 	if err != nil {
 		return err

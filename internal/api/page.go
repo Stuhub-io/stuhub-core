@@ -353,8 +353,7 @@ func (h *PageHandler) GetPageByToken(c *gin.Context) {
 	response.WithData(c, 200, page)
 }
 
-// Page Roles
-
+// Page Roles.
 func (h *PageHandler) AddPageRoleUser(c *gin.Context, user *domain.User) {
 	pagePkID, ok := pageutils.GetPagePkIDParam(c)
 	if !ok {

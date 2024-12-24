@@ -34,8 +34,8 @@ func main() {
 
 	// modify the sql
 	result := dbStore.DB().Exec(`
-	ALTER TABLE page_roles 
-	ALTER COLUMN email SET NOT NULL;
+	CREATE UNIQUE INDEX IF NOT EXISTS page_roles_page_email_unique_idx 
+	ON "page_roles" ("page_pkid", "email");
 	`)
 	// ALTER TABLE page_roles
 	// ADD COLUMN IF NOT EXISTS email VARCHAR(255);

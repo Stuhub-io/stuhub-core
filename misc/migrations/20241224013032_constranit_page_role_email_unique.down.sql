@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS page_roles_page_email_unique_idx;

@@ -59,8 +59,8 @@ func (s *Service) UpdateUserInfo(pkID int64, firstName, lastName, avatar string)
 	}, nil
 }
 
-func (s *Service) SearchUsers(input domain.UserSearchQuery) ([]domain.User, *domain.Error) {
-	users, err := s.userRepository.Search(context.Background(), input)
+func (s *Service) SearchUsers(input domain.UserSearchQuery, currentUser *domain.User) ([]domain.User, *domain.Error) {
+	users, err := s.userRepository.Search(context.Background(), input, currentUser)
 	if err != nil {
 		return nil, err
 	}
