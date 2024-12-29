@@ -169,7 +169,7 @@ func (s *Service) AddPageRoleUser(
 	}
 
 	// FIXME: Extend to allow non owner to add user
-	if !exisingPage.IsAuthor(input.AuthorPkID) {
+	if !exisingPage.IsAuthor(input.CallerPkID) {
 		return nil, domain.ErrUnauthorized
 	}
 

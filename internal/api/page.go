@@ -368,7 +368,7 @@ func (h *PageHandler) AddPageRoleUser(c *gin.Context, user *domain.User) {
 	}
 
 	page, err := h.pageService.AddPageRoleUser(domain.PageRoleCreateInput{
-		AuthorPkID: user.PkID,
+		CallerPkID: user.PkID,
 		PagePkID:   pagePkID,
 		Email:      body.Email,
 		Role:       body.Role,

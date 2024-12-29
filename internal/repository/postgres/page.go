@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/Stuhub-io/config"
@@ -75,7 +76,7 @@ func (r *PageRepository) List(
 			*pageutils.TransformPageModelToDomain(result.Page, nil, pageutils.PageBodyParams{
 				Document: pageutils.TransformDocModelToDomain(result.Doc),
 				Asset:    pageutils.TransformAssetModalToDomain(result.Asset),
-			}),
+			}, nil),
 		)
 	}
 
@@ -116,6 +117,7 @@ func (r *PageRepository) Update(
 		page,
 		nil,
 		pageutils.PageBodyParams{},
+		nil,
 	), nil
 }
 
@@ -155,7 +157,7 @@ func (r *PageRepository) GetByID(
 		childPagesDomain[i] = *pageutils.TransformPageModelToDomain(childPages[i].Page, nil, pageutils.PageBodyParams{
 			Document: pageutils.TransformDocModelToDomain(childPages[i].Doc),
 			Asset:    pageutils.TransformAssetModalToDomain(childPages[i].Asset),
-		})
+		}, nil)
 	}
 
 	return pageutils.TransformPageModelToDomain(
@@ -166,6 +168,7 @@ func (r *PageRepository) GetByID(
 			Asset:    pageutils.TransformAssetModalToDomain(page.Asset),
 			Author:   userutils.TransformUserModelToDomain(page.Author),
 		},
+		nil,
 	), nil
 }
 
@@ -183,7 +186,7 @@ func (r *PageRepository) Archive(
 
 	tx, done := r.store.NewTransaction()
 
-	descendantPath := pageutils.AppendPath(page.Path, page.ID)
+	descendantPath := pageutils.AppendPath(page.Path, strconv.FormatInt(page.Pkid, 10))
 
 	// Archive current page
 	if dbErr := tx.DB().Clauses(clause.Locking{
@@ -207,7 +210,7 @@ func (r *PageRepository) Archive(
 
 	done(nil)
 
-	return pageutils.TransformPageModelToDomain(page, nil, pageutils.PageBodyParams{}), nil
+	return pageutils.TransformPageModelToDomain(page, nil, pageutils.PageBodyParams{}, nil), nil
 }
 
 func (r *PageRepository) Move(
@@ -235,7 +238,7 @@ func (r *PageRepository) Move(
 		if dbErr := tx.DB().Where("pkid = ?", parentPagePkID).First(&parentPage).Error; dbErr != nil {
 			return nil, doneTx(dbErr)
 		}
-		newPath = pageutils.AppendPath(parentPage.Path, parentPage.ID)
+		newPath = pageutils.AppendPath(parentPage.Path, strconv.FormatInt(parentPage.Pkid, 10))
 	}
 
 	// update page path
@@ -248,7 +251,7 @@ func (r *PageRepository) Move(
 		return nil, doneTx(dbErr)
 	}
 
-	descendantPath := pageutils.AppendPath(page.Path, page.ID)
+	descendantPath := pageutils.AppendPath(page.Path, strconv.FormatInt(page.Pkid, 10))
 	descendantOldPath := pageutils.AppendPath(oldPath, page.ID)
 
 	// batch update descendants
@@ -264,7 +267,7 @@ func (r *PageRepository) Move(
 	doneTx(nil)
 	// Commit Tx
 
-	return pageutils.TransformPageModelToDomain(page, nil, pageutils.PageBodyParams{}), nil
+	return pageutils.TransformPageModelToDomain(page, nil, pageutils.PageBodyParams{}, nil), nil
 }
 
 func (r *PageRepository) UpdateGeneralAccess(
@@ -283,5 +286,5 @@ func (r *PageRepository) UpdateGeneralAccess(
 		return nil, domain.ErrUpdatePageGeneralAccess
 	}
 
-	return pageutils.TransformPageModelToDomain(page, nil, pageutils.PageBodyParams{}), nil
+	return pageutils.TransformPageModelToDomain(page, nil, pageutils.PageBodyParams{}, nil), nil
 }

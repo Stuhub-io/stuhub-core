@@ -26,16 +26,18 @@ type Page struct {
 	IsGeneralAccess  bool         `json:"is_general_access"`
 	GeneralRole      PageRole     `json:"general_role"`
 	Author           *User        `json:"author"`
+	InheritFromPage  *Page        `json:"inherit_from_page"`
 }
 
 type PageRoleUser struct {
-	PkID      int64    `json:"pkid"`
-	PagePkID  int64    `json:"page_pkid"`
-	User      *User    `json:"user"`
-	Email     string   `json:"email"`
-	Role      PageRole `json:"role"`
-	CreatedAt string   `json:"created_at"`
-	UpdatedAt string   `json:"updated_at"`
+	PkID            int64    `json:"pkid"`
+	PagePkID        int64    `json:"page_pkid"`
+	User            *User    `json:"user"`
+	Email           string   `json:"email"`
+	Role            PageRole `json:"role"`
+	CreatedAt       string   `json:"created_at"`
+	UpdatedAt       string   `json:"updated_at"`
+	InheritFromPage *Page    `json:"inherit_from_page"`
 }
 
 type PageInput struct {
@@ -76,7 +78,7 @@ type PageGeneralAccessUpdateInput struct {
 }
 
 type PageRoleCreateInput struct {
-	AuthorPkID int64    `json:"author_pkid"`
+	CallerPkID int64    `json:"author_pkid"`
 	PagePkID   int64    `json:"page_pkid"`
 	Email      string   `json:"email"`
 	Role       PageRole `json:"role"`
@@ -145,10 +147,11 @@ type PageRole int
 const (
 	PageViewer PageRole = iota + 1
 	PageEditor
+	PageInherit
 )
 
 func (r PageRole) String() string {
-	return [...]string{"viewer", "editor"}[r-1]
+	return [...]string{"viewer", "editor", "inherit"}[r-1]
 }
 
 func (r *PageRole) UnmarshalJSON(data []byte) error {
@@ -158,11 +161,11 @@ func (r *PageRole) UnmarshalJSON(data []byte) error {
 	}
 
 	switch PageRole(value) {
-	case PageViewer, PageEditor:
+	case PageViewer, PageEditor, PageInherit:
 		*r = PageRole(value)
 		return nil
 	default:
-		return errors.New("invalid view_type, must be 1(viewer) | 2(editor)")
+		return errors.New("invalid view_type, must be 1(viewer) | 2(editor) | 3(inherit)")
 	}
 }
 
@@ -172,6 +175,8 @@ func PageRoleFromString(val string) PageRole {
 		return PageViewer
 	case "editor":
 		return PageEditor
+	case "inherit":
+		return PageInherit
 	default:
 		return PageViewer
 	}

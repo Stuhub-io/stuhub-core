@@ -2,11 +2,14 @@ package main
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/internal/cache"
 	store "github.com/Stuhub-io/internal/repository"
+	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/internal/repository/postgres"
 	"github.com/Stuhub-io/logger"
 )
@@ -32,15 +35,38 @@ func main() {
 
 	dbStore := store.NewDBStore(postgresDB, cacheStore)
 
-	// modify the sql
-	result := dbStore.DB().Exec(`
-	CREATE UNIQUE INDEX IF NOT EXISTS page_roles_page_email_unique_idx 
-	ON "page_roles" ("page_pkid", "email");
-	`)
-	// ALTER TABLE page_roles
-	// ADD COLUMN IF NOT EXISTS email VARCHAR(255);
-	if result.Error != nil {
-		panic(result.Error)
+	// Migrate All Paths From IDs Into PkIDs
+	var allPages []model.Page
+	dbStore.DB().Find(&allPages)
+
+	pageIDMap := make(map[string]model.Page)
+	for _, page := range allPages {
+		pageIDMap[page.ID] = page
 	}
-	fmt.Print("Successfully dropped constraint", result)
+
+	PathToPkIDPath := func(path string) string {
+		if len(path) == 0 {
+			return ""
+		}
+		ids := strings.Split(path, "/")
+		pkIDs := make([]string, 0, len(ids))
+		for _, id := range ids {
+			pkIdStr := strconv.FormatInt(pageIDMap[id].Pkid, 10)
+			pkIDs = append(pkIDs, pkIdStr)
+		}
+		newPath := strings.Join(pkIDs, "/")
+		return newPath
+	}
+
+	updatePages := make([]model.Page, 0, len(allPages))
+
+	for _, page := range allPages {
+		page.Path = PathToPkIDPath(page.Path)
+		updatePages = append(updatePages, page)
+		fmt.Println(page.Path)
+	}
+
+	dbStore.DB().Save(&updatePages)
+
+	fmt.Print("done")
 }

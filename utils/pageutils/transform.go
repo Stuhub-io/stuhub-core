@@ -34,6 +34,7 @@ func TransformPageModelToDomain(
 	model model.Page,
 	childPages []domain.Page,
 	pageBody PageBodyParams,
+	inheritFromPage *domain.Page,
 ) *domain.Page {
 	archivedAt := ""
 	if model.ArchivedAt != nil {
@@ -64,25 +65,29 @@ func TransformPageModelToDomain(
 		IsGeneralAccess:  model.IsGeneralAccess,
 		GeneralRole:      domain.PageRoleFromString(model.GeneralRole),
 		Author:           pageBody.Author,
+		InheritFromPage:  inheritFromPage,
 	}
 }
 
 type PageRoleWithUser struct {
 	model.PageRole
-	User *model.User `gorm:"foreignKey:user_pkid" json:"user"` // Define foreign key relationship
+	User            *model.User  `gorm:"foreignKey:user_pkid" json:"user"` // Define foreign key relationship
+	InheritFromPage *domain.Page `gorm:"-"                    json:"inherit_from_page"`
+	Page            *model.Page  `gorm:"foreignKey:page_pkid" json:"page"` // Define foreign key relationship
 }
 
 func TransformPageRoleModelToDomain(
 	model PageRoleWithUser,
 ) *domain.PageRoleUser {
 	return &domain.PageRoleUser{
-		PkID:      model.Pkid,
-		PagePkID:  model.PagePkid,
-		User:      userutils.TransformUserModelToDomain(model.User),
-		Email:     model.Email,
-		Role:      domain.PageRoleFromString(model.Role),
-		CreatedAt: model.CreatedAt.String(),
-		UpdatedAt: model.UpdatedAt.String(),
+		PkID:            model.Pkid,
+		PagePkID:        model.PagePkid,
+		User:            userutils.TransformUserModelToDomain(model.User),
+		Email:           model.Email,
+		Role:            domain.PageRoleFromString(model.Role),
+		CreatedAt:       model.CreatedAt.String(),
+		UpdatedAt:       model.UpdatedAt.String(),
+		InheritFromPage: model.InheritFromPage,
 	}
 }
 

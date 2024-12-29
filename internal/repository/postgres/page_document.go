@@ -13,8 +13,9 @@ func (r *PageRepository) CreateDocumentPage(
 	ctx context.Context,
 	pageInput domain.DocumentPageInput,
 ) (*domain.Page, *domain.Error) {
+	result, iErr := r.initPageModel(ctx, pageInput.PageInput)
+	newPage := result.Page
 
-	newPage, iErr := r.initPageModel(ctx, pageInput.PageInput)
 	if iErr != nil {
 		return nil, iErr
 	}
@@ -25,6 +26,7 @@ func (r *PageRepository) CreateDocumentPage(
 
 	// Begin Tx
 	tx, doneTx := r.store.NewTransaction()
+
 	err := tx.DB().Create(&newPage).Error
 	if err != nil {
 		return nil, doneTx(err)
@@ -40,8 +42,18 @@ func (r *PageRepository) CreateDocumentPage(
 		return nil, doneTx(err)
 	}
 
+	// Inherit Parent Permission
+	parentFolder := result.ParentFolder
+	if parentFolder != nil {
+		if err := inheritPageRoles(tx.DB(), InheritPageRolesParams{
+			ParentFolder: *parentFolder,
+			NewPagePkID:  newPage.Pkid,
+		}); err != nil {
+			return nil, doneTx(err)
+		}
+	}
+
 	doneTx(nil)
-	// Commit Tx
 
 	return pageutils.TransformPageModelToDomain(
 		*newPage,
@@ -49,6 +61,7 @@ func (r *PageRepository) CreateDocumentPage(
 		pageutils.PageBodyParams{
 			Document: pageutils.TransformDocModelToDomain(&document),
 		},
+		nil,
 	), nil
 }
 
@@ -80,5 +93,6 @@ func (r *PageRepository) UpdateContent(
 		pageutils.PageBodyParams{
 			Document: pageutils.TransformDocModelToDomain(&doc),
 		},
+		nil,
 	), nil
 }
