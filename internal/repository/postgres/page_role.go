@@ -9,30 +9,63 @@ import (
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/pageutils"
 	sliceutils "github.com/Stuhub-io/utils/slice"
+	"gorm.io/gorm/clause"
 )
 
 func (r *PageRepository) CreatePageRole(ctx context.Context, createInput domain.PageRoleCreateInput) (*domain.PageRoleUser, *domain.Error) {
+	tx, done := r.store.NewTransaction()
+	defer done(nil)
 
 	Email := strings.ToLower(createInput.Email)
+
+	page := &model.Page{}
+	if err := tx.DB().Where("pkid = ?", createInput.PagePkID).First(page).Error; err != nil {
+		return nil, done(err)
+	}
+
 	var UserPkID *int64
 	user := &model.User{}
 
-	if err := r.store.DB().Where("email = ?", Email).First(user).Error; err == nil {
+	if err := tx.DB().Where("email = ?", Email).First(user).Error; err == nil {
 		UserPkID = &user.Pkid
 	}
 
+	// New User page Role
 	pageRole := model.PageRole{
-		PagePkid: createInput.PagePkID,
+		PagePkid: page.Pkid,
 		Email:    Email,
 		UserPkid: UserPkID,
 		Role:     createInput.Role.String(),
 	}
 
-	if err := r.store.DB().Create(&pageRole).Error; err != nil {
-		return nil, domain.ErrDatabaseMutation
+	if err := tx.DB().Create(&pageRole).Error; err != nil {
+		return nil, done(err)
 	}
 
-	// FIXME: Create an INHERIT type Role for all descendant Pages for new email -- if not exist
+	// Inherit Role to Child Pages
+	childPath := pageutils.AppendPath(page.Path, strconv.FormatInt(page.Pkid, 10))
+	childPages := []model.Page{}
+	if err := tx.DB().Where("path LIKE ?", childPath+"%").Find(&childPages).Error; err != nil {
+		return nil, done(err)
+	}
+
+	if len(childPages) != 0 {
+		newRoles := sliceutils.Map(childPages, func(page model.Page) model.PageRole {
+			return model.PageRole{
+				PagePkid: page.Pkid,
+				Email:    Email,
+				UserPkid: UserPkID,
+				Role:     domain.PageInherit.String(),
+			}
+		})
+
+		// Ignore if child already has user role
+		if err := tx.DB().Clauses(clause.OnConflict{
+			DoNothing: true,
+		}).Create(&newRoles).Error; err != nil {
+			return nil, done(err)
+		}
+	}
 
 	return pageutils.TransformPageRoleModelToDomain(
 		pageutils.PageRoleWithUser{
@@ -49,13 +82,36 @@ func (r *PageRepository) GetPageRoleByEmail(
 	var pageRole model.PageRole
 
 	if err := buildQueryPageRoles(r.store.DB(), queryPageRolesParams{
-		PkIDs:  []int64{pagePkID},
-		Emails: []string{email},
+		PagePkIDs: []int64{pagePkID},
+		Emails:    []string{email},
 	}).First(&pageRole).Error; err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	// FIXME: Get Actual Page Role From Parent for Inherit Access
+	// If role inherit, get the role from parent page
+	if pageRole.Role == domain.PageInherit.String() {
+		var page model.Page
+		if err := r.store.DB().Where("pkid = ?", pagePkID).First(&page).Error; err != nil {
+			return nil, domain.ErrDatabaseQuery
+		}
+
+		parentPkIDs := pageutils.PagePathToPkIDs(page.Path)
+
+		var basePageRole model.PageRole
+		query := buildQueryPageRoles(r.store.DB(), queryPageRolesParams{
+			Emails:       []string{email},
+			ExcludeRoles: []domain.PageRole{domain.PageInherit},
+			PagePkIDs:    parentPkIDs,
+			Preload: queryPageRolesPreloadOption{
+				Page: true,
+			},
+		})
+		if err := query.First(&basePageRole); err != nil {
+			pageRole.Role = domain.PageViewer.String() // Default Role If Not Found inherit
+		} else {
+			pageRole.Role = basePageRole.Role
+		}
+	}
 
 	return pageutils.TransformPageRoleModelToDomain(
 		pageutils.PageRoleWithUser{
@@ -75,7 +131,10 @@ func (r *PageRepository) GetPageRoles(
 	}
 
 	pageRoles, err := queryPageRoles(r.store.DB(), queryPageRolesParams{
-		PkIDs: []int64{pagePkID},
+		PagePkIDs: []int64{pagePkID},
+		Preload: queryPageRolesPreloadOption{
+			User: true,
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -89,18 +148,12 @@ func (r *PageRepository) GetPageRoles(
 		})
 
 	// Get Actual Page Role for Inherit Access
-	parentPkIDs := sliceutils.Map(strings.Split(page.Path, "/"), func(pkid string) int64 {
-		parsedPkID, err := strconv.ParseInt(pkid, 10, 64)
-		if err != nil {
-			return -1
-		}
-		return parsedPkID
-	})
+	parentPkIDs := pageutils.PagePathToPkIDs(page.Path)
 
 	parentBasePageRoles, err := queryPageRoles(r.store.DB(), queryPageRolesParams{
 		Emails:       inheritRoleEmails,
 		ExcludeRoles: []domain.PageRole{domain.PageInherit},
-		PkIDs:        parentPkIDs,
+		PagePkIDs:    parentPkIDs,
 		Preload: queryPageRolesPreloadOption{
 			Page: true,
 		},
@@ -144,8 +197,8 @@ func (r *PageRepository) UpdatePageRole(
 	updateInput domain.PageRoleUpdateInput,
 ) *domain.Error {
 	query := buildQueryPageRoles(r.store.DB(), queryPageRolesParams{
-		PkIDs:  []int64{updateInput.PagePkID},
-		Emails: []string{updateInput.Email},
+		PagePkIDs: []int64{updateInput.PagePkID},
+		Emails:    []string{updateInput.Email},
 	})
 	if err := query.Model(&model.PageRole{}).Update("role", updateInput.Role.String()).Error; err != nil {
 		return domain.ErrDatabaseMutation
@@ -158,15 +211,39 @@ func (r *PageRepository) DeletePageRole(
 	ctx context.Context,
 	updateInput domain.PageRoleDeleteInput,
 ) *domain.Error {
+	tx, done := r.store.NewTransaction()
+	defer done(nil)
 
-	if err := buildQueryPageRoles(r.store.DB(), queryPageRolesParams{
-		PkIDs:  []int64{updateInput.PagePkID},
-		Emails: []string{updateInput.Email},
+	var page model.Page
+	if err := tx.DB().Where("pkid = ?", updateInput.PagePkID).First(&page).Error; err != nil {
+		return done(err)
+	}
+
+	if err := buildQueryPageRoles(tx.DB(), queryPageRolesParams{
+		PagePkIDs: []int64{page.Pkid},
+		Emails:    []string{updateInput.Email},
 	}).Delete(&model.PageRole{}).Error; err != nil {
 		return domain.ErrDatabaseMutation
 	}
 
-	// FIXME: DELETE ALL INHERIT ROLES FOR DESCENDANT PAGES
+	// Remove All Inherit Roles from children
+	childPath := pageutils.AppendPath(page.Path, strconv.FormatInt(page.Pkid, 10))
+	childPages := []model.Page{}
+	if err := tx.DB().Where("path LIKE ?", childPath+"%").Find(&childPages).Error; err != nil {
+		return done(err)
+	}
+	if len(childPages) != 0 {
+		q := buildQueryPageRoles(tx.DB(), queryPageRolesParams{
+			PagePkIDs: sliceutils.Map(childPages, func(page model.Page) int64 {
+				return page.Pkid
+			}),
+			Emails: []string{updateInput.Email},
+			Roles:  []domain.PageRole{domain.PageInherit},
+		})
+		if err := q.Delete(&model.PageRole{}).Error; err != nil {
+			return done(err)
+		}
+	}
 
 	return nil
 }

@@ -52,7 +52,7 @@ type queryPageRolesPreloadOption struct {
 	Page bool
 }
 type queryPageRolesParams struct {
-	PkIDs        []int64
+	PagePkIDs    []int64
 	Emails       []string
 	Roles        []domain.PageRole
 	Preload      queryPageRolesPreloadOption
@@ -60,9 +60,9 @@ type queryPageRolesParams struct {
 }
 
 func queryPageRoles(tx *gorm.DB, params queryPageRolesParams) ([]PageRoleResult, *domain.Error) {
-	pageRoles := make([]PageRoleResult, 0, len(params.PkIDs))
+	pageRoles := make([]PageRoleResult, 0, len(params.PagePkIDs))
 
-	if len(params.PkIDs) == 0 && len(params.Emails) == 0 && len(params.Roles) == 0 {
+	if len(params.PagePkIDs) == 0 && len(params.Emails) == 0 && len(params.Roles) == 0 {
 		return pageRoles, nil
 	}
 	query := buildQueryPageRoles(tx, params)
@@ -72,20 +72,20 @@ func queryPageRoles(tx *gorm.DB, params queryPageRolesParams) ([]PageRoleResult,
 	}
 
 	slices.SortFunc(pageRoles, func(i, j PageRoleResult) int {
-		return slices.Index(params.PkIDs, i.Pkid) - slices.Index(params.PkIDs, j.Pkid)
+		return slices.Index(params.PagePkIDs, i.Pkid) - slices.Index(params.PagePkIDs, j.Pkid)
 	})
 
 	return pageRoles, nil
 }
 
 func buildQueryPageRoles(tx *gorm.DB, params queryPageRolesParams) *gorm.DB {
-	PkIDs := params.PkIDs
+	PagePkIDs := params.PagePkIDs
 	Emails := params.Emails
 	Roles := params.Roles
 	Preload := params.Preload
 	ExcludeRoles := params.ExcludeRoles
 
-	if len(PkIDs) == 0 && len(Emails) == 0 && len(Roles) == 0 {
+	if len(PagePkIDs) == 0 && len(Emails) == 0 && len(Roles) == 0 {
 		return tx
 	}
 
@@ -98,11 +98,11 @@ func buildQueryPageRoles(tx *gorm.DB, params queryPageRolesParams) *gorm.DB {
 	}
 
 	// tx
-	if len(PkIDs) != 0 {
-		if len(PkIDs) == 1 {
-			tx = tx.Where("page_pkid = ?", PkIDs[0])
+	if len(PagePkIDs) != 0 {
+		if len(PagePkIDs) == 1 {
+			tx = tx.Where("page_pkid = ?", PagePkIDs[0])
 		} else {
-			tx = tx.Where("page_pkid IN (?)", PkIDs)
+			tx = tx.Where("page_pkid IN (?)", PagePkIDs)
 		}
 	}
 
