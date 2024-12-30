@@ -87,7 +87,7 @@ func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
 		return
 	}
 
-	page, err := h.pageService.GetPageDetailByID(pageID, "")
+	page, err := h.pageService.GetPageDetailByID(pageID, "", user)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -146,7 +146,7 @@ func (h *PageHandler) CreateDocument(c *gin.Context, user *domain.User) {
 			OrganizationPkID: body.OrgPkID,
 		},
 		Document: domain.DocumentInput(body.Document),
-	})
+	}, user)
 
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
@@ -178,7 +178,8 @@ func (h *PageHandler) UpdatePage(c *gin.Context, user *domain.User) {
 		ViewType:   body.ViewType,
 		CoverImage: body.CoverImage,
 		Document:   body.Document,
-	})
+	}, user)
+
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -200,7 +201,7 @@ func (h *PageHandler) UpdatePageContent(c *gin.Context, user *domain.User) {
 
 	document, err := h.pageService.UpdateDocumentContentByPkID(pagePkID, domain.DocumentInput{
 		JsonContent: body.JsonContent,
-	})
+	}, user)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -213,7 +214,7 @@ func (h *PageHandler) ArchivePage(c *gin.Context, user *domain.User) {
 	if !ok {
 		response.BindError(c, "pagePkID is missing or invalid")
 	}
-	page, err := h.pageService.ArchivedPageByPkID(pagePkID)
+	page, err := h.pageService.ArchivedPageByPkID(pagePkID, user)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -235,7 +236,8 @@ func (h *PageHandler) MovePage(c *gin.Context, user *domain.User) {
 
 	page, err := h.pageService.MovePageByPkID(pagePkID, domain.PageMoveInput{
 		ParentPagePkID: body.ParentPagePkID,
-	})
+	}, user)
+
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -268,7 +270,7 @@ func (h *PageHandler) CreateAsset(c *gin.Context, user *domain.User) {
 			Extension:  body.Asset.Extension,
 			Thumbnails: body.Asset.Thumbnails,
 		},
-	})
+	}, user)
 
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
@@ -328,7 +330,8 @@ func (h *PageHandler) UpdatePageGeneralAccess(c *gin.Context, user *domain.User)
 		AuthorPkID:      user.PkID,
 		IsGeneralAccess: *body.IsGeneralAccess,
 		GeneralRole:     body.GeneralRole,
-	})
+	}, user)
+
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -344,7 +347,8 @@ func (h *PageHandler) GetPageByToken(c *gin.Context) {
 		return
 	}
 
-	page, err := h.pageService.GetPageDetailByID("", tokenID)
+	page, err := h.pageService.GetPageDetailByID("", tokenID, nil)
+
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -372,7 +376,8 @@ func (h *PageHandler) AddPageRoleUser(c *gin.Context, user *domain.User) {
 		PagePkID:   pagePkID,
 		Email:      body.Email,
 		Role:       body.Role,
-	})
+	}, user)
+
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -391,7 +396,8 @@ func (h *PageHandler) GetAllRoleUsers(c *gin.Context, user *domain.User) {
 	roles, err := h.pageService.GetPageRoleUsers(domain.PageRoleGetAllInput{
 		AuthorPkID: user.PkID,
 		PagePkID:   pagePkID,
-	})
+	}, user)
+
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -418,7 +424,8 @@ func (h *PageHandler) UpdatePageRoleUser(c *gin.Context, user *domain.User) {
 		PagePkID:   pagePkID,
 		Email:      body.Email,
 		Role:       body.Role,
-	})
+	}, user)
+
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -444,7 +451,8 @@ func (h *PageHandler) DeletePageRoleUser(c *gin.Context, user *domain.User) {
 		AuthorPkID: user.PkID,
 		PagePkID:   pagePkID,
 		Email:      body.Email,
-	})
+	}, user)
+
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return

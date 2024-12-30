@@ -112,6 +112,19 @@ func (r *OrganizationRepository) GetOwnerOrgByPkID(ctx context.Context, ownerID,
 	return organizationutils.TransformOrganizationModelToDomain(org), nil
 }
 
+func (r *OrganizationRepository) GetOrgByPkID(ctx context.Context, pkID int64) (*domain.Organization, *domain.Error) {
+	var org organizationutils.OrganizationWithMembers
+
+	err := r.store.DB().Preload("Members").Where("pkid = ?", pkID).First(&org).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrNotFound
+		}
+	}
+
+	return organizationutils.TransformOrganizationModelToDomain(org), nil
+}
+
 func (r *OrganizationRepository) GetOrgBySlug(ctx context.Context, slug string) (*domain.Organization, *domain.Error) {
 	var org organizationutils.OrganizationWithMembers
 

@@ -247,3 +247,57 @@ func (r *PageRepository) DeletePageRole(
 
 	return nil
 }
+
+func (r *PageRepository) CheckPermission(ctx context.Context, input domain.PageRolePermissionCheckInput) (permissions domain.PageRolePermissions) {
+	page := input.Page
+	user := input.User
+
+	if user == nil {
+		if page.IsGeneralAccess {
+			return getPermissionByRole(page.GeneralRole)
+		}
+		return permissions
+	}
+
+	// Author has all permissions
+	if page.AuthorPkID != nil && user.PkID == *page.AuthorPkID {
+		permissions.CanDelete = true
+		permissions.CanEdit = true
+		permissions.CanMove = true
+		permissions.CanShare = true
+		permissions.CanView = true
+
+		return permissions
+	}
+
+	userRole, err := r.GetPageRoleByEmail(ctx, page.PkID, user.Email)
+
+	// Direct Role
+	if err == nil {
+		permissions = getPermissionByRole(userRole.Role)
+		return permissions
+	}
+
+	// Direct Role Not Found
+	if page.IsGeneralAccess {
+		return getPermissionByRole(page.GeneralRole)
+	}
+
+	return permissions
+}
+
+func getPermissionByRole(role domain.PageRole) (p domain.PageRolePermissions) {
+	switch role {
+	case domain.PageEditor:
+		p.CanEdit = true
+		p.CanView = true
+		p.CanDownload = true
+		p.CanShare = true
+		p.CanDelete = true
+		p.CanMove = true
+	case domain.PageViewer:
+		p.CanView = true
+	case domain.PageInherit:
+	}
+	return p
+}

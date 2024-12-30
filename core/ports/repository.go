@@ -38,6 +38,7 @@ type UserRepository interface {
 
 type OrganizationRepository interface {
 	GetOrgMembers(ctx context.Context, pkID int64) ([]domain.OrganizationMember, *domain.Error)
+	GetOrgByPkID(ctx context.Context, pkID int64) (*domain.Organization, *domain.Error)
 	GetOrgBySlug(ctx context.Context, slug string) (*domain.Organization, *domain.Error)
 	GetOwnerOrgByName(
 		ctx context.Context,
@@ -135,6 +136,10 @@ type PageRepository interface {
 		ctx context.Context,
 		updateInput domain.PageRoleDeleteInput,
 	) *domain.Error
+	CheckPermission(
+		ctx context.Context,
+		input domain.PageRolePermissionCheckInput,
+	) domain.PageRolePermissions
 }
 
 type OrganizationInviteRepository interface {

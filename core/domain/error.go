@@ -212,6 +212,11 @@ var (
 		Error:   BadRequestErr,
 		Message: "User's role has already added",
 	}
+	ErrPermissionDenied = &Error{
+		Code:    ForbiddenCode,
+		Error:   ForbiddenErr,
+		Message: "User don't have permission",
+	}
 )
 
 func NewErr(msg string, code int) *Error {

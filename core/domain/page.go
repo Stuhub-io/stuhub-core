@@ -195,3 +195,17 @@ func (p *Page) IsAuthor(authorPkID int64) bool {
 	}
 	return *p.AuthorPkID == authorPkID
 }
+
+type PageRolePermissions struct {
+	CanEdit     bool `json:"can_edit"`
+	CanView     bool `json:"can_view"`
+	CanDownload bool `json:"can_download"`
+	CanShare    bool `json:"can_share"`
+	CanDelete   bool `json:"can_delete"`
+	CanMove     bool `json:"can_move"`
+}
+
+type PageRolePermissionCheckInput struct {
+	User *User `json:"user"`
+	Page Page  `json:"page"`
+}
