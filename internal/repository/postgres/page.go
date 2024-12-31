@@ -134,6 +134,10 @@ func (r *PageRepository) GetByID(
 		Author: true,
 	})
 
+	if pageID == "" && pagePkID == nil {
+		return nil, domain.ErrBadParamInput
+	}
+
 	if pageID != "" {
 		query = query.Where("id = ?", pageID)
 	} else {

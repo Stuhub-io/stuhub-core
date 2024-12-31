@@ -81,7 +81,7 @@ func (h *OrganizationHandler) GetOrgBySlug(c *gin.Context, user *domain.User) {
 		return
 	}
 
-	data, err := h.orgService.GetOrganizationDetailBySlug(params.Slug)
+	data, err := h.orgService.GetOrganizationDetailBySlug(params.Slug, user)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return

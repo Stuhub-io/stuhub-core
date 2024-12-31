@@ -7,26 +7,27 @@ import (
 )
 
 type Page struct {
-	PkID             int64        `json:"pkid"`
-	ID               string       `json:"id"`
-	Name             string       `json:"name"`
-	ParentPagePkID   *int64       `json:"parent_page_pkid"`
-	AuthorPkID       *int64       `json:"author_pkid"`
-	OrganizationPkID int64        `json:"organization_pkid"`
-	CreatedAt        string       `json:"created_at"`
-	UpdatedAt        string       `json:"updated_at"`
-	ArchivedAt       string       `json:"archived_at"`
-	ViewType         PageViewType `json:"view_type"`
-	CoverImage       string       `json:"cover_image"`
-	NodeID           string       `json:"node_id"`
-	ChildPages       []Page       `json:"child_pages"`
-	Document         *Document    `json:"document"`
-	Asset            *Asset       `json:"asset"`
-	Path             string       `json:"path"`
-	IsGeneralAccess  bool         `json:"is_general_access"`
-	GeneralRole      PageRole     `json:"general_role"`
-	Author           *User        `json:"author"`
-	InheritFromPage  *Page        `json:"inherit_from_page"`
+	PkID             int64                `json:"pkid"`
+	ID               string               `json:"id"`
+	Name             string               `json:"name"`
+	ParentPagePkID   *int64               `json:"parent_page_pkid"`
+	AuthorPkID       *int64               `json:"author_pkid"`
+	OrganizationPkID int64                `json:"organization_pkid"`
+	CreatedAt        string               `json:"created_at"`
+	UpdatedAt        string               `json:"updated_at"`
+	ArchivedAt       string               `json:"archived_at"`
+	ViewType         PageViewType         `json:"view_type"`
+	CoverImage       string               `json:"cover_image"`
+	NodeID           string               `json:"node_id"`
+	ChildPages       []Page               `json:"child_pages"`
+	Document         *Document            `json:"document"`
+	Asset            *Asset               `json:"asset"`
+	Path             string               `json:"path"`
+	IsGeneralAccess  bool                 `json:"is_general_access"`
+	GeneralRole      PageRole             `json:"general_role"`
+	Author           *User                `json:"author"`
+	InheritFromPage  *Page                `json:"inherit_from_page"`
+	Permissions      *PageRolePermissions `json:"permissions"`
 }
 
 type PageRoleUser struct {
@@ -206,6 +207,12 @@ type PageRolePermissions struct {
 }
 
 type PageRolePermissionCheckInput struct {
-	User *User `json:"user"`
-	Page Page  `json:"page"`
+	User     *User         `json:"user"`
+	Page     Page          `json:"page"`
+	PageRole *PageRoleUser `json:"page_role"`
+}
+
+type PageRolePermissionBatchCheckInput struct {
+	User  *User  `json:"user"`
+	Pages []Page `json:"pages"`
 }

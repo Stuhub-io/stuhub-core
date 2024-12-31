@@ -55,6 +55,7 @@ func (r *OrganizationRepository) GetOrgMemberByEmail(ctx context.Context, orgPkI
 		Joins("JOIN users ON users.pkid = organization_member.user_pkid").
 		Where("organization_pkid = ? AND users.email = ?", orgPkID, email).
 		First(&member).Error
+
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrOrgMemberNotFound

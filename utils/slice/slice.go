@@ -18,6 +18,16 @@ func Contains[T comparable](s []T, elem T) bool {
 	return m[elem]
 }
 
+func Find[T any](s []T, callbackFn func(elem T) bool) (result *T) {
+	for _, item := range s {
+		if callbackFn(item) {
+			return &item
+		}
+	}
+
+	return nil
+}
+
 // returns a new slice containing the given slice's elements, which pass the provided callback function ('callbackFn' returns true).
 func Filter[T any](s []T, callbackFn func(elem T) bool) (result []T) {
 	for _, item := range s {
@@ -62,17 +72,6 @@ func IndexOf[T comparable](s []T, elem T) int {
 	return -1
 }
 
-func FindDuplications[T comparable](s []T) (duplications []T) {
-	var idx int
-	duplications = Filter(s, func(e T) bool {
-		cond := idx != IndexOf(s, e)
-		idx++
-		return cond
-	})
-
-	return
-}
-
 // Check if 2 slices have the same elements without considering their order
 // Supported types: int, float, string.
 func Equal[T constraints.Ordered](a []T, b []T) bool {
@@ -86,15 +85,6 @@ func Equal[T constraints.Ordered](a []T, b []T) bool {
 }
 
 // returns the first element of the given slice, which pass the provided callback function ('callbackFn' returns true).
-func Find[T any](s []T, callbackFn func(elem T) bool) *T {
-	for _, item := range s {
-		if callbackFn(item) {
-			return &item
-		}
-	}
-
-	return nil
-}
 
 func IsEmpty[T any](s []T) bool {
 	return s == nil || len(s) == 0

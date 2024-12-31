@@ -82,6 +82,7 @@ func UsePageHandle(params NewPageHandlerParams) {
 
 func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
 	pageID, ok := pageutils.GetPageIDParam(c)
+
 	if !ok {
 		response.BindError(c, "pageID is missing or invalid")
 		return
@@ -111,7 +112,7 @@ func (h *PageHandler) GetPages(c *gin.Context, user *domain.User) {
 		IsAll:          query.All,
 		Limit:          int(query.PaginationRequest.Size),
 		IsArchived:     query.IsArchived,
-	})
+	}, user)
 
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)

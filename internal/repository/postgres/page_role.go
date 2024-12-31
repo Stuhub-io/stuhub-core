@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -248,13 +249,31 @@ func (r *PageRepository) DeletePageRole(
 	return nil
 }
 
+func (r *PageRepository) CheckPermissions(ctx context.Context, input domain.PageRolePermissionBatchCheckInput) (permissions []domain.PageRolePermissions) {
+	user := input.User
+	pages := input.Pages
+
+	roles := []domain.PageRolePermissions{}
+	query := buildQueryPageRoles(r.store.DB(), queryPageRolesParams{
+		PagePkIDs: sliceutils.Map(pages, func(page domain.Page) int64 {
+			return page.PkID
+		}),
+		Emails:       []string{user.Email},
+		ExcludeRoles: []domain.PageRole{},
+	})
+
+	fmt.Print(query, roles)
+	return nil
+}
+
 func (r *PageRepository) CheckPermission(ctx context.Context, input domain.PageRolePermissionCheckInput) (permissions domain.PageRolePermissions) {
 	page := input.Page
 	user := input.User
+	pageRoleUser := input.PageRole
 
 	if user == nil {
 		if page.IsGeneralAccess {
-			return getPermissionByRole(page.GeneralRole)
+			return GetPermissionByRole(page.GeneralRole)
 		}
 		return permissions
 	}
@@ -270,23 +289,27 @@ func (r *PageRepository) CheckPermission(ctx context.Context, input domain.PageR
 		return permissions
 	}
 
-	userRole, err := r.GetPageRoleByEmail(ctx, page.PkID, user.Email)
+	if pageRoleUser == nil {
+		role, _ := r.GetPageRoleByEmail(ctx, page.PkID, user.Email)
+		if role == nil {
+			pageRoleUser = role
+		}
+	}
 
-	// Direct Role
-	if err == nil {
-		permissions = getPermissionByRole(userRole.Role)
+	if pageRoleUser != nil {
+		permissions = GetPermissionByRole(pageRoleUser.Role)
 		return permissions
 	}
 
 	// Direct Role Not Found
 	if page.IsGeneralAccess {
-		return getPermissionByRole(page.GeneralRole)
+		return GetPermissionByRole(page.GeneralRole)
 	}
 
 	return permissions
 }
 
-func getPermissionByRole(role domain.PageRole) (p domain.PageRolePermissions) {
+func GetPermissionByRole(role domain.PageRole) (p domain.PageRolePermissions) {
 	switch role {
 	case domain.PageEditor:
 		p.CanEdit = true
@@ -300,4 +323,11 @@ func getPermissionByRole(role domain.PageRole) (p domain.PageRolePermissions) {
 	case domain.PageInherit:
 	}
 	return p
+}
+
+func (r *PageRepository) GetPermission(ctx context.Context, page domain.Page, user *domain.User) domain.PageRolePermissions {
+	return r.CheckPermission(ctx, domain.PageRolePermissionCheckInput{
+		User: user,
+		Page: page,
+	})
 }

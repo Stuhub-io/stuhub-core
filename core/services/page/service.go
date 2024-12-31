@@ -6,6 +6,7 @@ import (
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
+	sliceutils "github.com/Stuhub-io/utils/slice"
 	"github.com/Stuhub-io/utils/userutils"
 )
 
@@ -32,7 +33,26 @@ func NewService(params NewServiceParams) *Service {
 	}
 }
 
-func (s *Service) GetPagesByOrgPkID(query domain.PageListQuery) (d []domain.Page, e *domain.Error) {
+func (s *Service) GetPagesByOrgPkID(query domain.PageListQuery, curUser *domain.User) (d []domain.Page, e *domain.Error) {
+
+	parentPagePkID := query.ParentPagePkID
+
+	if parentPagePkID != nil {
+		parentPage, err := s.pageRepository.GetByID(context.Background(), "", parentPagePkID)
+		if err != nil {
+			return nil, err
+		}
+
+		permissions := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
+			Page: *parentPage,
+			User: curUser,
+		})
+
+		if !permissions.CanView {
+			return nil, domain.ErrPermissionDenied
+		}
+	}
+
 	d, e = s.pageRepository.List(context.Background(), query)
 	return d, e
 }
@@ -210,7 +230,16 @@ func (s *Service) CreateDocumentPage(
 		}
 	}
 
-	// If is Root, check is org Member
+	if curUser == nil {
+		return nil, domain.ErrPermissionDenied
+	}
+
+	_, err := s.orgRepository.GetOrgMemberByEmail(context.Background(), pageInput.OrganizationPkID, curUser.Email)
+	isOrgMember := err == nil
+
+	if !isOrgMember {
+		return nil, domain.ErrPermissionDenied
+	}
 
 	page, err := s.pageRepository.CreateDocumentPage(context.Background(), pageInput)
 
@@ -255,8 +284,7 @@ func (s *Service) ValidateDocumentPublicToken(token string) (d bool, e *domain.E
 	return d, e
 }
 
-// Asset Controller
-
+// Asset Controller.
 func (s *Service) CreateAssetPage(assetInput domain.AssetPageInput, curUser *domain.User) (*domain.Page, *domain.Error) {
 
 	parentPagePkID := assetInput.ParentPagePkID
@@ -276,7 +304,17 @@ func (s *Service) CreateAssetPage(assetInput domain.AssetPageInput, curUser *dom
 		}
 	}
 
-	// If is Root, check is org Member
+	members, err := s.orgRepository.GetOrgMembers(context.Background(), assetInput.OrganizationPkID)
+	if err != nil {
+		return nil, err
+	}
+	isOrgMember := sliceutils.Find(members, func(member domain.OrganizationMember) bool {
+		return member.OrganizationPkID == assetInput.OrganizationPkID
+	}) != nil
+
+	if !isOrgMember {
+		return nil, domain.ErrPermissionDenied
+	}
 
 	page, err := s.pageRepository.CreateAsset(context.Background(), assetInput)
 	if err != nil {
