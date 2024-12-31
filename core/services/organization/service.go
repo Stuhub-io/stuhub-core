@@ -69,11 +69,6 @@ func (s *Service) CreateOrganization(dto CreateOrganizationDto) (*CreateOrganiza
 }
 
 func (s *Service) GetOrganizationDetailBySlug(slug string, curUser *domain.User) (*domain.Organization, *domain.Error) {
-
-	if curUser == nil {
-		return nil, domain.ErrUnauthorized
-	}
-
 	org, err := s.orgRepository.GetOrgBySlug(context.Background(), slug)
 
 	if err != nil {
