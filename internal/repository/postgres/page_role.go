@@ -183,7 +183,11 @@ func (r *PageRepository) GetPageRoles(
 			} else {
 				transformRole.Role = emailRole.Role
 				inheritPage := emailRole.Page
-				transformRole.InheritFromPage = pageutils.TransformPageModelToDomain(inheritPage, nil, pageutils.PageBodyParams{}, nil)
+				transformRole.InheritFromPage = pageutils.TransformPageModelToDomain(
+					pageutils.PageModelToDomainParams{
+						Page: inheritPage,
+					},
+				)
 			}
 			role.Role = EmailRoleMap[role.Email].Role
 		}

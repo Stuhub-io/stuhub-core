@@ -52,10 +52,15 @@ func (r *PageRepository) List(
 	for _, result := range results {
 		domainPages = append(
 			domainPages,
-			*pageutils.TransformPageModelToDomain(&result.Page, nil, pageutils.PageBodyParams{
-				Document: pageutils.TransformDocModelToDomain(result.Doc),
-				Asset:    pageutils.TransformAssetModalToDomain(result.Asset),
-			}, nil),
+			*pageutils.TransformPageModelToDomain(
+				pageutils.PageModelToDomainParams{
+					Page: &result.Page,
+					PageBody: pageutils.PageBodyParams{
+						Document: pageutils.TransformDocModelToDomain(result.Doc),
+						Asset:    pageutils.TransformAssetModalToDomain(result.Asset),
+					},
+				},
+			),
 		)
 	}
 
@@ -93,10 +98,9 @@ func (r *PageRepository) Update(
 	}
 
 	return pageutils.TransformPageModelToDomain(
-		&page,
-		nil,
-		pageutils.PageBodyParams{},
-		nil,
+		pageutils.PageModelToDomainParams{
+			Page: &page,
+		},
 	), nil
 }
 
@@ -145,14 +149,19 @@ func (r *PageRepository) GetByID(
 	}
 
 	return pageutils.TransformPageModelToDomain(
-		&page.Page,
-		nil,
-		pageutils.PageBodyParams{
-			Document: pageutils.TransformDocModelToDomain(page.Doc),
-			Asset:    pageutils.TransformAssetModalToDomain(page.Asset),
-			Author:   userutils.TransformUserModelToDomain(page.Author),
+		pageutils.PageModelToDomainParams{
+			Page: &page.Page,
+			PageBody: pageutils.PageBodyParams{
+				Document: pageutils.TransformDocModelToDomain(page.Doc),
+				Asset:    pageutils.TransformAssetModalToDomain(page.Asset),
+				Author:   userutils.TransformUserModelToDomain(page.Author),
+			},
+			InheritFromPage: pageutils.TransformPageModelToDomain(
+				pageutils.PageModelToDomainParams{
+					Page: inheritPage,
+				},
+			),
 		},
-		pageutils.TransformPageModelToDomain(inheritPage, nil, pageutils.PageBodyParams{}, nil),
 	), nil
 }
 
@@ -194,7 +203,11 @@ func (r *PageRepository) Archive(
 
 	done(nil)
 
-	return pageutils.TransformPageModelToDomain(&page, nil, pageutils.PageBodyParams{}, nil), nil
+	return pageutils.TransformPageModelToDomain(
+		pageutils.PageModelToDomainParams{
+			Page: &page,
+		},
+	), nil
 }
 
 func (r *PageRepository) Move(
@@ -251,7 +264,11 @@ func (r *PageRepository) Move(
 	doneTx(nil)
 	// Commit Tx
 
-	return pageutils.TransformPageModelToDomain(&page, nil, pageutils.PageBodyParams{}, nil), nil
+	return pageutils.TransformPageModelToDomain(
+		pageutils.PageModelToDomainParams{
+			Page: &page,
+		},
+	), nil
 }
 
 func (r *PageRepository) UpdateGeneralAccess(
@@ -269,5 +286,9 @@ func (r *PageRepository) UpdateGeneralAccess(
 		return nil, domain.ErrUpdatePageGeneralAccess
 	}
 
-	return pageutils.TransformPageModelToDomain(&page, nil, pageutils.PageBodyParams{}, nil), nil
+	return pageutils.TransformPageModelToDomain(
+		pageutils.PageModelToDomainParams{
+			Page: &page,
+		},
+	), nil
 }

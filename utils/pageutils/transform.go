@@ -30,12 +30,21 @@ type PageBodyParams struct {
 	Author   *domain.User
 }
 
+type PageModelToDomainParams struct {
+	Page            *model.Page
+	ChildPages      []domain.Page
+	PageBody        PageBodyParams
+	InheritFromPage *domain.Page
+}
+
 func TransformPageModelToDomain(
-	model *model.Page,
-	childPages []domain.Page,
-	pageBody PageBodyParams,
-	inheritFromPage *domain.Page,
+	params PageModelToDomainParams,
 ) *domain.Page {
+	model := params.Page
+	childPages := params.ChildPages
+	pageBody := params.PageBody
+	inheritFromPage := params.InheritFromPage
+
 	if model == nil {
 		return nil
 	}
