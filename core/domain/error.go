@@ -148,6 +148,11 @@ var (
 		Error:   InternalServerErr,
 		Message: "Failed to process sending email. Please try again!",
 	}
+	ErrInvalidTemplate = &Error{
+		Code:    BadRequestCode,
+		Error:   BadRequestErr,
+		Message: "Failed to parse email template. Please try again!",
+	}
 )
 
 var (
@@ -178,9 +183,12 @@ var (
 	}
 	ErrExistOrgMember = func(userPkID int64) *Error {
 		return &Error{
-			Code:    BadRequestCode,
-			Error:   BadRequestErr,
-			Message: fmt.Sprintf("The member with the ID '%d' already exist in this organization.", userPkID),
+			Code:  BadRequestCode,
+			Error: BadRequestErr,
+			Message: fmt.Sprintf(
+				"The member with the ID '%d' already exist in this organization.",
+				userPkID,
+			),
 		}
 	}
 )
@@ -190,6 +198,24 @@ var (
 		Code:    NotFoundCode,
 		Error:   NotFoundErr,
 		Message: "The member or page does not exist",
+	}
+)
+
+var (
+	ErrUpdatePageGeneralAccess = &Error{
+		Code:    InternalServerErrCode,
+		Error:   InternalServerErr,
+		Message: "Fail to update page general access",
+	}
+	ErrExisitingPageRoleUser = &Error{
+		Code:    BadRequestCode,
+		Error:   BadRequestErr,
+		Message: "User's role has already added",
+	}
+	ErrPermissionDenied = &Error{
+		Code:    ForbiddenCode,
+		Error:   ForbiddenErr,
+		Message: "User don't have permission",
 	}
 )
 

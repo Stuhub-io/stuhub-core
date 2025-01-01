@@ -24,6 +24,7 @@ type GetPagesQuery struct {
 	ParentPagePkID *int64                `form:"parent_page_pkid,omitempty" json:"parent_page_pkid,omitempty"`
 	IsArchived     *bool                 `form:"is_archived,omitempty"      json:"is_archived,omitempty"`
 	All            bool                  `form:"all,omitempty"              json:"all,omitempty"`
+	GeneralRole    *domain.PageRole      `form:"general_role,omitempty"     json:"general_role,omitempty"`
 	PaginationRequest
 }
 
@@ -53,4 +54,22 @@ type CreateAssetBody struct {
 		Extension  string                `json:"extension"`
 		Thumbnails domain.AssetThumbnail `json:"thumbnails"`
 	} `binding:"required" json:"asset"`
+}
+
+type UpdatePageGeneralAccessBody struct {
+	GeneralRole domain.PageRole `binding:"required" json:"general_role,omitempty"`
+}
+
+type AddPageRoleUserBody struct {
+	Role  domain.PageRole `binding:"required" json:"role,omitempty"`
+	Email string          `binding:"required" json:"email"`
+}
+
+type UpdatePageRoleUserBody struct {
+	Email string          `binding:"required" json:"email"`
+	Role  domain.PageRole `binding:"required" json:"role,omitempty"`
+}
+
+type DeletePageRoleUserBody struct {
+	Email string `binding:"required" json:"email"`
 }

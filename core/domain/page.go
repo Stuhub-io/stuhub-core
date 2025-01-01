@@ -3,24 +3,41 @@ package domain
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 )
 
 type Page struct {
-	PkID             int64        `json:"pkid"`
-	ID               string       `json:"id"`
-	Name             string       `json:"name"`
-	ParentPagePkID   *int64       `json:"parent_page_pkid"`
-	OrganizationPkID int64        `json:"organization_pkid"`
-	CreatedAt        string       `json:"created_at"`
-	UpdatedAt        string       `json:"updated_at"`
-	ArchivedAt       string       `json:"archived_at"`
-	ViewType         PageViewType `json:"view_type"`
-	CoverImage       string       `json:"cover_image"`
-	NodeID           string       `json:"node_id"`
-	ChildPages       []Page       `json:"child_pages"`
-	Document         *Document    `json:"document"`
-	Asset            *Asset       `json:"asset"`
-	Path             string       `json:"path"`
+	PkID             int64                `json:"pkid"`
+	ID               string               `json:"id"`
+	Name             string               `json:"name"`
+	ParentPagePkID   *int64               `json:"parent_page_pkid"`
+	AuthorPkID       *int64               `json:"author_pkid"`
+	OrganizationPkID int64                `json:"organization_pkid"`
+	CreatedAt        string               `json:"created_at"`
+	UpdatedAt        string               `json:"updated_at"`
+	ArchivedAt       string               `json:"archived_at"`
+	ViewType         PageViewType         `json:"view_type"`
+	CoverImage       string               `json:"cover_image"`
+	NodeID           string               `json:"node_id"`
+	ChildPages       []Page               `json:"child_pages"`
+	Document         *Document            `json:"document"`
+	Asset            *Asset               `json:"asset"`
+	Path             string               `json:"path"`
+	GeneralRole      PageRole             `json:"general_role"`
+	Author           *User                `json:"author"`
+	InheritFromPage  *Page                `json:"inherit_from_page"`
+	Permissions      *PageRolePermissions `json:"permissions"`
+}
+
+type PageRoleUser struct {
+	PkID            int64    `json:"pkid"`
+	PagePkID        int64    `json:"page_pkid"`
+	User            *User    `json:"user"`
+	Email           string   `json:"email"`
+	Role            PageRole `json:"role"`
+	CreatedAt       string   `json:"created_at"`
+	UpdatedAt       string   `json:"updated_at"`
+	InheritFromPage *Page    `json:"inherit_from_page"`
 }
 
 type PageInput struct {
@@ -28,6 +45,7 @@ type PageInput struct {
 	ParentPagePkID   *int64       `json:"parent_page_pkid"`
 	ViewType         PageViewType `json:"view_type"`
 	CoverImage       string       `json:"cover_image"`
+	AuthorPkID       int64        `json:"author_pkid"`
 	OrganizationPkID int64        `json:"organization_pkid"`
 }
 
@@ -44,13 +62,46 @@ type PageMoveInput struct {
 	ParentPagePkID *int64 `json:"parent_page_pkid"`
 }
 type PageListQuery struct {
-	OrgPkID        int64          `json:"org_pkid"`
-	ViewTypes      []PageViewType `json:"view_type"`
-	ParentPagePkID *int64         `json:"parent_page_pkid"`
-	IsArchived     *bool          `json:"is_archived"`
-	Offset         int            `json:"offset"`
-	Limit          int            `json:"limit"`
-	IsAll          bool           `json:"all"`
+	OrgPkID            int64          `json:"org_pkid"`
+	ViewTypes          []PageViewType `json:"view_type"`
+	ParentPagePkID     *int64         `json:"parent_page_pkid"`
+	IsArchived         *bool          `json:"is_archived"`
+	Offset             int            `json:"offset"`
+	Limit              int            `json:"limit"`
+	IsAll              bool           `json:"all"`
+	GeneralRole        *PageRole      `json:"general_role"`
+	PagePkIDs          []int64        `json:"page_pkids"`
+	ExcludeGeneralRole []PageRole     `json:"exclude_general_role"`
+}
+
+type PageGeneralAccessUpdateInput struct {
+	AuthorPkID  int64    `json:"author_pkid"`
+	GeneralRole PageRole `json:"general_role"`
+}
+
+type PageRoleCreateInput struct {
+	CallerPkID int64    `json:"author_pkid"`
+	PagePkID   int64    `json:"page_pkid"`
+	Email      string   `json:"email"`
+	Role       PageRole `json:"role"`
+}
+
+type PageRoleUpdateInput struct {
+	AuthorPkID int64    `json:"author_pkid"`
+	PagePkID   int64    `json:"page_pkid"`
+	Email      string   `json:"email"`
+	Role       PageRole `json:"role"`
+}
+
+type PageRoleDeleteInput struct {
+	AuthorPkID int64  `json:"author_pkid"`
+	PagePkID   int64  `json:"page_pkid"`
+	Email      string `json:"email"`
+}
+
+type PageRoleGetAllInput struct {
+	AuthorPkID int64 `json:"author_pkid"`
+	PagePkID   int64 `json:"page_pkid"`
 }
 
 type PageViewType int
@@ -91,4 +142,81 @@ func PageViewFromString(val string) PageViewType {
 	default:
 		return PageViewTypeDoc
 	}
+}
+
+type PageRole int
+
+const (
+	PageViewer PageRole = iota + 1
+	PageEditor
+	PageInherit
+	PageRestrict
+)
+
+func (r PageRole) String() string {
+	return [...]string{"viewer", "editor", "inherit", "restrict"}[r-1]
+}
+
+func (r *PageRole) UnmarshalJSON(data []byte) error {
+	var value int
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+
+	switch PageRole(value) {
+	case PageViewer, PageEditor, PageInherit:
+		*r = PageRole(value)
+		return nil
+	default:
+		return errors.New("invalid view_type, must be 1(viewer) | 2(editor) | 3(inherit)")
+	}
+}
+
+func PageRoleFromString(val string) PageRole {
+	switch val {
+	case "viewer":
+		return PageViewer
+	case "editor":
+		return PageEditor
+	case "inherit":
+		return PageInherit
+	case "restrict":
+		return PageRestrict
+	default:
+		return PageViewer
+	}
+}
+
+func (p *Page) IsEmailAuthor(email string) bool {
+	if p.Author == nil {
+		return false
+	}
+	return strings.EqualFold(p.Author.Email, email)
+}
+
+func (p *Page) IsAuthor(authorPkID int64) bool {
+	if p.AuthorPkID == nil {
+		return false
+	}
+	return *p.AuthorPkID == authorPkID
+}
+
+type PageRolePermissions struct {
+	CanEdit     bool `json:"can_edit"`
+	CanView     bool `json:"can_view"`
+	CanDownload bool `json:"can_download"`
+	CanShare    bool `json:"can_share"`
+	CanDelete   bool `json:"can_delete"`
+	CanMove     bool `json:"can_move"`
+}
+
+type PageRolePermissionCheckInput struct {
+	User     *User         `json:"user"`
+	Page     Page          `json:"page"`
+	PageRole *PageRoleUser `json:"page_role"`
+}
+
+type PageRolePermissionBatchCheckInput struct {
+	User  *User  `json:"user"`
+	Pages []Page `json:"pages"`
 }

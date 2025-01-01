@@ -17,7 +17,10 @@ func GetUserFullName(f string, l string) string {
 	return f + " " + l
 }
 
-func TransformUserModelToDomain(model model.User) *domain.User {
+func TransformUserModelToDomain(model *model.User) *domain.User {
+	if model == nil {
+		return nil
+	}
 	activatedAt := ""
 	if model.ActivatedAt != nil {
 		activatedAt = model.ActivatedAt.String()

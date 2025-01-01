@@ -9,3 +9,10 @@ type UpdateUserInfoBody struct {
 	FirstName string `binding:"required" json:"first_name"`
 	Avatar    string `json:"avatar"`
 }
+
+type SearchUsersBody struct {
+	Search  string   `json:"search,omitempty"`
+	OrgPkID *int64   `json:"org_pkid,omitempty"`
+	Emails  []string `json:"emails,omitempty"`
+	PaginationRequest
+}

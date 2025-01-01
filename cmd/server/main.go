@@ -108,10 +108,12 @@ func main() {
 		Cfg:   cfg,
 		Store: dbStore,
 	})
-	organizationInviteRepository := postgres.NewOrganizationInvitesRepository(postgres.NewOrganizationInvitesRepositoryParams{
-		Cfg:   cfg,
-		Store: dbStore,
-	})
+	organizationInviteRepository := postgres.NewOrganizationInvitesRepository(
+		postgres.NewOrganizationInvitesRepositoryParams{
+			Cfg:   cfg,
+			Store: dbStore,
+		},
+	)
 
 	cloudinaryUploader := uploader.NewCloudinaryUploader(cfg)
 
@@ -147,6 +149,7 @@ func main() {
 	pageService := page.NewService(page.NewServiceParams{
 		Config:         cfg,
 		PageRepository: PageRepository,
+		Mailer:         mailer,
 	})
 
 	uploadService := upload.NewUploadService(upload.NewUploadServiceParams{

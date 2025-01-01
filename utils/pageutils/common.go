@@ -2,7 +2,9 @@ package pageutils
 
 import (
 	"strconv"
+	"strings"
 
+	sliceutils "github.com/Stuhub-io/utils/slice"
 	"github.com/gin-gonic/gin"
 )
 
@@ -37,9 +39,31 @@ func GetPublicTokenIDParam(c *gin.Context) (string, bool) {
 	return publicTokenID, true
 }
 
-func AppendPath(path string, id string) string {
+func AppendPath(path string, pkID string) string {
 	if path == "" {
-		return id
+		return pkID
 	}
-	return path + "/" + id
+	return path + "/" + pkID
+}
+
+func PagePathToPkIDs(path string) []int64 {
+	parentPkIDs := sliceutils.Map(strings.Split(path, "/"), func(pkid string) int64 {
+		parsedPkID, err := strconv.ParseInt(pkid, 10, 64)
+		if err != nil {
+			return -1
+		}
+		return parsedPkID
+	})
+	return parentPkIDs
+}
+
+func BuildPagePath(pkIDs []int64) string {
+	if len(pkIDs) == 0 {
+		return ""
+	}
+	path := strconv.FormatInt(pkIDs[0], 10)
+	for _, pkID := range pkIDs[1:] {
+		path += "/" + strconv.FormatInt(pkID, 10)
+	}
+	return path
 }

@@ -24,6 +24,8 @@ type Page struct {
 	NodeID         *string    `gorm:"column:node_id;type:uuid;uniqueIndex:page_node_id_idx,priority:1" json:"node_id"`
 	OrgPkid        *int64     `gorm:"column:org_pkid;type:bigint" json:"org_pkid"`
 	Path           string     `gorm:"column:path;type:text;not null" json:"path"`
+	GeneralRole    string     `gorm:"column:general_role;type:character varying(20);not null;default:viewer" json:"general_role"`
+	AuthorPkid     *int64     `gorm:"column:author_pkid;type:bigint" json:"author_pkid"`
 }
 
 // TableName Page's table name

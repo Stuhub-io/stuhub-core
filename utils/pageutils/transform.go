@@ -3,6 +3,7 @@ package pageutils
 import (
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/internal/repository/model"
+	"github.com/Stuhub-io/utils/userutils"
 )
 
 func TransformDocModelToDomain(doc *model.Document) *domain.Document {
@@ -26,9 +27,18 @@ func TransformDocModelToDomain(doc *model.Document) *domain.Document {
 type PageBodyParams struct {
 	Document *domain.Document
 	Asset    *domain.Asset
+	Author   *domain.User
 }
 
-func TransformPageModelToDomain(model model.Page, ChildPages []domain.Page, pageBody PageBodyParams) *domain.Page {
+func TransformPageModelToDomain(
+	model *model.Page,
+	childPages []domain.Page,
+	pageBody PageBodyParams,
+	inheritFromPage *domain.Page,
+) *domain.Page {
+	if model == nil {
+		return nil
+	}
 	archivedAt := ""
 	if model.ArchivedAt != nil {
 		archivedAt = model.ArchivedAt.String()
@@ -42,6 +52,7 @@ func TransformPageModelToDomain(model model.Page, ChildPages []domain.Page, page
 		PkID:             model.Pkid,
 		ID:               model.ID,
 		OrganizationPkID: *model.OrgPkid,
+		AuthorPkID:       model.AuthorPkid,
 		Name:             model.Name,
 		ParentPagePkID:   model.ParentPagePkid,
 		CreatedAt:        model.CreatedAt.String(),
@@ -50,10 +61,35 @@ func TransformPageModelToDomain(model model.Page, ChildPages []domain.Page, page
 		CoverImage:       model.CoverImage,
 		ArchivedAt:       archivedAt,
 		NodeID:           nodeID,
-		ChildPages:       ChildPages,
+		ChildPages:       childPages,
 		Document:         pageBody.Document,
 		Asset:            pageBody.Asset,
 		Path:             model.Path,
+		GeneralRole:      domain.PageRoleFromString(model.GeneralRole),
+		Author:           pageBody.Author,
+		InheritFromPage:  inheritFromPage,
+	}
+}
+
+type PageRoleWithUser struct {
+	model.PageRole
+	User            *model.User  `gorm:"foreignKey:user_pkid" json:"user"` // Define foreign key relationship
+	InheritFromPage *domain.Page `gorm:"-"                    json:"inherit_from_page"`
+	Page            *model.Page  `gorm:"foreignKey:page_pkid" json:"page"` // Define foreign key relationship
+}
+
+func TransformPageRoleModelToDomain(
+	model PageRoleWithUser,
+) *domain.PageRoleUser {
+	return &domain.PageRoleUser{
+		PkID:            model.Pkid,
+		PagePkID:        model.PagePkid,
+		User:            userutils.TransformUserModelToDomain(model.User),
+		Email:           model.Email,
+		Role:            domain.PageRoleFromString(model.Role),
+		CreatedAt:       model.CreatedAt.String(),
+		UpdatedAt:       model.UpdatedAt.String(),
+		InheritFromPage: model.InheritFromPage,
 	}
 }
 

@@ -55,6 +55,7 @@ func (r *OrganizationRepository) GetOrgMemberByEmail(ctx context.Context, orgPkI
 		Joins("JOIN users ON users.pkid = organization_member.user_pkid").
 		Where("organization_pkid = ? AND users.email = ?", orgPkID, email).
 		First(&member).Error
+
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrOrgMemberNotFound
@@ -107,6 +108,19 @@ func (r *OrganizationRepository) GetOwnerOrgByPkID(ctx context.Context, ownerID,
 		}
 
 		return nil, domain.ErrDatabaseQuery
+	}
+
+	return organizationutils.TransformOrganizationModelToDomain(org), nil
+}
+
+func (r *OrganizationRepository) GetOrgByPkID(ctx context.Context, pkID int64) (*domain.Organization, *domain.Error) {
+	var org organizationutils.OrganizationWithMembers
+
+	err := r.store.DB().Preload("Members").Where("pkid = ?", pkID).First(&org).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrNotFound
+		}
 	}
 
 	return organizationutils.TransformOrganizationModelToDomain(org), nil

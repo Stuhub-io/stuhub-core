@@ -9,9 +9,13 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func (r *PageRepository) CreateDocumentPage(ctx context.Context, pageInput domain.DocumentPageInput) (*domain.Page, *domain.Error) {
+func (r *PageRepository) CreateDocumentPage(
+	ctx context.Context,
+	pageInput domain.DocumentPageInput,
+) (*domain.Page, *domain.Error) {
+	result, iErr := r.initPageModel(ctx, pageInput.PageInput)
+	newPage := result.Page
 
-	newPage, iErr := r.initPageModel(ctx, pageInput.PageInput)
 	if iErr != nil {
 		return nil, iErr
 	}
@@ -22,6 +26,7 @@ func (r *PageRepository) CreateDocumentPage(ctx context.Context, pageInput domai
 
 	// Begin Tx
 	tx, doneTx := r.store.NewTransaction()
+
 	err := tx.DB().Create(&newPage).Error
 	if err != nil {
 		return nil, doneTx(err)
@@ -37,19 +42,34 @@ func (r *PageRepository) CreateDocumentPage(ctx context.Context, pageInput domai
 		return nil, doneTx(err)
 	}
 
+	// Inherit Parent Permission
+	parentFolder := result.ParentFolder
+	if parentFolder != nil {
+		if err := inheritPageRoles(tx.DB(), InheritPageRolesParams{
+			ParentFolder: *parentFolder,
+			NewPagePkID:  newPage.Pkid,
+		}); err != nil {
+			return nil, doneTx(err)
+		}
+	}
+
 	doneTx(nil)
-	// Commit Tx
 
 	return pageutils.TransformPageModelToDomain(
-		*newPage,
+		newPage,
 		[]domain.Page{},
 		pageutils.PageBodyParams{
 			Document: pageutils.TransformDocModelToDomain(&document),
 		},
+		nil,
 	), nil
 }
 
-func (r *PageRepository) UpdateContent(ctx context.Context, pagePkID int64, content domain.DocumentInput) (*domain.Page, *domain.Error) {
+func (r *PageRepository) UpdateContent(
+	ctx context.Context,
+	pagePkID int64,
+	content domain.DocumentInput,
+) (*domain.Page, *domain.Error) {
 	var page = model.Page{}
 	if dbErr := r.store.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
 		return nil, domain.NewErr(dbErr.Error(), domain.BadRequestCode)
@@ -68,10 +88,11 @@ func (r *PageRepository) UpdateContent(ctx context.Context, pagePkID int64, cont
 	}
 
 	return pageutils.TransformPageModelToDomain(
-		page,
+		&page,
 		nil,
 		pageutils.PageBodyParams{
 			Document: pageutils.TransformDocModelToDomain(&doc),
 		},
+		nil,
 	), nil
 }

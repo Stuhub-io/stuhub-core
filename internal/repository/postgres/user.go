@@ -43,7 +43,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	return userutils.TransformUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(&user), nil
 }
 
 func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain.User, *domain.Error) {
@@ -62,7 +62,7 @@ func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	user := userutils.TransformUserModelToDomain(userModel)
+	user := userutils.TransformUserModelToDomain(&userModel)
 
 	// go func() {
 	// 	r.store.Cache().SetUser(user, time.Hour)
@@ -82,7 +82,7 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	return userutils.TransformUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(&user), nil
 }
 
 func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email string, salt string) (*domain.User, *domain.Error) {
@@ -104,7 +104,7 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 		}
 	}
 
-	return userutils.TransformUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(&user), nil
 }
 
 func (r *UserRepository) CreateUserWithGoogleInfo(ctx context.Context, email, salt, firstName, lastName, avatar string) (*domain.User, *domain.Error) {
@@ -122,7 +122,7 @@ func (r *UserRepository) CreateUserWithGoogleInfo(ctx context.Context, email, sa
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	return userutils.TransformUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(&user), nil
 }
 
 func (r *UserRepository) SetUserPassword(ctx context.Context, pkID int64, hashedPassword string) *domain.Error {
@@ -162,7 +162,7 @@ func (r *UserRepository) UpdateUserInfo(ctx context.Context, PkID int64, firstNa
 		return nil, domain.ErrDatabaseMutation
 	}
 
-	return userutils.TransformUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(&user), nil
 }
 
 func (r *UserRepository) SetUserActivatedAt(ctx context.Context, pkID int64, activatedAt time.Time) (*domain.User, *domain.Error) {
@@ -173,5 +173,38 @@ func (r *UserRepository) SetUserActivatedAt(ctx context.Context, pkID int64, act
 		return nil, domain.ErrDatabaseMutation
 	}
 
-	return userutils.TransformUserModelToDomain(user), nil
+	return userutils.TransformUserModelToDomain(&user), nil
+}
+
+func (r *UserRepository) Search(ctx context.Context, input domain.UserSearchQuery, currentUser *domain.User) ([]domain.User, *domain.Error) {
+	var users []model.User
+
+	query := r.store.DB().Model(&model.User{})
+	if input.Search != "" {
+		query = query.Where("unaccent(CONCAT(first_name, ' ', last_name)) ILIKE unaccent(?) OR unaccent(email) ILIKE unaccent(?)", "%"+input.Search+"%", "%"+input.Search+"%")
+	}
+
+	if currentUser != nil {
+		query = query.Where("pkid != ?", currentUser.PkID)
+	}
+
+	if input.OrganizationPkID != nil {
+		query = query.Joins("JOIN organization_members ON organization_members.user_pkid = users.pkid").Where("organization_members.organization_pkid = ?", *input.OrganizationPkID)
+	}
+
+	if len(input.Emails) > 0 {
+		query = query.Where("email IN (?)", input.Emails)
+	}
+
+	if err := query.Limit(input.Limit).Offset(input.Offset).Find(&users).Error; err != nil {
+		return nil, domain.ErrDatabaseQuery
+	}
+
+	resultUsers := make([]domain.User, 0, len(users))
+	for _, user := range users {
+		resultUsers = append(resultUsers, *userutils.TransformUserModelToDomain(&user))
+	}
+
+	// return domainUsers, nil
+	return resultUsers, nil
 }

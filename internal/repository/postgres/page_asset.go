@@ -11,12 +11,15 @@ import (
 // Asset Page.
 func (r *PageRepository) CreateAsset(ctx context.Context, assetInput domain.AssetPageInput) (*domain.Page, *domain.Error) {
 
-	newPage, iErr := r.initPageModel(ctx, assetInput.PageInput)
+	initPageResult, iErr := r.initPageModel(ctx, assetInput.PageInput)
 	if iErr != nil {
 		return nil, iErr
 	}
 
+	newPage := initPageResult.Page
+
 	tx, doneTx := r.store.NewTransaction()
+
 	err := tx.DB().Create(&newPage).Error
 	if err != nil {
 		return nil, doneTx(err)
@@ -35,14 +38,25 @@ func (r *PageRepository) CreateAsset(ctx context.Context, assetInput domain.Asse
 		return nil, doneTx(err)
 	}
 
+	parentFolder := initPageResult.ParentFolder
+	if parentFolder != nil {
+		if err := inheritPageRoles(tx.DB(), InheritPageRolesParams{
+			ParentFolder: *parentFolder,
+			NewPagePkID:  newPage.Pkid,
+		}); err != nil {
+			return nil, doneTx(err)
+		}
+	}
+
 	doneTx(nil)
 	// Commit Tx
 
 	return pageutils.TransformPageModelToDomain(
-		*newPage,
+		newPage,
 		nil,
 		pageutils.PageBodyParams{
 			Asset: pageutils.TransformAssetModalToDomain(&asset),
 		},
+		nil,
 	), nil
 }

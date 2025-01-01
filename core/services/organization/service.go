@@ -68,8 +68,9 @@ func (s *Service) CreateOrganization(dto CreateOrganizationDto) (*CreateOrganiza
 	}, nil
 }
 
-func (s *Service) GetOrganizationDetailBySlug(slug string) (*domain.Organization, *domain.Error) {
+func (s *Service) GetOrganizationDetailBySlug(slug string, curUser *domain.User) (*domain.Organization, *domain.Error) {
 	org, err := s.orgRepository.GetOrgBySlug(context.Background(), slug)
+
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +99,6 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Print("\n\n", dto.Owner.PkID, org.OwnerID, "\n\n")
 
 	if dto.Owner.PkID != org.OwnerID {
 		return nil, domain.ErrUnauthorized

@@ -1,6 +1,6 @@
 version: "0.1"
 database:
-  dsn: "postgresql://maroon14stuhub:ZFn2XRrRWGBsQ3MTFriekf5gSgsiodQQ@dpg-csjmqcu8ii6s73d5ttl0-a.singapore-postgres.render.com:5432/stuhub"
+  dsn: "postgresql://postgres.pybsblhawjcweeukqwfg:71102TonyynoT@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
   db: "postgres"
   tables:
     [
@@ -8,10 +8,11 @@ database:
       "organizations",
       "organization_member",
       "pages",
+      "page_roles",
       "documents",
       "organization_invites",
       "assets",
-      "public_token"
+      "public_token",
     ]
   outPath: "./internal/repository/model"
   withUnitTest: false

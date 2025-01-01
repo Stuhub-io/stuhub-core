@@ -19,3 +19,11 @@ type User struct {
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
 }
+
+type UserSearchQuery struct {
+	Limit            int      `json:"limit"`
+	Offset           int      `json:"offset"`
+	Search           string   `json:"search"`
+	Emails           []string `json:"emails"`
+	OrganizationPkID *int64   `json:"organization_pkid"`
+}
