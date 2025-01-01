@@ -32,25 +32,30 @@ func (r *PageRepository) CreateDocumentPage(
 		return nil, doneTx(err)
 	}
 
-	document := model.Document{
-		JSONContent: &pageInput.Document.JsonContent,
-		PagePkid:    newPage.Pkid,
-	}
+	document := model.Document{}
 
-	rerr := tx.DB().Create(&document).Error
-	if rerr != nil {
-		return nil, doneTx(err)
-	}
+	if pageInput.ViewType == domain.PageViewTypeDoc {
+		document = model.Document{
+			JSONContent: &pageInput.Document.JsonContent,
+			PagePkid:    newPage.Pkid,
+		}
 
-	// Inherit Parent Permission
-	parentFolder := result.ParentFolder
-	if parentFolder != nil {
-		if err := inheritPageRoles(tx.DB(), InheritPageRolesParams{
-			ParentFolder: *parentFolder,
-			NewPagePkID:  newPage.Pkid,
-		}); err != nil {
+		rerr := tx.DB().Create(&document).Error
+		if rerr != nil {
 			return nil, doneTx(err)
 		}
+
+		// Inherit Parent Permission
+		parentFolder := result.ParentFolder
+		if parentFolder != nil {
+			if err := inheritPageRoles(tx.DB(), InheritPageRolesParams{
+				ParentFolder: *parentFolder,
+				NewPagePkID:  newPage.Pkid,
+			}); err != nil {
+				return nil, doneTx(err)
+			}
+		}
+
 	}
 
 	doneTx(nil)

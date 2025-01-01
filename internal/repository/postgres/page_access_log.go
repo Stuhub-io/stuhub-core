@@ -50,7 +50,7 @@ func (r *PageAccessLogRepository) GetByUserPKID(ctx context.Context, userPkID in
 			END AS view_type, 
 			u.email, 
 			u.avatar, 
-			pp.name,
+			pp.name as folder_name,
 			pl.last_accessed
 		FROM page_access_logs pl 
 		LEFT JOIN pages p ON p.pkid = pl.page_pkid 
@@ -58,8 +58,7 @@ func (r *PageAccessLogRepository) GetByUserPKID(ctx context.Context, userPkID in
 		LEFT JOIN users u ON u.pkid = p.author_pkid
 		LEFT JOIN documents d ON d.page_pkid = p.pkid
 		LEFT JOIN assets a ON a.page_pkid = p.pkid
-		WHERE (d.page_pkid IS NOT NULL OR a.page_pkid IS NOT NULL) 
-		AND pl.user_pkid = ?`, userPkID).Scan(&result).Error
+		WHERE pl.user_pkid= ?`, userPkID).Scan(&result).Error
 	if err != nil {
 		return nil, err
 	}
