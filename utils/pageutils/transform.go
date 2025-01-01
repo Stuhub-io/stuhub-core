@@ -31,11 +31,14 @@ type PageBodyParams struct {
 }
 
 func TransformPageModelToDomain(
-	model model.Page,
+	model *model.Page,
 	childPages []domain.Page,
 	pageBody PageBodyParams,
 	inheritFromPage *domain.Page,
 ) *domain.Page {
+	if model == nil {
+		return nil
+	}
 	archivedAt := ""
 	if model.ArchivedAt != nil {
 		archivedAt = model.ArchivedAt.String()
@@ -62,7 +65,6 @@ func TransformPageModelToDomain(
 		Document:         pageBody.Document,
 		Asset:            pageBody.Asset,
 		Path:             model.Path,
-		IsGeneralAccess:  model.IsGeneralAccess,
 		GeneralRole:      domain.PageRoleFromString(model.GeneralRole),
 		Author:           pageBody.Author,
 		InheritFromPage:  inheritFromPage,

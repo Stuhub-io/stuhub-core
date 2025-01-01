@@ -37,7 +37,6 @@ func (r *PageRepository) initPageModel(
 		path = pageutils.AppendPath(parentFolder.Path, strconv.FormatInt(parentFolder.Pkid, 10))
 	}
 
-	GeneralAccess := false
 	GeneralRole := domain.PageInherit.String()
 
 	// Default General Access for Root Page
@@ -46,15 +45,14 @@ func (r *PageRepository) initPageModel(
 	}
 
 	newPage := model.Page{
-		Name:            pageInput.Name,
-		CoverImage:      pageInput.CoverImage,
-		OrgPkid:         &pageInput.OrganizationPkID,
-		AuthorPkid:      &pageInput.AuthorPkID,
-		ParentPagePkid:  pageInput.ParentPagePkID,
-		ViewType:        pageInput.ViewType.String(),
-		Path:            path,
-		GeneralRole:     GeneralRole,
-		IsGeneralAccess: GeneralAccess,
+		Name:           pageInput.Name,
+		CoverImage:     pageInput.CoverImage,
+		OrgPkid:        &pageInput.OrganizationPkID,
+		AuthorPkid:     &pageInput.AuthorPkID,
+		ParentPagePkid: pageInput.ParentPagePkID,
+		ViewType:       pageInput.ViewType.String(),
+		Path:           path,
+		GeneralRole:    GeneralRole,
 	}
 	return initPageModelResults{
 		Page:         &newPage,
@@ -68,7 +66,7 @@ type PreloadPageResultParams struct {
 	Author bool
 }
 
-func (*PageRepository) preloadPageResult(q *gorm.DB, option PreloadPageResultParams) *gorm.DB {
+func preloadPageResult(q *gorm.DB, option PreloadPageResultParams) *gorm.DB {
 	// Preload Asset and Doc
 	if option.Asset {
 		q = q.Preload("Asset")
@@ -80,4 +78,32 @@ func (*PageRepository) preloadPageResult(q *gorm.DB, option PreloadPageResultPar
 		q = q.Preload("Author")
 	}
 	return q
+}
+
+func buildPageQuery(
+	tx *gorm.DB,
+	q domain.PageListQuery,
+) *gorm.DB {
+	query := tx.Where("org_pkid = ?", q.OrgPkID)
+
+	if q.IsArchived != nil {
+		if *q.IsArchived {
+			query = query.Where("pages.archived_at IS NOT NULL")
+		} else {
+			query = query.Where("pages.archived_at IS NULL")
+		}
+	}
+	if !q.IsAll {
+		if q.ParentPagePkID != nil {
+			query = query.Where("pages.parent_page_pkid = ?", *q.ParentPagePkID)
+		} else {
+			query = query.Where("pages.parent_page_pkid IS NULL")
+		}
+	}
+	if (len(q.ViewTypes)) > 0 {
+		query = query.Where("pages.view_type IN ?", q.ViewTypes)
+	}
+
+	query = query.Order("pages.updated_at desc").Offset(q.Offset).Limit(q.Limit)
+	return query
 }

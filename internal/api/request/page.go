@@ -24,6 +24,7 @@ type GetPagesQuery struct {
 	ParentPagePkID *int64                `form:"parent_page_pkid,omitempty" json:"parent_page_pkid,omitempty"`
 	IsArchived     *bool                 `form:"is_archived,omitempty"      json:"is_archived,omitempty"`
 	All            bool                  `form:"all,omitempty"              json:"all,omitempty"`
+	GeneralRole    *domain.PageRole      `form:"general_role,omitempty"     json:"general_role,omitempty"`
 	PaginationRequest
 }
 
@@ -56,8 +57,7 @@ type CreateAssetBody struct {
 }
 
 type UpdatePageGeneralAccessBody struct {
-	IsGeneralAccess *bool           `binding:"required" json:"is_general_access"`
-	GeneralRole     domain.PageRole `binding:"required" json:"general_role,omitempty"`
+	GeneralRole domain.PageRole `binding:"required" json:"general_role,omitempty"`
 }
 
 type AddPageRoleUserBody struct {

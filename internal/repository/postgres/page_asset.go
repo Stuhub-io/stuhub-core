@@ -52,7 +52,7 @@ func (r *PageRepository) CreateAsset(ctx context.Context, assetInput domain.Asse
 	// Commit Tx
 
 	return pageutils.TransformPageModelToDomain(
-		*newPage,
+		newPage,
 		nil,
 		pageutils.PageBodyParams{
 			Asset: pageutils.TransformAssetModalToDomain(&asset),

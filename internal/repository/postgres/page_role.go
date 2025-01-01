@@ -183,7 +183,7 @@ func (r *PageRepository) GetPageRoles(
 			} else {
 				transformRole.Role = emailRole.Role
 				inheritPage := emailRole.Page
-				transformRole.InheritFromPage = pageutils.TransformPageModelToDomain(*inheritPage, nil, pageutils.PageBodyParams{}, nil)
+				transformRole.InheritFromPage = pageutils.TransformPageModelToDomain(inheritPage, nil, pageutils.PageBodyParams{}, nil)
 			}
 			role.Role = EmailRoleMap[role.Email].Role
 		}
@@ -273,10 +273,7 @@ func (r *PageRepository) CheckPermission(ctx context.Context, input domain.PageR
 	pageRoleUser := input.PageRole
 
 	if user == nil {
-		if page.IsGeneralAccess {
-			return GetPermissionByRole(page.GeneralRole)
-		}
-		return permissions
+		return GetPermissionByRole(page.GeneralRole)
 	}
 
 	// Author has all permissions
@@ -303,15 +300,13 @@ func (r *PageRepository) CheckPermission(ctx context.Context, input domain.PageR
 	}
 
 	// Direct Role Not Found
-	if page.IsGeneralAccess {
-		return GetPermissionByRole(page.GeneralRole)
-	}
-
-	return permissions
+	return GetPermissionByRole(page.GeneralRole)
 }
 
 func GetPermissionByRole(role domain.PageRole) (p domain.PageRolePermissions) {
 	switch role {
+	case domain.PageRestrict:
+		return p
 	case domain.PageEditor:
 		p.CanEdit = true
 		p.CanView = true

@@ -56,7 +56,7 @@ func (r *PageRepository) CreateDocumentPage(
 	doneTx(nil)
 
 	return pageutils.TransformPageModelToDomain(
-		*newPage,
+		newPage,
 		[]domain.Page{},
 		pageutils.PageBodyParams{
 			Document: pageutils.TransformDocModelToDomain(&document),
@@ -88,7 +88,7 @@ func (r *PageRepository) UpdateContent(
 	}
 
 	return pageutils.TransformPageModelToDomain(
-		page,
+		&page,
 		nil,
 		pageutils.PageBodyParams{
 			Document: pageutils.TransformDocModelToDomain(&doc),

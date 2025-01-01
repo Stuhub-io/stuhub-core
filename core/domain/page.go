@@ -23,7 +23,6 @@ type Page struct {
 	Document         *Document            `json:"document"`
 	Asset            *Asset               `json:"asset"`
 	Path             string               `json:"path"`
-	IsGeneralAccess  bool                 `json:"is_general_access"`
 	GeneralRole      PageRole             `json:"general_role"`
 	Author           *User                `json:"author"`
 	InheritFromPage  *Page                `json:"inherit_from_page"`
@@ -63,19 +62,21 @@ type PageMoveInput struct {
 	ParentPagePkID *int64 `json:"parent_page_pkid"`
 }
 type PageListQuery struct {
-	OrgPkID        int64          `json:"org_pkid"`
-	ViewTypes      []PageViewType `json:"view_type"`
-	ParentPagePkID *int64         `json:"parent_page_pkid"`
-	IsArchived     *bool          `json:"is_archived"`
-	Offset         int            `json:"offset"`
-	Limit          int            `json:"limit"`
-	IsAll          bool           `json:"all"`
+	OrgPkID            int64          `json:"org_pkid"`
+	ViewTypes          []PageViewType `json:"view_type"`
+	ParentPagePkID     *int64         `json:"parent_page_pkid"`
+	IsArchived         *bool          `json:"is_archived"`
+	Offset             int            `json:"offset"`
+	Limit              int            `json:"limit"`
+	IsAll              bool           `json:"all"`
+	GeneralRole        *PageRole      `json:"general_role"`
+	PagePkIDs          []int64        `json:"page_pkids"`
+	ExcludeGeneralRole []PageRole     `json:"exclude_general_role"`
 }
 
 type PageGeneralAccessUpdateInput struct {
-	AuthorPkID      int64    `json:"author_pkid"`
-	IsGeneralAccess bool     `json:"is_general_access"`
-	GeneralRole     PageRole `json:"general_role"`
+	AuthorPkID  int64    `json:"author_pkid"`
+	GeneralRole PageRole `json:"general_role"`
 }
 
 type PageRoleCreateInput struct {
@@ -149,10 +150,11 @@ const (
 	PageViewer PageRole = iota + 1
 	PageEditor
 	PageInherit
+	PageRestrict
 )
 
 func (r PageRole) String() string {
-	return [...]string{"viewer", "editor", "inherit"}[r-1]
+	return [...]string{"viewer", "editor", "inherit", "restrict"}[r-1]
 }
 
 func (r *PageRole) UnmarshalJSON(data []byte) error {
@@ -178,6 +180,8 @@ func PageRoleFromString(val string) PageRole {
 		return PageEditor
 	case "inherit":
 		return PageInherit
+	case "restrict":
+		return PageRestrict
 	default:
 		return PageViewer
 	}

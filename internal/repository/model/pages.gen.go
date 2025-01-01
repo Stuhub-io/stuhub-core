@@ -12,21 +12,20 @@ const TableNamePage = "pages"
 
 // Page mapped from table <pages>
 type Page struct {
-	Pkid            int64      `gorm:"column:pkid;type:bigint;primaryKey;autoIncrement:true" json:"pkid"`
-	ID              string     `gorm:"column:id;type:uuid;not null;default:uuid_generate_v4()" json:"id"`
-	Name            string     `gorm:"column:name;type:character varying(255);not null" json:"name"`
-	CreatedAt       time.Time  `gorm:"column:created_at;type:timestamp with time zone;not null;default:now()" json:"created_at"`
-	UpdatedAt       time.Time  `gorm:"column:updated_at;type:timestamp with time zone;not null;default:now()" json:"updated_at"`
-	ParentPagePkid  *int64     `gorm:"column:parent_page_pkid;type:bigint;index:idx_parent_page_pkid,priority:1" json:"parent_page_pkid"`
-	ViewType        string     `gorm:"column:view_type;type:character varying(50);not null" json:"view_type"`
-	ArchivedAt      *time.Time `gorm:"column:archived_at;type:timestamp with time zone" json:"archived_at"`
-	CoverImage      string     `gorm:"column:cover_image;type:character varying;not null" json:"cover_image"`
-	NodeID          *string    `gorm:"column:node_id;type:uuid;uniqueIndex:page_node_id_idx,priority:1" json:"node_id"`
-	OrgPkid         *int64     `gorm:"column:org_pkid;type:bigint" json:"org_pkid"`
-	Path            string     `gorm:"column:path;type:text;not null" json:"path"`
-	IsGeneralAccess bool       `gorm:"column:is_general_access;type:boolean;not null" json:"is_general_access"`
-	GeneralRole     string     `gorm:"column:general_role;type:character varying(20);not null;default:viewer" json:"general_role"`
-	AuthorPkid      *int64     `gorm:"column:author_pkid;type:bigint" json:"author_pkid"`
+	Pkid           int64      `gorm:"column:pkid;type:bigint;primaryKey;autoIncrement:true" json:"pkid"`
+	ID             string     `gorm:"column:id;type:uuid;not null;default:uuid_generate_v4()" json:"id"`
+	Name           string     `gorm:"column:name;type:character varying(255);not null" json:"name"`
+	CreatedAt      time.Time  `gorm:"column:created_at;type:timestamp with time zone;not null;default:now()" json:"created_at"`
+	UpdatedAt      time.Time  `gorm:"column:updated_at;type:timestamp with time zone;not null;default:now()" json:"updated_at"`
+	ParentPagePkid *int64     `gorm:"column:parent_page_pkid;type:bigint;index:idx_parent_page_pkid,priority:1" json:"parent_page_pkid"`
+	ViewType       string     `gorm:"column:view_type;type:character varying(50);not null" json:"view_type"`
+	ArchivedAt     *time.Time `gorm:"column:archived_at;type:timestamp with time zone" json:"archived_at"`
+	CoverImage     string     `gorm:"column:cover_image;type:character varying;not null" json:"cover_image"`
+	NodeID         *string    `gorm:"column:node_id;type:uuid;uniqueIndex:page_node_id_idx,priority:1" json:"node_id"`
+	OrgPkid        *int64     `gorm:"column:org_pkid;type:bigint" json:"org_pkid"`
+	Path           string     `gorm:"column:path;type:text;not null" json:"path"`
+	GeneralRole    string     `gorm:"column:general_role;type:character varying(20);not null;default:viewer" json:"general_role"`
+	AuthorPkid     *int64     `gorm:"column:author_pkid;type:bigint" json:"author_pkid"`
 }
 
 // TableName Page's table name

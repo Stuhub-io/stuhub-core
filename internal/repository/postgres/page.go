@@ -38,32 +38,12 @@ func (r *PageRepository) List(
 	q domain.PageListQuery,
 ) ([]domain.Page, *domain.Error) {
 	var results []PageResult
-	query := r.preloadPageResult(r.store.DB(), PreloadPageResultParams{
+
+	query := buildPageQuery(preloadPageResult(r.store.DB(), PreloadPageResultParams{
 		Asset:  true,
 		Doc:    true,
 		Author: true,
-	}).
-		Where("org_pkid = ?", q.OrgPkID)
-
-	if q.IsArchived != nil {
-		if *q.IsArchived {
-			query = query.Where("pages.archived_at IS NOT NULL")
-		} else {
-			query = query.Where("pages.archived_at IS NULL")
-		}
-	}
-	if !q.IsAll {
-		if q.ParentPagePkID != nil {
-			query = query.Where("pages.parent_page_pkid = ?", *q.ParentPagePkID)
-		} else {
-			query = query.Where("pages.parent_page_pkid IS NULL")
-		}
-	}
-	if (len(q.ViewTypes)) > 0 {
-		query = query.Where("pages.view_type IN ?", q.ViewTypes)
-	}
-
-	query = query.Order("pages.updated_at desc").Offset(q.Offset).Limit(q.Limit)
+	}), q)
 
 	if err := query.Find(&results).Error; err != nil {
 		return nil, domain.ErrDatabaseQuery
@@ -73,7 +53,7 @@ func (r *PageRepository) List(
 	for _, result := range results {
 		domainPages = append(
 			domainPages,
-			*pageutils.TransformPageModelToDomain(result.Page, nil, pageutils.PageBodyParams{
+			*pageutils.TransformPageModelToDomain(&result.Page, nil, pageutils.PageBodyParams{
 				Document: pageutils.TransformDocModelToDomain(result.Doc),
 				Asset:    pageutils.TransformAssetModalToDomain(result.Asset),
 			}, nil),
@@ -114,7 +94,7 @@ func (r *PageRepository) Update(
 	}
 
 	return pageutils.TransformPageModelToDomain(
-		page,
+		&page,
 		nil,
 		pageutils.PageBodyParams{},
 		nil,
@@ -126,9 +106,10 @@ func (r *PageRepository) GetByID(
 	pageID string,
 	pagePkID *int64,
 ) (*domain.Page, *domain.Error) {
+
 	var page PageResult
 
-	query := r.preloadPageResult(r.store.DB().Model(&page), PreloadPageResultParams{
+	query := preloadPageResult(r.store.DB().Model(&page), PreloadPageResultParams{
 		Asset:  true,
 		Doc:    true,
 		Author: true,
@@ -148,31 +129,31 @@ func (r *PageRepository) GetByID(
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	var childPages []PageResult
-	if dbErr := r.preloadPageResult(r.store.DB(), PreloadPageResultParams{
-		Asset: true,
-		Doc:   true,
-	}).Where("parent_page_pkid = ?", page.Pkid).Order("pages.updated_at desc").Find(&childPages).Error; dbErr != nil {
-		return nil, domain.ErrDatabaseQuery
-	}
-
-	childPagesDomain := make([]domain.Page, len((childPages)))
-	for i := 0; i < len(childPages); i++ {
-		childPagesDomain[i] = *pageutils.TransformPageModelToDomain(childPages[i].Page, nil, pageutils.PageBodyParams{
-			Document: pageutils.TransformDocModelToDomain(childPages[i].Doc),
-			Asset:    pageutils.TransformAssetModalToDomain(childPages[i].Asset),
-		}, nil)
+	// Get Inherited Access
+	var inheritPage *model.Page
+	if page.GeneralRole == domain.PageInherit.String() {
+		parentPkIDs := pageutils.PagePathToPkIDs(page.Path)
+		query := buildPageQuery(r.store.DB(), domain.PageListQuery{
+			OrgPkID:            *page.OrgPkid,
+			ExcludeGeneralRole: []domain.PageRole{domain.PageInherit},
+			PagePkIDs:          parentPkIDs,
+		})
+		if err := query.First(&inheritPage).Error; err != nil {
+			page.GeneralRole = domain.PageRestrict.String()
+		} else {
+			page.GeneralRole = inheritPage.GeneralRole
+		}
 	}
 
 	return pageutils.TransformPageModelToDomain(
-		page.Page,
-		childPagesDomain,
+		&page.Page,
+		nil,
 		pageutils.PageBodyParams{
 			Document: pageutils.TransformDocModelToDomain(page.Doc),
 			Asset:    pageutils.TransformAssetModalToDomain(page.Asset),
 			Author:   userutils.TransformUserModelToDomain(page.Author),
 		},
-		nil,
+		pageutils.TransformPageModelToDomain(inheritPage, nil, pageutils.PageBodyParams{}, nil),
 	), nil
 }
 
@@ -214,7 +195,7 @@ func (r *PageRepository) Archive(
 
 	done(nil)
 
-	return pageutils.TransformPageModelToDomain(page, nil, pageutils.PageBodyParams{}, nil), nil
+	return pageutils.TransformPageModelToDomain(&page, nil, pageutils.PageBodyParams{}, nil), nil
 }
 
 func (r *PageRepository) Move(
@@ -271,7 +252,7 @@ func (r *PageRepository) Move(
 	doneTx(nil)
 	// Commit Tx
 
-	return pageutils.TransformPageModelToDomain(page, nil, pageutils.PageBodyParams{}, nil), nil
+	return pageutils.TransformPageModelToDomain(&page, nil, pageutils.PageBodyParams{}, nil), nil
 }
 
 func (r *PageRepository) UpdateGeneralAccess(
@@ -280,15 +261,14 @@ func (r *PageRepository) UpdateGeneralAccess(
 	updateInput domain.PageGeneralAccessUpdateInput,
 ) (*domain.Page, *domain.Error) {
 	page := model.Page{
-		Pkid:            pagePkID,
-		IsGeneralAccess: updateInput.IsGeneralAccess,
-		GeneralRole:     updateInput.GeneralRole.String(),
+		Pkid:        pagePkID,
+		GeneralRole: updateInput.GeneralRole.String(),
 	}
 
-	if dbErr := r.store.DB().Clauses(clause.Returning{}).Select("IsGeneralAccess", "GeneralRole").Save(&page).Error; dbErr != nil {
+	if dbErr := r.store.DB().Clauses(clause.Returning{}).Select("GeneralRole").Save(&page).Error; dbErr != nil {
 		fmt.Print(dbErr)
 		return nil, domain.ErrUpdatePageGeneralAccess
 	}
 
-	return pageutils.TransformPageModelToDomain(page, nil, pageutils.PageBodyParams{}, nil), nil
+	return pageutils.TransformPageModelToDomain(&page, nil, pageutils.PageBodyParams{}, nil), nil
 }

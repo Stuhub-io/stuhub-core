@@ -112,6 +112,7 @@ func (h *PageHandler) GetPages(c *gin.Context, user *domain.User) {
 		IsAll:          query.All,
 		Limit:          int(query.PaginationRequest.Size),
 		IsArchived:     query.IsArchived,
+		GeneralRole:    query.GeneralRole,
 	}, user)
 
 	if err != nil {
@@ -328,9 +329,8 @@ func (h *PageHandler) UpdatePageGeneralAccess(c *gin.Context, user *domain.User)
 	}
 
 	page, err := h.pageService.UpdateGeneralAccess(pagePkID, domain.PageGeneralAccessUpdateInput{
-		AuthorPkID:      user.PkID,
-		IsGeneralAccess: *body.IsGeneralAccess,
-		GeneralRole:     body.GeneralRole,
+		AuthorPkID:  user.PkID,
+		GeneralRole: body.GeneralRole,
 	}, user)
 
 	if err != nil {
