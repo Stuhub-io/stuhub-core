@@ -234,13 +234,6 @@ func (s *Service) CreateDocumentPage(
 		return nil, domain.ErrPermissionDenied
 	}
 
-	_, err := s.orgRepository.GetOrgMemberByEmail(context.Background(), pageInput.OrganizationPkID, curUser.Email)
-	isOrgMember := err == nil
-
-	if !isOrgMember {
-		return nil, domain.ErrPermissionDenied
-	}
-
 	page, err := s.pageRepository.CreateDocumentPage(context.Background(), pageInput)
 
 	if err != nil {

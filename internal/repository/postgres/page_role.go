@@ -233,6 +233,7 @@ func (r *PageRepository) DeletePageRole(
 	if err := tx.DB().Where("path LIKE ?", childPath+"%").Find(&childPages).Error; err != nil {
 		return done(err)
 	}
+
 	if len(childPages) != 0 {
 		q := buildQueryPageRoles(tx.DB(), queryPageRolesParams{
 			PagePkIDs: sliceutils.Map(childPages, func(page model.Page) int64 {
