@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -260,13 +259,13 @@ func (r *PageRepository) UpdateGeneralAccess(
 	pagePkID int64,
 	updateInput domain.PageGeneralAccessUpdateInput,
 ) (*domain.Page, *domain.Error) {
+
 	page := model.Page{
 		Pkid:        pagePkID,
 		GeneralRole: updateInput.GeneralRole.String(),
 	}
 
 	if dbErr := r.store.DB().Clauses(clause.Returning{}).Select("GeneralRole").Save(&page).Error; dbErr != nil {
-		fmt.Print(dbErr)
 		return nil, domain.ErrUpdatePageGeneralAccess
 	}
 

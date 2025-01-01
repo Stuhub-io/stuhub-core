@@ -154,7 +154,7 @@ const (
 )
 
 func (r PageRole) String() string {
-	return [...]string{"viewer", "editor", "inherit", "restrict"}[r-1]
+	return [...]string{"viewer", "editor", "inherit", "restricted"}[r-1]
 }
 
 func (r *PageRole) UnmarshalJSON(data []byte) error {
@@ -164,11 +164,11 @@ func (r *PageRole) UnmarshalJSON(data []byte) error {
 	}
 
 	switch PageRole(value) {
-	case PageViewer, PageEditor, PageInherit:
+	case PageViewer, PageEditor, PageInherit, PageRestrict:
 		*r = PageRole(value)
 		return nil
 	default:
-		return errors.New("invalid view_type, must be 1(viewer) | 2(editor) | 3(inherit)")
+		return errors.New("invalid page role, must be 1(viewer) | 2(editor) | 3(inherit)")
 	}
 }
 
@@ -180,7 +180,7 @@ func PageRoleFromString(val string) PageRole {
 		return PageEditor
 	case "inherit":
 		return PageInherit
-	case "restrict":
+	case "restricted":
 		return PageRestrict
 	default:
 		return PageViewer
