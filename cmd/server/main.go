@@ -114,8 +114,14 @@ func main() {
 			Store: dbStore,
 		},
 	)
+	pageAccessLogs := postgres.NewPageAccessLogRepository(postgres.NewPageAccessLogRepositoryParams{
+		Cfg:   cfg,
+		Store: dbStore,
+	})
 
 	cloudinaryUploader := uploader.NewCloudinaryUploader(cfg)
+
+	pageAccessLogs.GetByUserPKID(context.Background(), 6)
 
 	// services
 	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{
