@@ -294,8 +294,8 @@ func (r *PageRepository) CheckPermission(ctx context.Context, input domain.PageR
 
 	// Dont pass in direct role
 	if pageRoleUser == nil {
-		role, _ := r.GetPageRoleByEmail(ctx, page.PkID, user.Email)
-		if role != nil {
+		role, err := r.GetPageRoleByEmail(ctx, page.PkID, user.Email)
+		if err == nil {
 			pageRoleUser = &role.Role
 		}
 	}

@@ -42,7 +42,7 @@ func (r *PageRepository) initPageModel(
 
 	// Default General Access for Root Page
 	if parentFolder == nil {
-		GeneralRole = domain.PageViewer.String()
+		GeneralRole = domain.PageRestrict.String()
 	}
 
 	newPage := model.Page{
@@ -111,4 +111,12 @@ func buildPageQuery(
 
 	query = query.Order("pages.updated_at desc").Offset(q.Offset).Limit(q.Limit)
 	return query
+}
+
+func pageResultsToMap(results []PageResult) map[int64]PageResult {
+	pageMap := make(map[int64]PageResult)
+	for _, result := range results {
+		pageMap[result.Pkid] = result
+	}
+	return pageMap
 }

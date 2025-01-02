@@ -12,6 +12,7 @@ import (
 	"github.com/Stuhub-io/utils/pageutils"
 	sliceutils "github.com/Stuhub-io/utils/slice"
 	"github.com/Stuhub-io/utils/userutils"
+	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -52,31 +53,119 @@ func (r *PageRepository) List(
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	var fallbackCurUserRole = domain.PageRestrict
-	if q.ParentPagePkID != nil {
-		parentRole, err := r.GetCurrentUserRole(ctx, *q.ParentPagePkID, curUser)
+	directPageRoleMap := make(map[int64]model.PageRole)
+	generalPageRoleMap := make(map[int64]domain.PageRole)
+	// Find missing direct role for inherit direct roles
+	missingPagePkIDs := make([]int64, 0, len(results))
+	// Find missing page general role for inherit general roles
+	missingGeneralPagePkIDs := make([]int64, 0, len(results))
+
+	for _, result := range results {
+		// Handle General Role
+		if result.GeneralRole != domain.PageInherit.String() {
+			generalPageRoleMap[result.Pkid] = domain.PageRoleFromString(result.GeneralRole)
+		} else {
+			parentPkIDs := pageutils.PagePathToPkIDs(result.Path)
+
+			for _, pkID := range parentPkIDs {
+				if _, ok := generalPageRoleMap[pkID]; !ok {
+					missingGeneralPagePkIDs = append(missingGeneralPagePkIDs, pkID)
+				}
+			}
+		}
+
+		// Handle Direct Role
+		if curUser != nil {
+			// Find current user's direct page roles
+			curUserRole := sliceutils.Find(result.PageRoles, func(role model.PageRole) bool {
+				return role.Email == curUser.Email
+			})
+			if curUserRole != nil && curUserRole.Role != domain.PageInherit.String() {
+				directPageRoleMap[result.Pkid] = *curUserRole
+			}
+			// Find missing parent page pkids for user's indirect page roles
+			parentPkIDs := pageutils.PagePathToPkIDs(result.Path)
+			for _, pkID := range parentPkIDs {
+				if _, ok := directPageRoleMap[pkID]; !ok {
+					missingPagePkIDs = append(missingPagePkIDs, pkID)
+				}
+			}
+		}
+	}
+
+	// Fill missing general roles
+	generalBasePageRoles := []model.Page{}
+	pQuery := buildPageQuery(r.store.DB(), domain.PageListQuery{
+		OrgPkID:            q.OrgPkID,
+		ExcludeGeneralRole: []domain.PageRole{domain.PageInherit},
+		PagePkIDs:          missingGeneralPagePkIDs,
+	})
+
+	if err := pQuery.Find(&generalBasePageRoles).Error; err != nil {
+		return nil, domain.ErrDatabaseQuery
+	}
+
+	for _, role := range generalBasePageRoles {
+		generalPageRoleMap[role.Pkid] = domain.PageRoleFromString(role.GeneralRole)
+	}
+
+	// Fill missing direct roles
+	if curUser != nil {
+		// Find actual roles from missing direct role page pkids
+		curUserIndirectRoles, err := queryPageRoles(r.store.DB(), queryPageRolesParams{
+			Emails:       []string{curUser.Email},
+			PagePkIDs:    missingPagePkIDs,
+			ExcludeRoles: []domain.PageRole{domain.PageInherit},
+		})
+
 		if err != nil {
 			return nil, err
 		}
-		fallbackCurUserRole = parentRole
+
+		for _, role := range curUserIndirectRoles {
+			if _, ok := directPageRoleMap[role.PagePkid]; !ok {
+				directPageRoleMap[role.PagePkid] = role.PageRole
+			}
+		}
+	}
+
+	findInheritGeneralRole := func(parentPkIds []int64) domain.PageRole {
+		slices.Reverse(parentPkIds)
+		for _, pkID := range parentPkIds {
+			if role, ok := generalPageRoleMap[pkID]; ok {
+				return role
+			}
+		}
+		return domain.PageRestrict
+	}
+
+	findCurPageRole := func(parentPkIDs []int64) *domain.PageRole {
+		slices.Reverse(parentPkIDs)
+		for _, pkID := range parentPkIDs {
+			if role, ok := directPageRoleMap[pkID]; ok {
+				role := domain.PageRoleFromString(role.Role)
+				return &role
+			}
+		}
+		return nil
 	}
 
 	domainPages := make([]domain.Page, 0, len(results))
 	for _, result := range results {
-		specificRole := fallbackCurUserRole
-
-		if result.GeneralRole != domain.PageInherit.String() {
-			specificRole = domain.PageRoleFromString(result.GeneralRole)
-		} else {
-			// if inherit, use parent's general role
-			result.GeneralRole = specificRole.String()
+		// Inherit general role
+		if result.GeneralRole == domain.PageInherit.String() {
+			result.GeneralRole = findInheritGeneralRole(pageutils.PagePathToPkIDs(result.Path)).String()
 		}
+		// Inherit cur user role
+		var curUserRole *domain.PageRole
 		if curUser != nil {
-			userRole := sliceutils.Find(result.PageRoles, func(role model.PageRole) bool {
-				return role.Email == curUser.Email
-			})
-			if userRole != nil {
-				specificRole = domain.PageRoleFromString(userRole.Role)
+			directRole, ok := directPageRoleMap[result.Pkid]
+			// Is inherit type role
+			if !ok {
+				curUserRole = findCurPageRole(pageutils.PagePathToPkIDs(result.Path))
+			} else {
+				role := domain.PageRoleFromString(directRole.Role)
+				curUserRole = &role
 			}
 		}
 
@@ -86,6 +175,7 @@ func (r *PageRepository) List(
 				PageBody: pageutils.PageBodyParams{
 					Document: pageutils.TransformDocModelToDomain(result.Doc),
 					Asset:    pageutils.TransformAssetModalToDomain(result.Asset),
+					Author:   userutils.TransformUserModelToDomain(result.Author),
 				},
 			},
 		)
@@ -93,7 +183,7 @@ func (r *PageRepository) List(
 		permission := r.CheckPermission(ctx, domain.PageRolePermissionCheckInput{
 			Page:     *domainPage,
 			User:     curUser,
-			PageRole: &specificRole,
+			PageRole: curUserRole,
 		})
 
 		domainPage.Permissions = &permission
@@ -335,30 +425,4 @@ func (r *PageRepository) UpdateGeneralAccess(
 			Page: &page,
 		},
 	), nil
-}
-
-func (r *PageRepository) GetCurrentUserRole(ctx context.Context, pagePkID int64, curUser *domain.User) (domain.PageRole, *domain.Error) {
-	var curUserRole = domain.PageRestrict
-	// default to parent's general role
-	parentPage, err := r.GetByID(ctx, "", &pagePkID, domain.PageDetailOptions{})
-	if err != nil {
-		return curUserRole, err
-	}
-
-	curUserRole = parentPage.GeneralRole
-	// Check if user has direct role in parent page
-	if curUser != nil {
-		parentRoles, err := r.GetPageRoles(ctx, pagePkID)
-		if err != nil {
-			return curUserRole, err
-		}
-		curUserBaseRole := sliceutils.Find(parentRoles, func(role domain.PageRoleUser) bool {
-			return role.Email == curUser.Email
-		})
-
-		if curUserBaseRole != nil {
-			curUserRole = curUserBaseRole.Role
-		}
-	}
-	return curUserRole, nil
 }

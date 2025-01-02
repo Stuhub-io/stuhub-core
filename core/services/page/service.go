@@ -393,17 +393,8 @@ func (s *Service) GetPageRoleUsers(
 		User: curUser,
 	})
 
-	if !permissions.CanView {
+	if !permissions.CanShare {
 		return nil, domain.ErrPermissionDenied
-	}
-
-	exisingPage, err := s.pageRepository.GetByID(context.Background(), "", &input.PagePkID, domain.PageDetailOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	if !exisingPage.IsAuthor(input.AuthorPkID) {
-		return nil, domain.ErrUnauthorized
 	}
 
 	pageRoleUsers, err := s.pageRepository.GetPageRoles(
@@ -435,14 +426,6 @@ func (s *Service) UpdatePageRoleUser(
 
 	if err != nil {
 		return err
-	}
-
-	if !exisingPage.IsAuthor(input.AuthorPkID) {
-		return domain.ErrUnauthorized
-	}
-
-	if exisingPage.IsEmailAuthor(input.Email) {
-		return domain.ErrNotFound
 	}
 
 	exisingPageRoleUser, _ := s.pageRepository.GetPageRoleByEmail(
