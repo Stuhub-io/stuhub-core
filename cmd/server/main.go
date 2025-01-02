@@ -121,7 +121,7 @@ func main() {
 
 	cloudinaryUploader := uploader.NewCloudinaryUploader(cfg)
 
-	pageAccessLogs.GetByUserPKID(context.Background(), 6)
+	pageAccessLogs.GetByUserPKID(context.Background(), 1)
 
 	// services
 	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{
