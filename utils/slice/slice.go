@@ -131,3 +131,11 @@ func DivideIntoChunks[T any](s []T, maxSize int64) (result [][]T) {
 
 	return
 }
+
+func FlatMap[A, B any](input []A, f func(A) []B) []B {
+	var result []B
+	for _, v := range input {
+		result = append(result, f(v)...)
+	}
+	return result
+}

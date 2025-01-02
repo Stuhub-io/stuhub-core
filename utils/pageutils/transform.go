@@ -35,6 +35,7 @@ type PageModelToDomainParams struct {
 	ChildPages      []domain.Page
 	PageBody        PageBodyParams
 	InheritFromPage *domain.Page
+	Permissions     *domain.PageRolePermissions
 }
 
 func TransformPageModelToDomain(
@@ -44,6 +45,7 @@ func TransformPageModelToDomain(
 	childPages := params.ChildPages
 	pageBody := params.PageBody
 	inheritFromPage := params.InheritFromPage
+	Permissions := params.Permissions
 
 	if model == nil {
 		return nil
@@ -77,6 +79,7 @@ func TransformPageModelToDomain(
 		GeneralRole:      domain.PageRoleFromString(model.GeneralRole),
 		Author:           pageBody.Author,
 		InheritFromPage:  inheritFromPage,
+		Permissions:      Permissions,
 	}
 }
 

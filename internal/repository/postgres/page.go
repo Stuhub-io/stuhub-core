@@ -10,6 +10,7 @@ import (
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/pageutils"
+	sliceutils "github.com/Stuhub-io/utils/slice"
 	"github.com/Stuhub-io/utils/userutils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -35,33 +36,75 @@ func NewPageRepository(params NewPageRepositoryParams) *PageRepository {
 func (r *PageRepository) List(
 	ctx context.Context,
 	q domain.PageListQuery,
+	curUser *domain.User,
 ) ([]domain.Page, *domain.Error) {
+
 	var results []PageResult
 
 	query := buildPageQuery(preloadPageResult(r.store.DB(), PreloadPageResultParams{
-		Asset:  true,
-		Doc:    true,
-		Author: true,
+		Asset:     true,
+		Doc:       true,
+		Author:    true,
+		PageRoles: true,
 	}), q)
 
 	if err := query.Find(&results).Error; err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
 
+	var fallbackCurUserRole = domain.PageRestrict
+	if q.ParentPagePkID != nil {
+		parentRole, err := r.GetCurrentUserRole(ctx, *q.ParentPagePkID, curUser)
+		if err != nil {
+			return nil, err
+		}
+		fallbackCurUserRole = parentRole
+	}
+
 	domainPages := make([]domain.Page, 0, len(results))
 	for _, result := range results {
-		domainPages = append(
-			domainPages,
-			*pageutils.TransformPageModelToDomain(
-				pageutils.PageModelToDomainParams{
-					Page: &result.Page,
-					PageBody: pageutils.PageBodyParams{
-						Document: pageutils.TransformDocModelToDomain(result.Doc),
-						Asset:    pageutils.TransformAssetModalToDomain(result.Asset),
-					},
+		specificRole := fallbackCurUserRole
+
+		if result.GeneralRole != domain.PageInherit.String() {
+			specificRole = domain.PageRoleFromString(result.GeneralRole)
+		} else {
+			// if inherit, use parent's general role
+			result.GeneralRole = specificRole.String()
+		}
+		if curUser != nil {
+			userRole := sliceutils.Find(result.PageRoles, func(role model.PageRole) bool {
+				return role.Email == curUser.Email
+			})
+			if userRole != nil {
+				specificRole = domain.PageRoleFromString(userRole.Role)
+			}
+		}
+
+		domainPage := pageutils.TransformPageModelToDomain(
+			pageutils.PageModelToDomainParams{
+				Page: &result.Page,
+				PageBody: pageutils.PageBodyParams{
+					Document: pageutils.TransformDocModelToDomain(result.Doc),
+					Asset:    pageutils.TransformAssetModalToDomain(result.Asset),
 				},
-			),
+			},
 		)
+
+		permission := r.CheckPermission(ctx, domain.PageRolePermissionCheckInput{
+			Page:     *domainPage,
+			User:     curUser,
+			PageRole: &specificRole,
+		})
+
+		domainPage.Permissions = &permission
+
+		// Only return pages that user has permission to view
+		if permission.CanView {
+			domainPages = append(
+				domainPages,
+				*domainPage,
+			)
+		}
 	}
 
 	return domainPages, nil
@@ -108,14 +151,15 @@ func (r *PageRepository) GetByID(
 	ctx context.Context,
 	pageID string,
 	pagePkID *int64,
+	detailOption domain.PageDetailOptions,
 ) (*domain.Page, *domain.Error) {
 
 	var page PageResult
 
 	query := preloadPageResult(r.store.DB().Model(&page), PreloadPageResultParams{
-		Asset:  true,
-		Doc:    true,
-		Author: true,
+		Asset:  detailOption.Asset,
+		Doc:    detailOption.Document,
+		Author: detailOption.Author,
 	})
 
 	if pageID == "" && pagePkID == nil {
@@ -291,4 +335,30 @@ func (r *PageRepository) UpdateGeneralAccess(
 			Page: &page,
 		},
 	), nil
+}
+
+func (r *PageRepository) GetCurrentUserRole(ctx context.Context, pagePkID int64, curUser *domain.User) (domain.PageRole, *domain.Error) {
+	var curUserRole = domain.PageRestrict
+	// default to parent's general role
+	parentPage, err := r.GetByID(ctx, "", &pagePkID, domain.PageDetailOptions{})
+	if err != nil {
+		return curUserRole, err
+	}
+
+	curUserRole = parentPage.GeneralRole
+	// Check if user has direct role in parent page
+	if curUser != nil {
+		parentRoles, err := r.GetPageRoles(ctx, pagePkID)
+		if err != nil {
+			return curUserRole, err
+		}
+		curUserBaseRole := sliceutils.Find(parentRoles, func(role domain.PageRoleUser) bool {
+			return role.Email == curUser.Email
+		})
+
+		if curUserBaseRole != nil {
+			curUserRole = curUserBaseRole.Role
+		}
+	}
+	return curUserRole, nil
 }
