@@ -13,6 +13,7 @@ database:
       "organization_invites",
       "assets",
       "public_token",
+      "page_access_logs",
     ]
   outPath: "./internal/repository/model"
   withUnitTest: false

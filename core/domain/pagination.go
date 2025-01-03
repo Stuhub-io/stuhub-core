@@ -12,3 +12,8 @@ type Pagination struct {
 	Size int64 `json:"size"`
 	Page int64 `json:"page"`
 }
+
+type OffsetBasedPagination struct {
+	Offset int `json:"offset"`
+	Limit  int `json:"limit"`
+}
