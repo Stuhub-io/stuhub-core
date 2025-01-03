@@ -26,9 +26,9 @@ func UsePageAccessLogHandler(params NewPageAccessLogHandlerParams) {
 		AuthMiddleware:       params.AuthMiddleware,
 	}
 	router := params.Router.Group("/page-access-log-services")
-	authMiddleware := params.AuthMiddleware
+	// authMiddleware := params.AuthMiddleware
 
-	router.Use(authMiddleware.Authenticated())
+	// router.Use(authMiddleware.Authenticated())
 	router.GET("/", decorators.CurrentUser(handler.GetLogsList))
 }
 
@@ -50,7 +50,7 @@ func (h *PageAccessLogHandler) GetLogsList(c *gin.Context, user *domain.User) {
 	logs, err := h.PageAccessLogService.GetLogsByUser(domain.OffsetBasedPagination{
 		Offset: queryParams.Offset,
 		Limit:  queryParams.Limit,
-	}, user.PkID)
+	}, int64(1))
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return

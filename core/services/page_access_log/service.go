@@ -25,6 +25,9 @@ func (s *Service) GetLogsByUser(
 	query domain.OffsetBasedPagination,
 	userPkID int64,
 ) ([]domain.PageAccessLog, *domain.Error) {
+	logs, err := s.pageAccessLogRepository.GetByUserPKID(context.Background(), query, userPkID)
+
 	//TODO: check permision of parent pages
-	return s.pageAccessLogRepository.GetByUserPKID(context.Background(), query, userPkID)
+
+	return logs, err
 }

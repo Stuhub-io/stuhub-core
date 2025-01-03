@@ -163,7 +163,7 @@ type PageAccessLogsResult struct {
 	PageName        string
 	Action          string
 	ViewType        string
-	AuthorPkID      int64
+	AuthorPkid      int64
 	AuthorFirstName string
 	AuthorLastName  string
 	AuthorEmail     string
@@ -182,11 +182,10 @@ func TransformPageAccessLogsResultToDomain(result PageAccessLogsResult) domain.P
 			Name:     result.PageName,
 			ViewType: domain.PageViewFromString(result.ViewType),
 			Author: &domain.User{
-				PkID:      result.AuthorPkID,
-				FirstName: result.AuthorFirstName,
-				LastName:  result.AuthorLastName,
-				Email:     result.AuthorEmail,
-				Avatar:    result.AuthorAvatar,
+				PkID:     result.AuthorPkid,
+				LastName: result.AuthorLastName,
+				Email:    result.AuthorEmail,
+				Avatar:   result.AuthorAvatar,
 			},
 		},
 		ParentPages: sliceutils.Map(result.ParentPages, func(page string) domain.Page {
