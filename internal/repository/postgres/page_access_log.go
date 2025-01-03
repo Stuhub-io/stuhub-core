@@ -45,10 +45,11 @@ func (r *PageAccessLogRepository) GetByUserPKID(
 				WHEN a.page_pkid IS NOT NULL THEN 'asset'
 				ELSE 'none'
 			END AS view_type, 
-			u.first_name, 
-			u.last_name, 
-			u.email, 
-    		u.avatar, 
+			u.pkid as author_pkid, 
+			u.first_name as author_first_name, 
+			u.last_name as author_last_name, 
+			u.email as author_email, 
+    		u.avatar as author_avatar, 
 			pl.last_accessed,
 			ARRAY(
 				SELECT json_build_object(

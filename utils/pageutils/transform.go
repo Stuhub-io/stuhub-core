@@ -145,18 +145,19 @@ type PartialPage struct {
 }
 
 type PageAccessLogsResult struct {
-	Pkid         int64
-	PagePkid     int64
-	PageId       string
-	PageName     string
-	Action       string
-	ViewType     string
-	FirstName    string
-	LastName     string
-	Email        string
-	Avatar       string
-	LastAccessed time.Time
-	ParentPages  pq.StringArray `gorm:"type:text[]"`
+	Pkid            int64
+	PagePkid        int64
+	PageId          string
+	PageName        string
+	Action          string
+	ViewType        string
+	AuthorPkID      int64
+	AuthorFirstName string
+	AuthorLastName  string
+	AuthorEmail     string
+	AuthorAvatar    string
+	LastAccessed    time.Time
+	ParentPages     pq.StringArray `gorm:"type:text[]"`
 }
 
 func TransformPageAccessLogsResultToDomain(result PageAccessLogsResult) domain.PageAccessLog {
@@ -169,10 +170,11 @@ func TransformPageAccessLogsResultToDomain(result PageAccessLogsResult) domain.P
 			Name:     result.PageName,
 			ViewType: domain.PageViewFromString(result.ViewType),
 			Author: &domain.User{
-				FirstName: result.FirstName,
-				LastName:  result.LastName,
-				Email:     result.Email,
-				Avatar:    result.Avatar,
+				PkID:      result.AuthorPkID,
+				FirstName: result.AuthorFirstName,
+				LastName:  result.AuthorLastName,
+				Email:     result.AuthorEmail,
+				Avatar:    result.AuthorAvatar,
 			},
 		},
 		ParentPages: sliceutils.Map(result.ParentPages, func(page string) domain.Page {
