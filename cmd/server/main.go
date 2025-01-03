@@ -14,6 +14,7 @@ import (
 	"github.com/Stuhub-io/core/services/auth"
 	"github.com/Stuhub-io/core/services/organization"
 	"github.com/Stuhub-io/core/services/page"
+	pageAccessLog "github.com/Stuhub-io/core/services/page_access_log"
 	"github.com/Stuhub-io/core/services/upload"
 	"github.com/Stuhub-io/core/services/user"
 	_ "github.com/Stuhub-io/docs"
@@ -157,10 +158,12 @@ func main() {
 		PageRepository: PageRepository,
 		Mailer:         mailer,
 	})
-
 	uploadService := upload.NewUploadService(upload.NewUploadServiceParams{
 		Config:   cfg,
 		Uploader: cloudinaryUploader,
+	})
+	pageAccessLogService := pageAccessLog.NewService(pageAccessLog.NewServiceParams{
+		PageAccessLogRepository: pageAccessLogsRepository,
 	})
 
 	// handlers
@@ -191,9 +194,9 @@ func main() {
 			UploadService:  uploadService,
 		})
 		api.UsePageAccessLogHandler(api.NewPageAccessLogHandlerParams{
-			Router:         v1,
-			AuthMiddleware: authMiddleware,
-			Repo:           pageAccessLogsRepository,
+			Router:               v1,
+			AuthMiddleware:       authMiddleware,
+			PageAccessLogService: pageAccessLogService,
 		})
 	}
 

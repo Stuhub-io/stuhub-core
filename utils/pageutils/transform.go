@@ -2,7 +2,6 @@ package pageutils
 
 import (
 	"encoding/json"
-	"log"
 	"time"
 
 	"github.com/Stuhub-io/core/domain"
@@ -180,7 +179,6 @@ func TransformPageAccessLogsResultToDomain(result PageAccessLogsResult) domain.P
 			var parentPage PartialPage
 
 			if err := json.Unmarshal([]byte(page), &parentPage); err != nil {
-				log.Println("Error: ", err)
 				return domain.Page{}
 			}
 
