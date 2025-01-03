@@ -2,7 +2,6 @@ package pageAccessLog
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
@@ -67,9 +66,6 @@ func (s *Service) GetLogsByUser(
 				PageRole: pageRole,
 			},
 		)
-
-		fmt.Println(page.Name, page.GeneralRole, permission)
-
 		if !permission.CanView {
 			flatPages = sliceutils.Filter(flatPages, func(p domain.Page) bool {
 				return p.PkID != page.PkID

@@ -26,9 +26,9 @@ func UsePageAccessLogHandler(params NewPageAccessLogHandlerParams) {
 		AuthMiddleware:       params.AuthMiddleware,
 	}
 	router := params.Router.Group("/page-access-log-services")
-	// authMiddleware := params.AuthMiddleware
+	authMiddleware := params.AuthMiddleware
 
-	// router.Use(authMiddleware.Authenticated())
+	router.Use(authMiddleware.Authenticated())
 	router.GET("/", decorators.CurrentUser(handler.GetLogsList))
 }
 
