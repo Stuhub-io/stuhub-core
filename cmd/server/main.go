@@ -114,14 +114,14 @@ func main() {
 			Store: dbStore,
 		},
 	)
-	pageAccessLogs := postgres.NewPageAccessLogRepository(postgres.NewPageAccessLogRepositoryParams{
-		Cfg:   cfg,
-		Store: dbStore,
-	})
+	pageAccessLogsRepository := postgres.NewPageAccessLogRepository(
+		postgres.NewPageAccessLogRepositoryParams{
+			Cfg:   cfg,
+			Store: dbStore,
+		},
+	)
 
 	cloudinaryUploader := uploader.NewCloudinaryUploader(cfg)
-
-	pageAccessLogs.GetByUserPKID(context.Background(), 1)
 
 	// services
 	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{
@@ -189,6 +189,11 @@ func main() {
 			Router:         v1,
 			AuthMiddleware: authMiddleware,
 			UploadService:  uploadService,
+		})
+		api.UsePageAccessLogHandler(api.NewPageAccessLogHandlerParams{
+			Router:         v1,
+			AuthMiddleware: authMiddleware,
+			Repo:           pageAccessLogsRepository,
 		})
 	}
 
