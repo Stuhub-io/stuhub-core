@@ -34,24 +34,6 @@ func (r *PageAccessLogRepository) GetByUserPKID(
 	var result []pageutils.PageAccessLogsResult
 
 	err := r.store.DB().Raw(`
-		WITH RECURSIVE parent_pages AS (
-			SELECT 
-				p.id AS page_id,
-				p.pkid AS page_pkid,
-				p.name AS page_name,
-				p.parent_page_pkid
-			FROM pages p
-
-			UNION
-
-			SELECT 
-				pp.id AS page_id,
-				pp.pkid AS page_pkid,
-				pp.name AS page_name,
-				pp.parent_page_pkid
-			FROM pages pp
-			INNER JOIN parent_pages p ON pp.pkid = p.parent_page_pkid
-		)
 		SELECT 
 			pl.pkid, 
 			p.pkid AS page_pkid,
@@ -70,12 +52,12 @@ func (r *PageAccessLogRepository) GetByUserPKID(
 			pl.last_accessed,
 			ARRAY(
 				SELECT json_build_object(
-					'id', parent_pages.page_id,
-					'pkid', parent_pages.page_pkid,
-					'name', parent_pages.page_name
+					'id', pages.id,
+					'pkid', pages.pkid,
+					'name', pages.name
 				)
-				FROM parent_pages
-				WHERE parent_pages.page_pkid IN (
+				FROM pages
+				WHERE pages.pkid IN (
 					WITH RECURSIVE page_hierarchy AS (
 						SELECT pkid, parent_page_pkid
 						FROM pages
