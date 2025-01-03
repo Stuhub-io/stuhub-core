@@ -105,7 +105,7 @@ func main() {
 		Cfg:            cfg,
 		UserRepository: userRepository,
 	})
-	PageRepository := postgres.NewPageRepository(postgres.NewPageRepositoryParams{
+	pageRepository := postgres.NewPageRepository(postgres.NewPageRepositoryParams{
 		Cfg:   cfg,
 		Store: dbStore,
 	})
@@ -155,7 +155,7 @@ func main() {
 	})
 	pageService := page.NewService(page.NewServiceParams{
 		Config:         cfg,
-		PageRepository: PageRepository,
+		PageRepository: pageRepository,
 		Mailer:         mailer,
 	})
 	uploadService := upload.NewUploadService(upload.NewUploadServiceParams{
@@ -163,6 +163,7 @@ func main() {
 		Uploader: cloudinaryUploader,
 	})
 	pageAccessLogService := pageAccessLog.NewService(pageAccessLog.NewServiceParams{
+		PageRepository:          pageRepository,
 		PageAccessLogRepository: pageAccessLogsRepository,
 	})
 

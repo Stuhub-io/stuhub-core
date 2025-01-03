@@ -151,9 +151,11 @@ func TransformPagePublicTokenModelToDomain(model model.PublicToken) *domain.Page
 }
 
 type PartialPage struct {
-	ID   string `json:"id"`
-	PkID int64  `json:"pkid"`
-	Name string `json:"name"`
+	ID          string `json:"id"`
+	PkID        int64  `json:"pkid"`
+	Name        string `json:"name"`
+	AuthorPkID  int64  `json:"author_pkid"`
+	GeneralRole string `json:"general_role"`
 }
 
 type PageAccessLogsResult struct {
@@ -161,6 +163,7 @@ type PageAccessLogsResult struct {
 	PagePkid        int64
 	PageId          string
 	PageName        string
+	PageGeneralRole string
 	Action          string
 	ViewType        string
 	AuthorPkid      int64
@@ -177,10 +180,12 @@ func TransformPageAccessLogsResultToDomain(result PageAccessLogsResult) domain.P
 		PkID:   result.Pkid,
 		Action: result.Action,
 		Page: domain.Page{
-			PkID:     result.PagePkid,
-			ID:       result.PageId,
-			Name:     result.PageName,
-			ViewType: domain.PageViewFromString(result.ViewType),
+			PkID:        result.PagePkid,
+			ID:          result.PageId,
+			Name:        result.PageName,
+			ViewType:    domain.PageViewFromString(result.ViewType),
+			GeneralRole: domain.PageRoleFromString(result.PageGeneralRole),
+			AuthorPkID:  &result.AuthorPkid,
 			Author: &domain.User{
 				PkID:     result.AuthorPkid,
 				LastName: result.AuthorLastName,
@@ -196,9 +201,11 @@ func TransformPageAccessLogsResultToDomain(result PageAccessLogsResult) domain.P
 			}
 
 			return domain.Page{
-				PkID: parentPage.PkID,
-				ID:   parentPage.ID,
-				Name: parentPage.Name,
+				PkID:        parentPage.PkID,
+				ID:          parentPage.ID,
+				Name:        parentPage.Name,
+				AuthorPkID:  &parentPage.AuthorPkID,
+				GeneralRole: domain.PageRoleFromString(parentPage.GeneralRole),
 			}
 		}),
 		LastAccessed: result.LastAccessed.String(),

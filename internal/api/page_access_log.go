@@ -50,7 +50,7 @@ func (h *PageAccessLogHandler) GetLogsList(c *gin.Context, user *domain.User) {
 	logs, err := h.PageAccessLogService.GetLogsByUser(domain.OffsetBasedPagination{
 		Offset: queryParams.Offset,
 		Limit:  queryParams.Limit,
-	}, int64(1))
+	}, user)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return

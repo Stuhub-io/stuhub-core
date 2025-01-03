@@ -39,6 +39,7 @@ func (r *PageAccessLogRepository) GetByUserPKID(
 			p.pkid AS page_pkid,
 			p.id AS page_id,
 			p.name AS page_name,
+			p.general_role AS page_general_role,
 			pl.action, 
 			CASE 
 				WHEN d.page_pkid IS NOT NULL THEN 'document'
@@ -55,7 +56,9 @@ func (r *PageAccessLogRepository) GetByUserPKID(
 				SELECT json_build_object(
 					'id', pages.id,
 					'pkid', pages.pkid,
-					'name', pages.name
+					'name', pages.name,
+					'author_pkid', pages.author_pkid,
+					'general_role', pages.general_role
 				)
 				FROM pages
 				WHERE pages.pkid IN (
