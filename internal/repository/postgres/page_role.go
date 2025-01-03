@@ -183,7 +183,11 @@ func (r *PageRepository) GetPageRoles(
 			} else {
 				transformRole.Role = emailRole.Role
 				inheritPage := emailRole.Page
-				transformRole.InheritFromPage = pageutils.TransformPageModelToDomain(inheritPage, nil, pageutils.PageBodyParams{}, nil)
+				transformRole.InheritFromPage = pageutils.TransformPageModelToDomain(
+					pageutils.PageModelToDomainParams{
+						Page: inheritPage,
+					},
+				)
 			}
 			role.Role = EmailRoleMap[role.Email].Role
 		}
@@ -272,11 +276,12 @@ func (r *PageRepository) CheckPermission(ctx context.Context, input domain.PageR
 	user := input.User
 	pageRoleUser := input.PageRole
 
+	// General role
 	if user == nil {
 		return GetPermissionByRole(page.GeneralRole)
 	}
 
-	// Author has all permissions
+	// User is Author
 	if page.AuthorPkID != nil && user.PkID == *page.AuthorPkID {
 		permissions.CanDelete = true
 		permissions.CanEdit = true
@@ -287,15 +292,16 @@ func (r *PageRepository) CheckPermission(ctx context.Context, input domain.PageR
 		return permissions
 	}
 
+	// Dont pass in direct role
 	if pageRoleUser == nil {
-		role, _ := r.GetPageRoleByEmail(ctx, page.PkID, user.Email)
-		if role == nil {
-			pageRoleUser = role
+		role, err := r.GetPageRoleByEmail(ctx, page.PkID, user.Email)
+		if err == nil {
+			pageRoleUser = &role.Role
 		}
 	}
 
 	if pageRoleUser != nil {
-		permissions = GetPermissionByRole(pageRoleUser.Role)
+		permissions = GetPermissionByRole(*pageRoleUser)
 		return permissions
 	}
 
@@ -303,6 +309,7 @@ func (r *PageRepository) CheckPermission(ctx context.Context, input domain.PageR
 	return GetPermissionByRole(page.GeneralRole)
 }
 
+// Exclude Inherit role instead.
 func GetPermissionByRole(role domain.PageRole) (p domain.PageRolePermissions) {
 	switch role {
 	case domain.PageRestrict:
@@ -316,6 +323,7 @@ func GetPermissionByRole(role domain.PageRole) (p domain.PageRolePermissions) {
 		p.CanMove = true
 	case domain.PageViewer:
 		p.CanView = true
+		p.CanDownload = true
 	case domain.PageInherit:
 	}
 	return p

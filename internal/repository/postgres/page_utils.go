@@ -12,9 +12,10 @@ import (
 
 type PageResult struct {
 	model.Page
-	Asset  *model.Asset    `gorm:"foreignKey:page_pkid"`
-	Doc    *model.Document `gorm:"foreignKey:page_pkid"`
-	Author *model.User     `gorm:"foreignKey:author_pkid"`
+	Asset     *model.Asset     `gorm:"foreignKey:page_pkid"`
+	Doc       *model.Document  `gorm:"foreignKey:page_pkid"`
+	Author    *model.User      `gorm:"foreignKey:author_pkid"`
+	PageRoles []model.PageRole `gorm:"foreignKey:page_pkid"`
 }
 
 type initPageModelResults struct {
@@ -41,7 +42,7 @@ func (r *PageRepository) initPageModel(
 
 	// Default General Access for Root Page
 	if parentFolder == nil {
-		GeneralRole = domain.PageViewer.String()
+		GeneralRole = domain.PageRestrict.String()
 	}
 
 	newPage := model.Page{
@@ -61,9 +62,10 @@ func (r *PageRepository) initPageModel(
 }
 
 type PreloadPageResultParams struct {
-	Asset  bool
-	Doc    bool
-	Author bool
+	Asset     bool
+	Doc       bool
+	Author    bool
+	PageRoles bool
 }
 
 func preloadPageResult(q *gorm.DB, option PreloadPageResultParams) *gorm.DB {
@@ -76,6 +78,9 @@ func preloadPageResult(q *gorm.DB, option PreloadPageResultParams) *gorm.DB {
 	}
 	if option.Author {
 		q = q.Preload("Author")
+	}
+	if option.PageRoles {
+		q = q.Preload("PageRoles")
 	}
 	return q
 }
@@ -106,4 +111,12 @@ func buildPageQuery(
 
 	query = query.Order("pages.updated_at desc").Offset(q.Offset).Limit(q.Limit)
 	return query
+}
+
+func pageResultsToMap(results []PageResult) map[int64]PageResult {
+	pageMap := make(map[int64]PageResult)
+	for _, result := range results {
+		pageMap[result.Pkid] = result
+	}
+	return pageMap
 }

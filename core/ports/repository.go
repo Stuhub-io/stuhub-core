@@ -83,14 +83,14 @@ type OrganizationRepository interface {
 }
 
 type PageRepository interface {
-	List(ctx context.Context, query domain.PageListQuery) ([]domain.Page, *domain.Error)
+	List(ctx context.Context, query domain.PageListQuery, curUser *domain.User) ([]domain.Page, *domain.Error)
 	Update(
 		ctx context.Context,
 		pagePkID int64,
 		page domain.PageUpdateInput,
 	) (*domain.Page, *domain.Error)
 	Move(ctx context.Context, pagePkID int64, parentPagePkID *int64) (*domain.Page, *domain.Error)
-	GetByID(ctx context.Context, pageID string, pagePkID *int64) (*domain.Page, *domain.Error)
+	GetByID(ctx context.Context, pageID string, pagePkID *int64, detailOption domain.PageDetailOptions) (*domain.Page, *domain.Error)
 	Archive(ctx context.Context, pagePkID int64) (*domain.Page, *domain.Error)
 	UpdateGeneralAccess(
 		ctx context.Context,

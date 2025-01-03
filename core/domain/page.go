@@ -61,6 +61,7 @@ type PageUpdateInput struct {
 type PageMoveInput struct {
 	ParentPagePkID *int64 `json:"parent_page_pkid"`
 }
+
 type PageListQuery struct {
 	OrgPkID            int64          `json:"org_pkid"`
 	ViewTypes          []PageViewType `json:"view_type"`
@@ -144,6 +145,12 @@ func PageViewFromString(val string) PageViewType {
 	}
 }
 
+type PageDetailOptions struct {
+	Document bool `json:"document"`
+	Asset    bool `json:"asset"`
+	Author   bool `json:"author"`
+}
+
 type PageRole int
 
 const (
@@ -211,9 +218,9 @@ type PageRolePermissions struct {
 }
 
 type PageRolePermissionCheckInput struct {
-	User     *User         `json:"user"`
-	Page     Page          `json:"page"`
-	PageRole *PageRoleUser `json:"page_role"`
+	User     *User     `json:"user"`
+	Page     Page      `json:"page"`
+	PageRole *PageRole `json:"page_role"`
 }
 
 type PageRolePermissionBatchCheckInput struct {

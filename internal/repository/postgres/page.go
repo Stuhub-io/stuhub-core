@@ -10,7 +10,9 @@ import (
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/pageutils"
+	sliceutils "github.com/Stuhub-io/utils/slice"
 	"github.com/Stuhub-io/utils/userutils"
+	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -35,28 +37,164 @@ func NewPageRepository(params NewPageRepositoryParams) *PageRepository {
 func (r *PageRepository) List(
 	ctx context.Context,
 	q domain.PageListQuery,
+	curUser *domain.User,
 ) ([]domain.Page, *domain.Error) {
+
 	var results []PageResult
 
 	query := buildPageQuery(preloadPageResult(r.store.DB(), PreloadPageResultParams{
-		Asset:  true,
-		Doc:    true,
-		Author: true,
+		Asset:     true,
+		Doc:       true,
+		Author:    true,
+		PageRoles: true,
 	}), q)
 
 	if err := query.Find(&results).Error; err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
 
+	directPageRoleMap := make(map[int64]model.PageRole)
+	generalPageRoleMap := make(map[int64]domain.PageRole)
+	// Find missing direct role for inherit direct roles
+	missingPagePkIDs := make([]int64, 0, len(results))
+	// Find missing page general role for inherit general roles
+	missingGeneralPagePkIDs := make([]int64, 0, len(results))
+
+	for _, result := range results {
+		// Handle General Role
+		if result.GeneralRole != domain.PageInherit.String() {
+			generalPageRoleMap[result.Pkid] = domain.PageRoleFromString(result.GeneralRole)
+		} else {
+			parentPkIDs := pageutils.PagePathToPkIDs(result.Path)
+
+			for _, pkID := range parentPkIDs {
+				if _, ok := generalPageRoleMap[pkID]; !ok {
+					missingGeneralPagePkIDs = append(missingGeneralPagePkIDs, pkID)
+				}
+			}
+		}
+
+		// Handle Direct Role
+		if curUser != nil {
+			// Find current user's direct page roles
+			curUserRole := sliceutils.Find(result.PageRoles, func(role model.PageRole) bool {
+				return role.Email == curUser.Email
+			})
+			if curUserRole != nil && curUserRole.Role != domain.PageInherit.String() {
+				directPageRoleMap[result.Pkid] = *curUserRole
+			}
+			// Find missing parent page pkids for user's indirect page roles
+			parentPkIDs := pageutils.PagePathToPkIDs(result.Path)
+			for _, pkID := range parentPkIDs {
+				if _, ok := directPageRoleMap[pkID]; !ok {
+					missingPagePkIDs = append(missingPagePkIDs, pkID)
+				}
+			}
+		}
+	}
+
+	// Fill missing general roles
+	generalBasePageRoles := []model.Page{}
+	pQuery := buildPageQuery(r.store.DB(), domain.PageListQuery{
+		OrgPkID:            q.OrgPkID,
+		ExcludeGeneralRole: []domain.PageRole{domain.PageInherit},
+		PagePkIDs:          missingGeneralPagePkIDs,
+	})
+
+	if err := pQuery.Find(&generalBasePageRoles).Error; err != nil {
+		return nil, domain.ErrDatabaseQuery
+	}
+
+	for _, role := range generalBasePageRoles {
+		generalPageRoleMap[role.Pkid] = domain.PageRoleFromString(role.GeneralRole)
+	}
+
+	// Fill missing direct roles
+	if curUser != nil {
+		// Find actual roles from missing direct role page pkids
+		curUserIndirectRoles, err := queryPageRoles(r.store.DB(), queryPageRolesParams{
+			Emails:       []string{curUser.Email},
+			PagePkIDs:    missingPagePkIDs,
+			ExcludeRoles: []domain.PageRole{domain.PageInherit},
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, role := range curUserIndirectRoles {
+			if _, ok := directPageRoleMap[role.PagePkid]; !ok {
+				directPageRoleMap[role.PagePkid] = role.PageRole
+			}
+		}
+	}
+
+	findInheritGeneralRole := func(parentPkIds []int64) domain.PageRole {
+		slices.Reverse(parentPkIds)
+		for _, pkID := range parentPkIds {
+			if role, ok := generalPageRoleMap[pkID]; ok {
+				return role
+			}
+		}
+		return domain.PageRestrict
+	}
+
+	findCurPageRole := func(parentPkIDs []int64) *domain.PageRole {
+		slices.Reverse(parentPkIDs)
+		for _, pkID := range parentPkIDs {
+			if role, ok := directPageRoleMap[pkID]; ok {
+				role := domain.PageRoleFromString(role.Role)
+				return &role
+			}
+		}
+		return nil
+	}
+
 	domainPages := make([]domain.Page, 0, len(results))
 	for _, result := range results {
-		domainPages = append(
-			domainPages,
-			*pageutils.TransformPageModelToDomain(&result.Page, nil, pageutils.PageBodyParams{
-				Document: pageutils.TransformDocModelToDomain(result.Doc),
-				Asset:    pageutils.TransformAssetModalToDomain(result.Asset),
-			}, nil),
+		// Inherit general role
+		if result.GeneralRole == domain.PageInherit.String() {
+			result.GeneralRole = findInheritGeneralRole(pageutils.PagePathToPkIDs(result.Path)).String()
+		}
+		// Inherit cur user role
+		var curUserRole *domain.PageRole
+		if curUser != nil {
+			directRole, ok := directPageRoleMap[result.Pkid]
+			// Is inherit type role
+			if !ok {
+				curUserRole = findCurPageRole(pageutils.PagePathToPkIDs(result.Path))
+			} else {
+				role := domain.PageRoleFromString(directRole.Role)
+				curUserRole = &role
+			}
+		}
+
+		domainPage := pageutils.TransformPageModelToDomain(
+			pageutils.PageModelToDomainParams{
+				Page: &result.Page,
+				PageBody: pageutils.PageBodyParams{
+					Document: pageutils.TransformDocModelToDomain(result.Doc),
+					Asset:    pageutils.TransformAssetModalToDomain(result.Asset),
+					Author:   userutils.TransformUserModelToDomain(result.Author),
+				},
+			},
 		)
+
+		permission := r.CheckPermission(ctx, domain.PageRolePermissionCheckInput{
+			Page:     *domainPage,
+			User:     curUser,
+			PageRole: curUserRole,
+		})
+
+		domainPage.Permissions = &permission
+
+		// Only return pages that user has permission to view
+		if permission.CanView {
+			domainPages = append(
+				domainPages,
+				*domainPage,
+			)
+		}
 	}
 
 	return domainPages, nil
@@ -93,10 +231,9 @@ func (r *PageRepository) Update(
 	}
 
 	return pageutils.TransformPageModelToDomain(
-		&page,
-		nil,
-		pageutils.PageBodyParams{},
-		nil,
+		pageutils.PageModelToDomainParams{
+			Page: &page,
+		},
 	), nil
 }
 
@@ -104,14 +241,15 @@ func (r *PageRepository) GetByID(
 	ctx context.Context,
 	pageID string,
 	pagePkID *int64,
+	detailOption domain.PageDetailOptions,
 ) (*domain.Page, *domain.Error) {
 
 	var page PageResult
 
 	query := preloadPageResult(r.store.DB().Model(&page), PreloadPageResultParams{
-		Asset:  true,
-		Doc:    true,
-		Author: true,
+		Asset:  detailOption.Asset,
+		Doc:    detailOption.Document,
+		Author: detailOption.Author,
 	})
 
 	if pageID == "" && pagePkID == nil {
@@ -145,14 +283,19 @@ func (r *PageRepository) GetByID(
 	}
 
 	return pageutils.TransformPageModelToDomain(
-		&page.Page,
-		nil,
-		pageutils.PageBodyParams{
-			Document: pageutils.TransformDocModelToDomain(page.Doc),
-			Asset:    pageutils.TransformAssetModalToDomain(page.Asset),
-			Author:   userutils.TransformUserModelToDomain(page.Author),
+		pageutils.PageModelToDomainParams{
+			Page: &page.Page,
+			PageBody: pageutils.PageBodyParams{
+				Document: pageutils.TransformDocModelToDomain(page.Doc),
+				Asset:    pageutils.TransformAssetModalToDomain(page.Asset),
+				Author:   userutils.TransformUserModelToDomain(page.Author),
+			},
+			InheritFromPage: pageutils.TransformPageModelToDomain(
+				pageutils.PageModelToDomainParams{
+					Page: inheritPage,
+				},
+			),
 		},
-		pageutils.TransformPageModelToDomain(inheritPage, nil, pageutils.PageBodyParams{}, nil),
 	), nil
 }
 
@@ -194,7 +337,11 @@ func (r *PageRepository) Archive(
 
 	done(nil)
 
-	return pageutils.TransformPageModelToDomain(&page, nil, pageutils.PageBodyParams{}, nil), nil
+	return pageutils.TransformPageModelToDomain(
+		pageutils.PageModelToDomainParams{
+			Page: &page,
+		},
+	), nil
 }
 
 func (r *PageRepository) Move(
@@ -251,7 +398,11 @@ func (r *PageRepository) Move(
 	doneTx(nil)
 	// Commit Tx
 
-	return pageutils.TransformPageModelToDomain(&page, nil, pageutils.PageBodyParams{}, nil), nil
+	return pageutils.TransformPageModelToDomain(
+		pageutils.PageModelToDomainParams{
+			Page: &page,
+		},
+	), nil
 }
 
 func (r *PageRepository) UpdateGeneralAccess(
@@ -269,5 +420,9 @@ func (r *PageRepository) UpdateGeneralAccess(
 		return nil, domain.ErrUpdatePageGeneralAccess
 	}
 
-	return pageutils.TransformPageModelToDomain(&page, nil, pageutils.PageBodyParams{}, nil), nil
+	return pageutils.TransformPageModelToDomain(
+		pageutils.PageModelToDomainParams{
+			Page: &page,
+		},
+	), nil
 }
