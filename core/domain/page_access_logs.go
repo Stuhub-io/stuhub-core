@@ -9,8 +9,8 @@ type PageAccessLog struct {
 	PkID         int64  `json:"pkid"`
 	Action       string `json:"action"`
 	IsShared     bool   `json:"is_shared"`
-	Page         Page
-	ParentPages  []Page
+	Page         Page   `json:"page"`
+	ParentPages  []Page `json:"parent_pages"`
 	LastAccessed string `json:"last_accessed"`
 }
 
