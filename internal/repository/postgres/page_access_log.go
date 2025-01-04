@@ -6,7 +6,9 @@ import (
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	store "github.com/Stuhub-io/internal/repository"
+	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/pageutils"
+	"gorm.io/gorm/clause"
 )
 
 type PageAccessLogRepository struct {
@@ -92,4 +94,25 @@ func (r *PageAccessLogRepository) GetByUserPKID(
 	}
 
 	return accessLogs, nil
+}
+
+func (r *PageAccessLogRepository) Upsert(
+	ctx context.Context,
+	pagePkID,
+	userPkID int64,
+	action domain.PageAccessAction,
+) (int64, *domain.Error) {
+	logModel := model.PageAccessLog{
+		PagePkid: pagePkID,
+		UserPkid: userPkID,
+		Action:   action.String(),
+	}
+	if err := r.store.DB().Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "page_pkid"}, {Name: "user_pkid"}},
+		DoUpdates: clause.AssignmentColumns([]string{"action", "last_accessed"}),
+	}).Create(&logModel).Error; err != nil {
+		return -1, domain.ErrDatabaseMutation
+	}
+
+	return logModel.Pkid, nil
 }

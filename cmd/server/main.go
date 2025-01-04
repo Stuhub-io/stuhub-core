@@ -154,9 +154,10 @@ func main() {
 		OrganizationInviteRepository: organizationInviteRepository,
 	})
 	pageService := page.NewService(page.NewServiceParams{
-		Config:         cfg,
-		PageRepository: pageRepository,
-		Mailer:         mailer,
+		Config:                  cfg,
+		PageRepository:          pageRepository,
+		PageAccessLogRepository: pageAccessLogsRepository,
+		Mailer:                  mailer,
 	})
 	uploadService := upload.NewUploadService(upload.NewUploadServiceParams{
 		Config:   cfg,

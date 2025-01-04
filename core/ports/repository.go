@@ -178,4 +178,10 @@ type PageAccessLogRepository interface {
 		query domain.OffsetBasedPagination,
 		userPkID int64,
 	) ([]domain.PageAccessLog, *domain.Error)
+	Upsert(
+		ctx context.Context,
+		pagePkID,
+		userPkID int64,
+		action domain.PageAccessAction,
+	) (int64, *domain.Error)
 }
