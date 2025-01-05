@@ -43,9 +43,12 @@ func (s *Service) GetPagesByOrgPkID(query domain.PageListQuery, curUser *domain.
 			return nil, err
 		}
 
+		pageRole := s.GetPageRolesByUser(context.Background(), *parentPagePkID, curUser)
+
 		permissions := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-			Page: *parentPage,
-			User: curUser,
+			Page:     *parentPage,
+			User:     curUser,
+			PageRole: pageRole,
 		})
 
 		if !permissions.CanView {
@@ -68,9 +71,11 @@ func (s *Service) UpdatePageByPkID(
 		return nil, err
 	}
 
+	pageRole := s.GetPageRolesByUser(context.Background(), pagePkID, user)
 	permissions := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-		Page: *page,
-		User: user,
+		Page:     *page,
+		User:     user,
+		PageRole: pageRole,
 	})
 
 	if !permissions.CanEdit {
@@ -106,9 +111,11 @@ func (s *Service) GetPageDetailByID(
 		Author:   true,
 	})
 
+	curRole := s.GetPageRolesByUser(context.Background(), d.PkID, curUser)
 	permission := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-		Page: *d,
-		User: curUser,
+		Page:     *d,
+		User:     curUser,
+		PageRole: curRole,
 	})
 
 	// return Permission in object
@@ -127,9 +134,11 @@ func (s *Service) ArchivedPageByPkID(pagePkID int64, curUser *domain.User) (d *d
 		return nil, err
 	}
 
+	curRole := s.GetPageRolesByUser(context.Background(), pagePkID, curUser)
 	permissions := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-		Page: *page,
-		User: curUser,
+		Page:     *page,
+		User:     curUser,
+		PageRole: curRole,
 	})
 
 	if !permissions.CanDelete {
@@ -151,9 +160,11 @@ func (s *Service) MovePageByPkID(
 		return nil, err
 	}
 
+	curRole := s.GetPageRolesByUser(context.Background(), pagePkID, curUser)
 	permissions := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-		Page: *page,
-		User: curUser,
+		Page:     *page,
+		User:     curUser,
+		PageRole: curRole,
 	})
 
 	if !permissions.CanMove {
@@ -196,9 +207,11 @@ func (s *Service) UpdateGeneralAccess(
 		return nil, err
 	}
 
+	curRole := s.GetPageRolesByUser(context.Background(), pagePkID, curUser)
 	permission := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-		Page: *page,
-		User: curUser,
+		Page:     *page,
+		User:     curUser,
+		PageRole: curRole,
 	})
 
 	if !permission.CanShare {
@@ -226,9 +239,11 @@ func (s *Service) CreateDocumentPage(
 			return nil, err
 		}
 
+		curRole := s.GetPageRolesByUser(context.Background(), *pageInput.ParentPagePkID, curUser)
 		permission := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-			Page: *parentPage,
-			User: curUser,
+			Page:     *parentPage,
+			User:     curUser,
+			PageRole: curRole,
 		})
 
 		if !permission.CanEdit {
@@ -240,6 +255,7 @@ func (s *Service) CreateDocumentPage(
 		return nil, domain.ErrPermissionDenied
 	}
 
+	// FIXME: Check if user is a member of the organization
 	page, err := s.pageRepository.CreateDocumentPage(context.Background(), pageInput)
 
 	if err != nil {
@@ -259,9 +275,11 @@ func (s *Service) UpdateDocumentContentByPkID(
 		return nil, err
 	}
 
+	curRole := s.GetPageRolesByUser(context.Background(), pagePkID, curUser)
 	permissions := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-		Page: *page,
-		User: curUser,
+		Page:     *page,
+		User:     curUser,
+		PageRole: curRole,
 	})
 
 	if !permissions.CanEdit {
@@ -293,9 +311,11 @@ func (s *Service) CreateAssetPage(assetInput domain.AssetPageInput, curUser *dom
 			return nil, err
 		}
 
+		curRole := s.GetPageRolesByUser(context.Background(), *parentPagePkID, curUser)
 		permission := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-			Page: *parentPage,
-			User: curUser,
+			Page:     *parentPage,
+			User:     curUser,
+			PageRole: curRole,
 		})
 
 		if !permission.CanEdit {
@@ -333,9 +353,11 @@ func (s *Service) AddPageRoleUser(
 		return nil, err
 	}
 
+	curRole := s.GetPageRolesByUser(context.Background(), input.PagePkID, curUser)
 	permissions := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-		Page: *exisingPage,
-		User: curUser,
+		Page:     *exisingPage,
+		User:     curUser,
+		PageRole: curRole,
 	})
 
 	if !permissions.CanShare {
@@ -388,9 +410,11 @@ func (s *Service) GetPageRoleUsers(
 		return nil, err
 	}
 
+	curRole := s.GetPageRolesByUser(context.Background(), input.PagePkID, curUser)
 	permissions := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-		Page: *page,
-		User: curUser,
+		Page:     *page,
+		User:     curUser,
+		PageRole: curRole,
 	})
 
 	if !permissions.CanShare {
@@ -415,9 +439,11 @@ func (s *Service) UpdatePageRoleUser(
 ) *domain.Error {
 	exisingPage, err := s.pageRepository.GetByID(context.Background(), "", &input.PagePkID, domain.PageDetailOptions{})
 
+	curRole := s.GetPageRolesByUser(context.Background(), input.PagePkID, curUser)
 	permissions := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-		Page: *exisingPage,
-		User: curUser,
+		Page:     *exisingPage,
+		User:     curUser,
+		PageRole: curRole,
 	})
 
 	if !permissions.CanShare {
@@ -450,9 +476,11 @@ func (s *Service) DeletePageRoleUser(
 		return err
 	}
 
+	curRole := s.GetPageRolesByUser(context.Background(), input.PagePkID, curUser)
 	permissions := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-		Page: *exisingPage,
-		User: curUser,
+		Page:     *exisingPage,
+		User:     curUser,
+		PageRole: curRole,
 	})
 
 	if !permissions.CanShare {
@@ -469,4 +497,15 @@ func (s *Service) DeletePageRoleUser(
 	}
 
 	return s.pageRepository.DeletePageRole(context.Background(), input)
+}
+
+func (s *Service) GetPageRolesByUser(ctx context.Context, pagePkID int64, user *domain.User) *domain.PageRole {
+	if user == nil {
+		return nil
+	}
+	role, err := s.pageRepository.GetPageRoleByEmail(ctx, pagePkID, user.Email)
+	if err != nil {
+		return nil
+	}
+	return &role.Role
 }
