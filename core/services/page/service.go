@@ -6,7 +6,6 @@ import (
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
-	sliceutils "github.com/Stuhub-io/utils/slice"
 	"github.com/Stuhub-io/utils/userutils"
 )
 
@@ -323,17 +322,18 @@ func (s *Service) CreateAssetPage(assetInput domain.AssetPageInput, curUser *dom
 		}
 	}
 
-	members, err := s.orgRepository.GetOrgMembers(context.Background(), assetInput.OrganizationPkID)
-	if err != nil {
-		return nil, err
-	}
-	isOrgMember := sliceutils.Find(members, func(member domain.OrganizationMember) bool {
-		return member.OrganizationPkID == assetInput.OrganizationPkID
-	}) != nil
+	//FIXME: GetOrgMembers Error
+	// members, err := s.orgRepository.GetOrgMembers(context.Background(), assetInput.OrganizationPkID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// isOrgMember := sliceutils.Find(members, func(member domain.OrganizationMember) bool {
+	// 	return member.OrganizationPkID == assetInput.OrganizationPkID
+	// }) != nil
 
-	if !isOrgMember {
-		return nil, domain.ErrPermissionDenied
-	}
+	// if !isOrgMember {
+	// 	return nil, domain.ErrPermissionDenied
+	// }
 
 	page, err := s.pageRepository.CreateAsset(context.Background(), assetInput)
 	if err != nil {

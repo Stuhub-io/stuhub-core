@@ -278,7 +278,7 @@ func (r *PageRepository) CheckPermission(ctx context.Context, input domain.PageR
 
 	// General role
 	if user == nil {
-		return GetPermissionByRole(page.GeneralRole)
+		return GetPermissionByRole(page.GeneralRole, false)
 	}
 
 	// User is Author
@@ -301,16 +301,20 @@ func (r *PageRepository) CheckPermission(ctx context.Context, input domain.PageR
 	// }
 
 	if pageRoleUser != nil {
-		permissions = GetPermissionByRole(*pageRoleUser)
+		permissions = GetPermissionByRole(*pageRoleUser, true)
 		return permissions
 	}
 
 	// Direct Role Not Found
-	return GetPermissionByRole(page.GeneralRole)
+	return GetPermissionByRole(page.GeneralRole, true)
 }
 
 // Exclude Inherit role instead.
-func GetPermissionByRole(role domain.PageRole) (p domain.PageRolePermissions) {
+func GetPermissionByRole(role domain.PageRole, isAuthenticated bool) (p domain.PageRolePermissions) {
+	if role != domain.PageRestrict && !isAuthenticated {
+		p.CanView = true
+		return p
+	}
 	switch role {
 	case domain.PageRestrict:
 		return p
