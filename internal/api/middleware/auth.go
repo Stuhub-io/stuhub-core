@@ -41,6 +41,7 @@ func (a *AuthMiddleware) Authenticated() gin.HandlerFunc {
 		}
 
 		user, dbErr := a.userRepository.GetUserByPkID(context.Background(), payload.UserPkID)
+
 		if dbErr != nil {
 			c.AbortWithStatusJSON(dbErr.Code, err)
 			return

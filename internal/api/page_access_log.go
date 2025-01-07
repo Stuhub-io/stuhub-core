@@ -29,7 +29,7 @@ func UsePageAccessLogHandler(params NewPageAccessLogHandlerParams) {
 	authMiddleware := params.AuthMiddleware
 
 	router.Use(authMiddleware.Authenticated())
-	router.GET("/", decorators.CurrentUser(handler.GetLogsList))
+	router.GET("/logs", decorators.CurrentUser(handler.GetLogsList))
 }
 
 func (h *PageAccessLogHandler) GetLogsList(c *gin.Context, user *domain.User) {

@@ -368,7 +368,17 @@ func (s *Service) UpdateDocumentContentByPkID(
 		return nil, domain.ErrPermissionDenied
 	}
 
+	if page.ViewType != domain.PageViewTypeFolder {
+		go s.pageAccessLogRepository.Upsert(
+			context.Background(),
+			page.PkID,
+			curUser.PkID,
+			domain.PageEdit,
+		)
+	}
+
 	d, e = s.pageRepository.UpdateContent(context.Background(), pagePkID, content)
+
 	return d, e
 }
 

@@ -164,6 +164,8 @@ type PageAccessLogsResult struct {
 	PageId          string
 	PageName        string
 	PageGeneralRole string
+	PageCreatedAt   string
+	PageUpdatedAt   string
 	Action          string
 	ViewType        string
 	AuthorPkid      int64
@@ -192,6 +194,8 @@ func TransformPageAccessLogsResultToDomain(result PageAccessLogsResult) domain.P
 				Email:    result.AuthorEmail,
 				Avatar:   result.AuthorAvatar,
 			},
+			CreatedAt: result.PageCreatedAt,
+			UpdatedAt: result.PageUpdatedAt,
 		},
 		ParentPages: sliceutils.Map(result.ParentPages, func(page string) domain.Page {
 			var parentPage PartialPage

@@ -44,6 +44,8 @@ func (s *Service) GetLogsByUser(
 		},
 	)
 
+	permissionsMapper := map[int64]domain.PageRolePermissions{}
+
 	// checking permission for all pages
 	for _, page := range flatPages {
 		var pageRole *domain.PageRole
@@ -58,7 +60,7 @@ func (s *Service) GetLogsByUser(
 			pageRole = foundPageInPermission.PageRole
 		}
 
-		permission := s.pageRepository.CheckPermission(
+		permissions := s.pageRepository.CheckPermission(
 			context.Background(),
 			domain.PageRolePermissionCheckInput{
 				User:     user,
@@ -66,15 +68,20 @@ func (s *Service) GetLogsByUser(
 				PageRole: pageRole,
 			},
 		)
-		if !permission.CanView {
+		if !permissions.CanView {
 			flatPages = sliceutils.Filter(flatPages, func(p domain.Page) bool {
 				return p.PkID != page.PkID
 			})
+			continue
 		}
+
+		permissionsMapper[page.PkID] = permissions
 	}
 
 	// filter logs after checking permission
-	for _, log := range logs {
+	for i := 0; i < len(logs); i++ {
+		log := &logs[i]
+
 		validPage := sliceutils.Find(flatPages, func(p domain.Page) bool {
 			return p.PkID == log.Page.PkID
 		})
@@ -84,6 +91,9 @@ func (s *Service) GetLogsByUser(
 			})
 			continue
 		}
+
+		permission := permissionsMapper[log.Page.PkID]
+		log.Page.Permissions = &permission
 
 		for _, page := range log.ParentPages {
 			validParentPage := sliceutils.Find(flatPages, func(p domain.Page) bool {
