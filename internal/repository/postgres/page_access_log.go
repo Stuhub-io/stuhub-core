@@ -85,7 +85,7 @@ func (r *PageAccessLogRepository) GetByUserPKID(
 		LEFT JOIN users u ON u.pkid = p.author_pkid
 		LEFT JOIN documents d ON d.page_pkid = p.pkid
 		LEFT JOIN assets a ON a.page_pkid = p.pkid
-		WHERE pl.user_pkid = ? ORDER BY pl.last_accessed DESC LIMIT ? OFFSET ?`, userPkID, query.Limit, query.Offset).Scan(&result).Error
+		WHERE pl.user_pkid = ? AND p.archived_at IS NULL ORDER BY pl.last_accessed DESC LIMIT ? OFFSET ?`, userPkID, query.Limit, query.Offset).Scan(&result).Error
 	if err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
