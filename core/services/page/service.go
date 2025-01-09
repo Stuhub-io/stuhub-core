@@ -10,34 +10,45 @@ import (
 )
 
 type Service struct {
-	cfg            config.Config
-	pageRepository ports.PageRepository
-	orgRepository  ports.OrganizationRepository
-	mailer         ports.Mailer
+	cfg                     config.Config
+	pageRepository          ports.PageRepository
+	pageAccessLogRepository ports.PageAccessLogRepository
+	orgRepository           ports.OrganizationRepository
+	mailer                  ports.Mailer
 }
 
 type NewServiceParams struct {
 	config.Config
 	ports.PageRepository
+	ports.PageAccessLogRepository
 	ports.OrganizationRepository
 	ports.Mailer
 }
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
-		cfg:            params.Config,
-		pageRepository: params.PageRepository,
-		mailer:         params.Mailer,
-		orgRepository:  params.OrganizationRepository,
+		cfg:                     params.Config,
+		pageRepository:          params.PageRepository,
+		pageAccessLogRepository: params.PageAccessLogRepository,
+		mailer:                  params.Mailer,
+		orgRepository:           params.OrganizationRepository,
 	}
 }
 
-func (s *Service) GetPagesByOrgPkID(query domain.PageListQuery, curUser *domain.User) (d []domain.Page, e *domain.Error) {
+func (s *Service) GetPagesByOrgPkID(
+	query domain.PageListQuery,
+	curUser *domain.User,
+) (d []domain.Page, e *domain.Error) {
 
 	parentPagePkID := query.ParentPagePkID
 
 	if parentPagePkID != nil {
-		parentPage, err := s.pageRepository.GetByID(context.Background(), "", parentPagePkID, domain.PageDetailOptions{})
+		parentPage, err := s.pageRepository.GetByID(
+			context.Background(),
+			"",
+			parentPagePkID,
+			domain.PageDetailOptions{},
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -65,7 +76,12 @@ func (s *Service) UpdatePageByPkID(
 	user *domain.User,
 ) (d *domain.Page, e *domain.Error) {
 
-	page, err := s.pageRepository.GetByID(context.Background(), "", &pagePkID, domain.PageDetailOptions{})
+	page, err := s.pageRepository.GetByID(
+		context.Background(),
+		"",
+		&pagePkID,
+		domain.PageDetailOptions{},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -81,6 +97,15 @@ func (s *Service) UpdatePageByPkID(
 		return nil, domain.ErrPermissionDenied
 	}
 
+	if page.ViewType != domain.PageViewTypeFolder {
+		go s.pageAccessLogRepository.Upsert(
+			context.Background(),
+			pagePkID,
+			user.PkID,
+			domain.PageEdit,
+		)
+	}
+
 	d, e = s.pageRepository.Update(context.Background(), pagePkID, updateInput)
 	return d, e
 }
@@ -91,7 +116,7 @@ func (s *Service) GetPageDetailByID(
 	curUser *domain.User,
 ) (d *domain.Page, e *domain.Error) {
 
-	var PagePkID *int64
+	var pagePkID *int64
 
 	if pageID == "" {
 		token, err := s.pageRepository.GetPublicTokenByID(context.Background(), publicTokenID)
@@ -101,14 +126,19 @@ func (s *Service) GetPageDetailByID(
 		if err != nil {
 			return nil, domain.ErrDatabaseQuery
 		}
-		PagePkID = &token.PagePkID
+		pagePkID = &token.PagePkID
 	}
 
-	d, e = s.pageRepository.GetByID(context.Background(), pageID, PagePkID, domain.PageDetailOptions{
-		Asset:    true,
-		Document: true,
-		Author:   true,
-	})
+	d, e = s.pageRepository.GetByID(
+		context.Background(),
+		pageID,
+		pagePkID,
+		domain.PageDetailOptions{
+			Asset:    true,
+			Document: true,
+			Author:   true,
+		},
+	)
 
 	curRole := s.GetPageRolesByUser(context.Background(), d.PkID, curUser)
 	permission := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
@@ -123,12 +153,29 @@ func (s *Service) GetPageDetailByID(
 		return nil, domain.ErrPermissionDenied
 	}
 
+	if d.ViewType != domain.PageViewTypeFolder {
+		go s.pageAccessLogRepository.Upsert(
+			context.Background(),
+			d.PkID,
+			curUser.PkID,
+			domain.PageOpen,
+		)
+	}
+
 	return d, e
 }
 
-func (s *Service) ArchivedPageByPkID(pagePkID int64, curUser *domain.User) (d *domain.Page, e *domain.Error) {
+func (s *Service) ArchivedPageByPkID(
+	pagePkID int64,
+	curUser *domain.User,
+) (d *domain.Page, e *domain.Error) {
 	// Recursive archive all children
-	page, err := s.pageRepository.GetByID(context.Background(), "", &pagePkID, domain.PageDetailOptions{})
+	page, err := s.pageRepository.GetByID(
+		context.Background(),
+		"",
+		&pagePkID,
+		domain.PageDetailOptions{},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +201,12 @@ func (s *Service) MovePageByPkID(
 	curUser *domain.User,
 ) (d *domain.Page, e *domain.Error) {
 
-	page, err := s.pageRepository.GetByID(context.Background(), "", &pagePkID, domain.PageDetailOptions{})
+	page, err := s.pageRepository.GetByID(
+		context.Background(),
+		"",
+		&pagePkID,
+		domain.PageDetailOptions{},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +229,12 @@ func (s *Service) MovePageByPkID(
 func (s *Service) CreatePublicPageToken(
 	pageID string,
 ) (d *domain.PagePublicToken, e *domain.Error) {
-	page, err := s.pageRepository.GetByID(context.Background(), pageID, nil, domain.PageDetailOptions{})
+	page, err := s.pageRepository.GetByID(
+		context.Background(),
+		pageID,
+		nil,
+		domain.PageDetailOptions{},
+	)
 	if err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
@@ -186,7 +243,12 @@ func (s *Service) CreatePublicPageToken(
 }
 
 func (s *Service) ArchiveAllPublicPageToken(pageID string) (e *domain.Error) {
-	page, err := s.pageRepository.GetByID(context.Background(), pageID, nil, domain.PageDetailOptions{})
+	page, err := s.pageRepository.GetByID(
+		context.Background(),
+		pageID,
+		nil,
+		domain.PageDetailOptions{},
+	)
 	if err != nil {
 		return domain.ErrDatabaseQuery
 	}
@@ -200,7 +262,12 @@ func (s *Service) UpdateGeneralAccess(
 	curUser *domain.User,
 ) (*domain.Page, *domain.Error) {
 
-	page, err := s.pageRepository.GetByID(context.Background(), "", &pagePkID, domain.PageDetailOptions{})
+	page, err := s.pageRepository.GetByID(
+		context.Background(),
+		"",
+		&pagePkID,
+		domain.PageDetailOptions{},
+	)
 
 	if err != nil {
 		return nil, err
@@ -233,7 +300,12 @@ func (s *Service) CreateDocumentPage(
 
 	parentPagePkID := pageInput.ParentPagePkID
 	if parentPagePkID != nil {
-		parentPage, err := s.pageRepository.GetByID(context.Background(), "", parentPagePkID, domain.PageDetailOptions{})
+		parentPage, err := s.pageRepository.GetByID(
+			context.Background(),
+			"",
+			parentPagePkID,
+			domain.PageDetailOptions{},
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -269,7 +341,12 @@ func (s *Service) UpdateDocumentContentByPkID(
 	curUser *domain.User,
 ) (d *domain.Page, e *domain.Error) {
 
-	page, err := s.pageRepository.GetByID(context.Background(), "", &pagePkID, domain.PageDetailOptions{})
+	page, err := s.pageRepository.GetByID(
+		context.Background(),
+		"",
+		&pagePkID,
+		domain.PageDetailOptions{},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +362,17 @@ func (s *Service) UpdateDocumentContentByPkID(
 		return nil, domain.ErrPermissionDenied
 	}
 
+	if page.ViewType != domain.PageViewTypeFolder {
+		go s.pageAccessLogRepository.Upsert(
+			context.Background(),
+			page.PkID,
+			curUser.PkID,
+			domain.PageEdit,
+		)
+	}
+
 	d, e = s.pageRepository.UpdateContent(context.Background(), pagePkID, content)
+
 	return d, e
 }
 
@@ -301,11 +388,19 @@ func (s *Service) ValidateDocumentPublicToken(token string) (d bool, e *domain.E
 }
 
 // Asset Controller.
-func (s *Service) CreateAssetPage(assetInput domain.AssetPageInput, curUser *domain.User) (*domain.Page, *domain.Error) {
+func (s *Service) CreateAssetPage(
+	assetInput domain.AssetPageInput,
+	curUser *domain.User,
+) (*domain.Page, *domain.Error) {
 
 	parentPagePkID := assetInput.ParentPagePkID
 	if parentPagePkID != nil {
-		parentPage, err := s.pageRepository.GetByID(context.Background(), "", parentPagePkID, domain.PageDetailOptions{})
+		parentPage, err := s.pageRepository.GetByID(
+			context.Background(),
+			"",
+			parentPagePkID,
+			domain.PageDetailOptions{},
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -339,6 +434,14 @@ func (s *Service) CreateAssetPage(assetInput domain.AssetPageInput, curUser *dom
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation
 	}
+
+	go s.pageAccessLogRepository.Upsert(
+		context.Background(),
+		page.PkID,
+		curUser.PkID,
+		domain.PageUpload,
+	)
+
 	return page, nil
 }
 
@@ -348,7 +451,12 @@ func (s *Service) AddPageRoleUser(
 	input domain.PageRoleCreateInput,
 	curUser *domain.User,
 ) (*domain.PageRoleUser, *domain.Error) {
-	exisingPage, err := s.pageRepository.GetByID(context.Background(), "", &input.PagePkID, domain.PageDetailOptions{})
+	exisingPage, err := s.pageRepository.GetByID(
+		context.Background(),
+		"",
+		&input.PagePkID,
+		domain.PageDetailOptions{},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -405,7 +513,12 @@ func (s *Service) GetPageRoleUsers(
 
 	pagePkID := input.PagePkID
 
-	page, err := s.pageRepository.GetByID(context.Background(), "", &pagePkID, domain.PageDetailOptions{})
+	page, err := s.pageRepository.GetByID(
+		context.Background(),
+		"",
+		&pagePkID,
+		domain.PageDetailOptions{},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -437,7 +550,12 @@ func (s *Service) UpdatePageRoleUser(
 	input domain.PageRoleUpdateInput,
 	curUser *domain.User,
 ) *domain.Error {
-	exisingPage, err := s.pageRepository.GetByID(context.Background(), "", &input.PagePkID, domain.PageDetailOptions{})
+	exisingPage, err := s.pageRepository.GetByID(
+		context.Background(),
+		"",
+		&input.PagePkID,
+		domain.PageDetailOptions{},
+	)
 
 	curRole := s.GetPageRolesByUser(context.Background(), input.PagePkID, curUser)
 	permissions := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
@@ -471,7 +589,12 @@ func (s *Service) DeletePageRoleUser(
 	curUser *domain.User,
 ) *domain.Error {
 
-	exisingPage, err := s.pageRepository.GetByID(context.Background(), "", &input.PagePkID, domain.PageDetailOptions{})
+	exisingPage, err := s.pageRepository.GetByID(
+		context.Background(),
+		"",
+		&input.PagePkID,
+		domain.PageDetailOptions{},
+	)
 	if err != nil {
 		return err
 	}

@@ -9,7 +9,11 @@ import (
 )
 
 type UserRepository interface {
-	Search(ctx context.Context, query domain.UserSearchQuery, currentUser *domain.User) ([]domain.User, *domain.Error)
+	Search(
+		ctx context.Context,
+		query domain.UserSearchQuery,
+		currentUser *domain.User,
+	) ([]domain.User, *domain.Error)
 	GetByID(ctx context.Context, id string) (*domain.User, *domain.Error)
 	GetUserByPkID(ctx context.Context, pkID int64) (*domain.User, *domain.Error)
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, *domain.Error)
@@ -79,14 +83,23 @@ type OrganizationRepository interface {
 }
 
 type PageRepository interface {
-	List(ctx context.Context, query domain.PageListQuery, curUser *domain.User) ([]domain.Page, *domain.Error)
+	List(
+		ctx context.Context,
+		query domain.PageListQuery,
+		curUser *domain.User,
+	) ([]domain.Page, *domain.Error)
 	Update(
 		ctx context.Context,
 		pagePkID int64,
 		page domain.PageUpdateInput,
 	) (*domain.Page, *domain.Error)
 	Move(ctx context.Context, pagePkID int64, parentPagePkID *int64) (*domain.Page, *domain.Error)
-	GetByID(ctx context.Context, pageID string, pagePkID *int64, detailOption domain.PageDetailOptions) (*domain.Page, *domain.Error)
+	GetByID(
+		ctx context.Context,
+		pageID string,
+		pagePkID *int64,
+		detailOption domain.PageDetailOptions,
+	) (*domain.Page, *domain.Error)
 	Archive(ctx context.Context, pagePkID int64) (*domain.Page, *domain.Error)
 	UpdateGeneralAccess(
 		ctx context.Context,
@@ -128,6 +141,10 @@ type PageRepository interface {
 		ctx context.Context,
 		pagePkID int64,
 	) ([]domain.PageRoleUser, *domain.Error)
+	GetPagesRole(
+		ctx context.Context,
+		input domain.PageRolePermissionBatchCheckInput,
+	) (permissions []domain.PageRolePermissionCheckInput, err *domain.Error)
 	UpdatePageRole(
 		ctx context.Context,
 		updateInput domain.PageRoleUpdateInput,
@@ -153,4 +170,18 @@ type OrganizationInviteRepository interface {
 		invite model.OrganizationInvite,
 	) (*domain.OrganizationInvite, *domain.Error)
 	GetInviteByID(ctx context.Context, inviteID string) (*domain.OrganizationInvite, *domain.Error)
+}
+
+type PageAccessLogRepository interface {
+	GetByUserPKID(
+		ctx context.Context,
+		query domain.OffsetBasedPagination,
+		userPkID int64,
+	) ([]domain.PageAccessLog, *domain.Error)
+	Upsert(
+		ctx context.Context,
+		pagePkID,
+		userPkID int64,
+		action domain.PageAccessAction,
+	) (int64, *domain.Error)
 }

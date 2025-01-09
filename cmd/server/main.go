@@ -14,6 +14,7 @@ import (
 	"github.com/Stuhub-io/core/services/auth"
 	"github.com/Stuhub-io/core/services/organization"
 	"github.com/Stuhub-io/core/services/page"
+	pageAccessLog "github.com/Stuhub-io/core/services/page_access_log"
 	"github.com/Stuhub-io/core/services/upload"
 	"github.com/Stuhub-io/core/services/user"
 	_ "github.com/Stuhub-io/docs"
@@ -104,12 +105,18 @@ func main() {
 		Cfg:            cfg,
 		UserRepository: userRepository,
 	})
-	PageRepository := postgres.NewPageRepository(postgres.NewPageRepositoryParams{
+	pageRepository := postgres.NewPageRepository(postgres.NewPageRepositoryParams{
 		Cfg:   cfg,
 		Store: dbStore,
 	})
 	organizationInviteRepository := postgres.NewOrganizationInvitesRepository(
 		postgres.NewOrganizationInvitesRepositoryParams{
+			Cfg:   cfg,
+			Store: dbStore,
+		},
+	)
+	pageAccessLogsRepository := postgres.NewPageAccessLogRepository(
+		postgres.NewPageAccessLogRepositoryParams{
 			Cfg:   cfg,
 			Store: dbStore,
 		},
@@ -147,14 +154,18 @@ func main() {
 		OrganizationInviteRepository: organizationInviteRepository,
 	})
 	pageService := page.NewService(page.NewServiceParams{
-		Config:         cfg,
-		PageRepository: PageRepository,
-		Mailer:         mailer,
+		Config:                  cfg,
+		PageRepository:          pageRepository,
+		PageAccessLogRepository: pageAccessLogsRepository,
+		Mailer:                  mailer,
 	})
-
 	uploadService := upload.NewUploadService(upload.NewUploadServiceParams{
 		Config:   cfg,
 		Uploader: cloudinaryUploader,
+	})
+	pageAccessLogService := pageAccessLog.NewService(pageAccessLog.NewServiceParams{
+		PageRepository:          pageRepository,
+		PageAccessLogRepository: pageAccessLogsRepository,
 	})
 
 	// handlers
@@ -183,6 +194,11 @@ func main() {
 			Router:         v1,
 			AuthMiddleware: authMiddleware,
 			UploadService:  uploadService,
+		})
+		api.UsePageAccessLogHandler(api.NewPageAccessLogHandlerParams{
+			Router:               v1,
+			AuthMiddleware:       authMiddleware,
+			PageAccessLogService: pageAccessLogService,
 		})
 	}
 

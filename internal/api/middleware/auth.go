@@ -29,9 +29,8 @@ func NewAuthMiddleware(params NewAuthMiddlewareParams) *AuthMiddleware {
 func (a *AuthMiddleware) Authenticated() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, err := authutils.ExtractBearerToken(c.GetHeader("Authorization"))
-
 		if err != nil {
-			c.Next()
+			c.AbortWithStatusJSON(domain.UnauthorizedCode, domain.ErrUnauthorized)
 			return
 		}
 
@@ -42,6 +41,7 @@ func (a *AuthMiddleware) Authenticated() gin.HandlerFunc {
 		}
 
 		user, dbErr := a.userRepository.GetUserByPkID(context.Background(), payload.UserPkID)
+
 		if dbErr != nil {
 			c.AbortWithStatusJSON(dbErr.Code, err)
 			return

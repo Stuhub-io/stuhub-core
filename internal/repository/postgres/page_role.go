@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -13,7 +12,10 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func (r *PageRepository) CreatePageRole(ctx context.Context, createInput domain.PageRoleCreateInput) (*domain.PageRoleUser, *domain.Error) {
+func (r *PageRepository) CreatePageRole(
+	ctx context.Context,
+	createInput domain.PageRoleCreateInput,
+) (*domain.PageRoleUser, *domain.Error) {
 	tx, done := r.store.NewTransaction()
 	defer done(nil)
 
@@ -254,24 +256,49 @@ func (r *PageRepository) DeletePageRole(
 	return nil
 }
 
-func (r *PageRepository) CheckPermissions(ctx context.Context, input domain.PageRolePermissionBatchCheckInput) (permissions []domain.PageRolePermissions) {
+func (r *PageRepository) GetPagesRole(
+	ctx context.Context,
+	input domain.PageRolePermissionBatchCheckInput,
+) (permissions []domain.PageRolePermissionCheckInput, err *domain.Error) {
 	user := input.User
 	pages := input.Pages
 
-	roles := []domain.PageRolePermissions{}
-	query := buildQueryPageRoles(r.store.DB(), queryPageRolesParams{
+	pageRoles, err := queryPageRoles(r.store.DB(), queryPageRolesParams{
 		PagePkIDs: sliceutils.Map(pages, func(page domain.Page) int64 {
 			return page.PkID
 		}),
-		Emails:       []string{user.Email},
-		ExcludeRoles: []domain.PageRole{},
+		Emails: []string{user.Email},
+		Preload: queryPageRolesPreloadOption{
+			Page: true,
+		},
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	fmt.Print(query, roles)
-	return nil
+	resultRoles := sliceutils.Map(
+		pageRoles,
+		func(role PageRoleResult) domain.PageRolePermissionCheckInput {
+			pageRole := domain.PageRoleFromString(role.Role)
+			return domain.PageRolePermissionCheckInput{
+				User: user,
+				Page: *pageutils.TransformPageModelToDomain(
+					pageutils.PageModelToDomainParams{
+						Page: role.Page,
+					},
+				),
+				PageRole: &pageRole,
+			}
+		},
+	)
+
+	return resultRoles, nil
 }
 
-func (r *PageRepository) CheckPermission(ctx context.Context, input domain.PageRolePermissionCheckInput) (permissions domain.PageRolePermissions) {
+func (r *PageRepository) CheckPermission(
+	ctx context.Context,
+	input domain.PageRolePermissionCheckInput,
+) (permissions domain.PageRolePermissions) {
 	page := input.Page
 	user := input.User
 	pageRoleUser := input.PageRole
@@ -333,7 +360,11 @@ func GetPermissionByRole(role domain.PageRole, isAuthenticated bool) (p domain.P
 	return p
 }
 
-func (r *PageRepository) GetPermission(ctx context.Context, page domain.Page, user *domain.User) domain.PageRolePermissions {
+func (r *PageRepository) GetPermission(
+	ctx context.Context,
+	page domain.Page,
+	user *domain.User,
+) domain.PageRolePermissions {
 	return r.CheckPermission(ctx, domain.PageRolePermissionCheckInput{
 		User: user,
 		Page: page,

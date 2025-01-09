@@ -1,9 +1,14 @@
 package pageutils
 
 import (
+	"encoding/json"
+	"time"
+
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/internal/repository/model"
+	sliceutils "github.com/Stuhub-io/utils/slice"
 	"github.com/Stuhub-io/utils/userutils"
+	"github.com/lib/pq"
 )
 
 func TransformDocModelToDomain(doc *model.Document) *domain.Document {
@@ -142,5 +147,71 @@ func TransformPagePublicTokenModelToDomain(model model.PublicToken) *domain.Page
 		PagePkID:   model.PagePkid,
 		ID:         model.ID,
 		CreatedAt:  model.CreatedAt.String(),
+	}
+}
+
+type PartialPage struct {
+	ID          string `json:"id"`
+	PkID        int64  `json:"pkid"`
+	Name        string `json:"name"`
+	AuthorPkID  int64  `json:"author_pkid"`
+	GeneralRole string `json:"general_role"`
+}
+
+type PageAccessLogsResult struct {
+	Pkid            int64
+	PagePkid        int64
+	PageId          string
+	PageName        string
+	PageGeneralRole string
+	PageCreatedAt   string
+	PageUpdatedAt   string
+	Action          string
+	ViewType        string
+	AuthorPkid      int64
+	AuthorFirstName string
+	AuthorLastName  string
+	AuthorEmail     string
+	AuthorAvatar    string
+	LastAccessed    time.Time
+	ParentPages     pq.StringArray `gorm:"type:text[]"`
+}
+
+func TransformPageAccessLogsResultToDomain(result PageAccessLogsResult) domain.PageAccessLog {
+	return domain.PageAccessLog{
+		PkID:   result.Pkid,
+		Action: result.Action,
+		Page: domain.Page{
+			PkID:        result.PagePkid,
+			ID:          result.PageId,
+			Name:        result.PageName,
+			ViewType:    domain.PageViewFromString(result.ViewType),
+			GeneralRole: domain.PageRoleFromString(result.PageGeneralRole),
+			AuthorPkID:  &result.AuthorPkid,
+			Author: &domain.User{
+				PkID:     result.AuthorPkid,
+				LastName: result.AuthorLastName,
+				Email:    result.AuthorEmail,
+				Avatar:   result.AuthorAvatar,
+			},
+			CreatedAt: result.PageCreatedAt,
+			UpdatedAt: result.PageUpdatedAt,
+		},
+		ParentPages: sliceutils.Map(result.ParentPages, func(page string) domain.Page {
+			var parentPage PartialPage
+
+			if err := json.Unmarshal([]byte(page), &parentPage); err != nil {
+				return domain.Page{}
+			}
+
+			return domain.Page{
+				PkID:        parentPage.PkID,
+				ID:          parentPage.ID,
+				Name:        parentPage.Name,
+				AuthorPkID:  &parentPage.AuthorPkID,
+				GeneralRole: domain.PageRoleFromString(parentPage.GeneralRole),
+			}
+		}),
+		LastAccessed: result.LastAccessed.String(),
 	}
 }

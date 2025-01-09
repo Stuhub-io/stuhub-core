@@ -139,3 +139,21 @@ func FlatMap[A, B any](input []A, f func(A) []B) []B {
 	}
 	return result
 }
+
+func UniqueByField[T any](items []T, field string) []T {
+	uniqueValues := make(map[interface{}]struct{})
+	var result []T
+
+	for _, item := range items {
+		v := reflect.ValueOf(item)
+		f := reflect.Indirect(v).FieldByName(field)
+		if f.IsValid() {
+			if _, exists := uniqueValues[f.Interface()]; !exists {
+				uniqueValues[f.Interface()] = struct{}{}
+				result = append(result, item)
+			}
+		}
+	}
+
+	return result
+}
