@@ -6,6 +6,7 @@ import (
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
+	"github.com/Stuhub-io/utils/pageutils"
 	"github.com/Stuhub-io/utils/userutils"
 )
 
@@ -140,6 +141,10 @@ func (s *Service) GetPageDetailByID(
 		},
 	)
 
+	if e != nil {
+		return d, e
+	}
+
 	curRole := s.GetPageRolesByUser(context.Background(), d.PkID, curUser)
 	permission := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
 		Page:     *d,
@@ -147,7 +152,7 @@ func (s *Service) GetPageDetailByID(
 		PageRole: curRole,
 	})
 
-	// return Permission in object
+	// Assign Current User Permission
 	d.Permissions = &permission
 	if !permission.CanView {
 		return nil, domain.ErrPermissionDenied
@@ -161,6 +166,28 @@ func (s *Service) GetPageDetailByID(
 			domain.PageOpen,
 		)
 	}
+
+	// Include Parent Page Detail
+	var parentPage *domain.Page
+	parentPkIDs := pageutils.PagePathToPkIDs(d.Path)
+
+	if len(parentPkIDs) > 0 {
+		parentPagePkID := parentPkIDs[len(parentPkIDs)-1]
+		parentPage, e = s.pageRepository.GetByID(context.Background(), "", &parentPagePkID, domain.PageDetailOptions{})
+		if e != nil {
+			return d, e
+		}
+		parentPageCurRole := s.GetPageRolesByUser(context.Background(), parentPage.PkID, curUser)
+		parentPagePermission := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
+			Page:     *parentPage,
+			User:     curUser,
+			PageRole: parentPageCurRole,
+		})
+		// Assign Parent Page Permission
+		parentPage.Permissions = &parentPagePermission
+	}
+
+	d.ParentPage = parentPage
 
 	return d, e
 }

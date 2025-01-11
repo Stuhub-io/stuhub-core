@@ -54,7 +54,9 @@ func PagePathToPkIDs(path string) []int64 {
 		}
 		return parsedPkID
 	})
-	return parentPkIDs
+	return sliceutils.Filter(parentPkIDs, func(pkid int64) bool {
+		return pkid != -1
+	})
 }
 
 func BuildPagePath(pkIDs []int64) string {

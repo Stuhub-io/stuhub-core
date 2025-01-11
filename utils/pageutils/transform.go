@@ -41,6 +41,7 @@ type PageModelToDomainParams struct {
 	PageBody        PageBodyParams
 	InheritFromPage *domain.Page
 	Permissions     *domain.PageRolePermissions
+	ParentPage      *domain.Page
 }
 
 func TransformPageModelToDomain(
@@ -85,6 +86,7 @@ func TransformPageModelToDomain(
 		Author:           pageBody.Author,
 		InheritFromPage:  inheritFromPage,
 		Permissions:      Permissions,
+		ParentPage:       params.ParentPage,
 	}
 }
 

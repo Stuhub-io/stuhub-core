@@ -109,14 +109,9 @@ func buildPageQuery(
 		query = query.Where("pages.view_type IN ?", q.ViewTypes)
 	}
 
-	query = query.Order("pages.updated_at desc").Offset(q.Offset).Limit(q.Limit)
-	return query
-}
-
-func pageResultsToMap(results []PageResult) map[int64]PageResult {
-	pageMap := make(map[int64]PageResult)
-	for _, result := range results {
-		pageMap[result.Pkid] = result
+	query = query.Order("pages.updated_at desc").Offset(q.Offset)
+	if q.Limit > 0 {
+		query = query.Limit(q.Limit)
 	}
-	return pageMap
+	return query
 }
