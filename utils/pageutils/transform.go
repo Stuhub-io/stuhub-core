@@ -158,25 +158,30 @@ type PartialPage struct {
 	Name        string `json:"name"`
 	AuthorPkID  int64  `json:"author_pkid"`
 	GeneralRole string `json:"general_role"`
+	Path        string `json:"path"`
+	OrgSlug     string `json:"org_slug"`
 }
 
 type PageAccessLogsResult struct {
-	Pkid            int64
-	PagePkid        int64
-	PageId          string
-	PageName        string
-	PageGeneralRole string
-	PageCreatedAt   string
-	PageUpdatedAt   string
-	Action          string
-	ViewType        string
-	AuthorPkid      int64
-	AuthorFirstName string
-	AuthorLastName  string
-	AuthorEmail     string
-	AuthorAvatar    string
-	LastAccessed    time.Time
-	ParentPages     pq.StringArray `gorm:"type:text[]"`
+	Pkid                int64
+	PagePkid            int64
+	PageId              string
+	PageName            string
+	PageDocumentContent string
+	PageOrgSlug         string
+	PageGeneralRole     string
+	PagePath            string
+	PageCreatedAt       string
+	PageUpdatedAt       string
+	Action              string
+	ViewType            string
+	AuthorPkid          int64
+	AuthorFirstName     string
+	AuthorLastName      string
+	AuthorEmail         string
+	AuthorAvatar        string
+	LastAccessed        time.Time
+	ParentPages         pq.StringArray `gorm:"type:text[]"`
 }
 
 func TransformPageAccessLogsResultToDomain(result PageAccessLogsResult) domain.PageAccessLog {
@@ -189,13 +194,20 @@ func TransformPageAccessLogsResultToDomain(result PageAccessLogsResult) domain.P
 			Name:        result.PageName,
 			ViewType:    domain.PageViewFromString(result.ViewType),
 			GeneralRole: domain.PageRoleFromString(result.PageGeneralRole),
-			AuthorPkID:  &result.AuthorPkid,
+			Document: &domain.Document{
+				JsonContent: result.PageDocumentContent,
+			},
+			AuthorPkID: &result.AuthorPkid,
 			Author: &domain.User{
 				PkID:     result.AuthorPkid,
 				LastName: result.AuthorLastName,
 				Email:    result.AuthorEmail,
 				Avatar:   result.AuthorAvatar,
 			},
+			Organization: &domain.Organization{
+				Slug: result.PageOrgSlug,
+			},
+			Path:      result.PagePath,
 			CreatedAt: result.PageCreatedAt,
 			UpdatedAt: result.PageUpdatedAt,
 		},
@@ -212,6 +224,10 @@ func TransformPageAccessLogsResultToDomain(result PageAccessLogsResult) domain.P
 				Name:        parentPage.Name,
 				AuthorPkID:  &parentPage.AuthorPkID,
 				GeneralRole: domain.PageRoleFromString(parentPage.GeneralRole),
+				Path:        parentPage.Path,
+				Organization: &domain.Organization{
+					Slug: parentPage.OrgSlug,
+				},
 			}
 		}),
 		LastAccessed: result.LastAccessed.String(),
