@@ -168,6 +168,10 @@ type PageAccessLogsResult struct {
 	PageId              string
 	PageName            string
 	PageDocumentContent string
+	PageAssetUrl        string
+	PageAssetExtension  string
+	PageAssetSize       int64
+	PageAssetThumbnail  string
 	PageOrgSlug         string
 	PageGeneralRole     string
 	PagePath            string
@@ -196,6 +200,12 @@ func TransformPageAccessLogsResultToDomain(result PageAccessLogsResult) domain.P
 			GeneralRole: domain.PageRoleFromString(result.PageGeneralRole),
 			Document: &domain.Document{
 				JsonContent: result.PageDocumentContent,
+			},
+			Asset: &domain.Asset{
+				URL:        result.PageAssetUrl,
+				Extension:  result.PageAssetExtension,
+				Size:       result.PageAssetSize,
+				Thumbnails: domain.AssetThumbnailFromString(result.PageAssetThumbnail),
 			},
 			AuthorPkID: &result.AuthorPkid,
 			Author: &domain.User{
