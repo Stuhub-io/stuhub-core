@@ -25,6 +25,7 @@ type Page struct {
 	Path             string               `json:"path"`
 	GeneralRole      PageRole             `json:"general_role"`
 	Author           *User                `json:"author"`
+	Organization     *Organization        `json:"organization"`
 	InheritFromPage  *Page                `json:"inherit_from_page"`
 	Permissions      *PageRolePermissions `json:"permissions"`
 	ParentPage       *Page                `json:"parent_page"`

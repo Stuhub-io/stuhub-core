@@ -41,7 +41,10 @@ func (r *PageAccessLogRepository) GetByUserPKID(
 			p.pkid AS page_pkid,
 			p.id AS page_id,
 			p.name AS page_name,
+			d.json_content AS page_document_content,
 			p.general_role AS page_general_role,
+			p.path AS page_path,
+			o.slug AS page_org_slug,
 			p.created_at AS page_created_at,
 			p.updated_at AS page_updated_at,
 			pl.action, 
@@ -62,9 +65,12 @@ func (r *PageAccessLogRepository) GetByUserPKID(
 					'pkid', pages.pkid,
 					'name', pages.name,
 					'author_pkid', pages.author_pkid,
-					'general_role', pages.general_role
+					'general_role', pages.general_role,
+					'path', pages.path,
+					'org_slug', organizations.slug
 				)
 				FROM pages
+				JOIN organizations ON pages.org_pkid = organizations.pkid
 				WHERE pages.pkid IN (
 					WITH RECURSIVE page_hierarchy AS (
 						SELECT pkid, parent_page_pkid
@@ -82,6 +88,7 @@ func (r *PageAccessLogRepository) GetByUserPKID(
 			) AS parent_pages
 		FROM page_access_logs pl 
 		LEFT JOIN pages p ON p.pkid = pl.page_pkid 
+		LEFT JOIN organizations o ON o.pkid = p.org_pkid 
 		LEFT JOIN users u ON u.pkid = p.author_pkid
 		LEFT JOIN documents d ON d.page_pkid = p.pkid
 		LEFT JOIN assets a ON a.page_pkid = p.pkid

@@ -2,9 +2,11 @@ package pageAccessLog
 
 import (
 	"context"
+	"slices"
 
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
+	"github.com/Stuhub-io/utils/pageutils"
 	sliceutils "github.com/Stuhub-io/utils/slice"
 )
 
@@ -45,8 +47,9 @@ func (s *Service) GetLogsByUser(
 	)
 
 	permissionsMapper := map[int64]domain.PageRolePermissions{}
+	inheritRolePagesMapper := map[int64]string{}
 
-	// checking permission for all pages
+	// get permissions for not inherit pages
 	for _, page := range flatPages {
 		var pageRole *domain.PageRole
 
@@ -60,6 +63,11 @@ func (s *Service) GetLogsByUser(
 			pageRole = foundPageInPermission.PageRole
 		}
 
+		if pageRole != nil && pageRole.String() == domain.PageInherit.String() && page.Path != "" {
+			inheritRolePagesMapper[page.PkID] = page.Path
+			continue
+		}
+
 		permissions := s.pageRepository.CheckPermission(
 			context.Background(),
 			domain.PageRolePermissionCheckInput{
@@ -68,38 +76,47 @@ func (s *Service) GetLogsByUser(
 				PageRole: pageRole,
 			},
 		)
-		if !permissions.CanView {
-			flatPages = sliceutils.Filter(flatPages, func(p domain.Page) bool {
-				return p.PkID != page.PkID
-			})
-			continue
-		}
 
 		permissionsMapper[page.PkID] = permissions
+	}
+
+	// get permissions for inherit pages
+	findInheritPermissions := func(parentPkIds []int64) domain.PageRolePermissions {
+		slices.Reverse(parentPkIds)
+		for _, pkID := range parentPkIds {
+			if permissions, ok := permissionsMapper[pkID]; ok {
+				if permissions.CanView {
+					return permissions
+				}
+			}
+		}
+		return domain.PageRolePermissions{
+			CanView: false,
+		}
+	}
+
+	for pkID, path := range inheritRolePagesMapper {
+		permissionsMapper[pkID] = findInheritPermissions(pageutils.PagePathToPkIDs(path))
 	}
 
 	// filter logs after checking permission
 	for i := 0; i < len(logs); i++ {
 		log := &logs[i]
 
-		validPage := sliceutils.Find(flatPages, func(p domain.Page) bool {
-			return p.PkID == log.Page.PkID
-		})
-		if validPage == nil {
+		permissions, ok := permissionsMapper[log.Page.PkID]
+		if !ok || !permissions.CanView {
 			logs = sliceutils.Filter(logs, func(l domain.PageAccessLog) bool {
 				return l.PkID != log.PkID
 			})
 			continue
 		}
 
-		permission := permissionsMapper[log.Page.PkID]
-		log.Page.Permissions = &permission
+		log.Page.Permissions = &permissions
+		log.IsShared = !log.Page.IsAuthor(user.PkID)
 
 		for _, page := range log.ParentPages {
-			validParentPage := sliceutils.Find(flatPages, func(p domain.Page) bool {
-				return p.PkID == page.PkID
-			})
-			if validParentPage == nil {
+			permissions, ok := permissionsMapper[page.PkID]
+			if !ok || !permissions.CanView {
 				log.ParentPages = sliceutils.Filter(log.ParentPages, func(p domain.Page) bool {
 					return p.PkID != page.PkID
 				})
