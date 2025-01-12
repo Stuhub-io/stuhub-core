@@ -1,8 +1,6 @@
 package postgres
 
 import (
-	"slices"
-
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/internal/repository/model"
 	sliceutils "github.com/Stuhub-io/utils/slice"
@@ -10,8 +8,11 @@ import (
 )
 
 type InheritPageRolesParams struct {
-	ParentFolder model.Page
-	NewPagePkID  int64
+	ParentFolder            model.Page
+	ParentFolderAuthorEmail string
+	NewPagePkID             int64
+	NewPageAuthorPkID       int64
+	NewPageAuthorEmail      string
 }
 
 func inheritPageRoles(tx *gorm.DB, input InheritPageRolesParams) error {
@@ -19,19 +20,32 @@ func inheritPageRoles(tx *gorm.DB, input InheritPageRolesParams) error {
 	if err := tx.Where("page_pkid = ?", input.ParentFolder.Pkid).Find(&parentPageRoles).Error; err != nil {
 		return err
 	}
-	if len(parentPageRoles) == 0 {
-		return nil
-	}
 
 	// Inherit direct parentPageRoles from parent
 	pageRoles := make([]model.PageRole, 0, len(parentPageRoles))
 	for _, permission := range parentPageRoles {
+		if permission.Email != input.NewPageAuthorEmail { // Skip if the role inherited is already the author of new page
+			pageRoles = append(pageRoles, model.PageRole{
+				PagePkid: input.NewPagePkID,
+				Email:    permission.Email,
+				UserPkid: permission.UserPkid,
+				Role:     domain.PageInherit.String(),
+			})
+		}
+	}
+
+	// Inherit parentPageRoles from parent's author
+	if input.ParentFolder.AuthorPkid != nil && *input.ParentFolder.AuthorPkid != input.NewPageAuthorPkID {
 		pageRoles = append(pageRoles, model.PageRole{
 			PagePkid: input.NewPagePkID,
-			Email:    permission.Email,
-			UserPkid: permission.UserPkid,
-			Role:     domain.PageInherit.String(),
+			UserPkid: input.ParentFolder.AuthorPkid,
+			Email:    input.ParentFolderAuthorEmail,
+			Role:     domain.PageEditor.String(),
 		})
+	}
+
+	if len(pageRoles) == 0 {
+		return nil
 	}
 
 	if err := tx.Create(&pageRoles).Error; err != nil {
@@ -57,6 +71,7 @@ type queryPageRolesParams struct {
 	Roles        []domain.PageRole
 	Preload      queryPageRolesPreloadOption
 	ExcludeRoles []domain.PageRole
+	OrderBy      string
 }
 
 func queryPageRoles(tx *gorm.DB, params queryPageRolesParams) ([]PageRoleResult, *domain.Error) {
@@ -65,15 +80,12 @@ func queryPageRoles(tx *gorm.DB, params queryPageRolesParams) ([]PageRoleResult,
 	if len(params.PagePkIDs) == 0 && len(params.Emails) == 0 && len(params.Roles) == 0 {
 		return pageRoles, nil
 	}
+
 	query := buildQueryPageRoles(tx, params)
 
 	if err := query.Find(&pageRoles).Error; err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
-
-	slices.SortFunc(pageRoles, func(i, j PageRoleResult) int {
-		return slices.Index(params.PagePkIDs, i.Pkid) - slices.Index(params.PagePkIDs, j.Pkid)
-	})
 
 	return pageRoles, nil
 }
@@ -84,6 +96,7 @@ func buildQueryPageRoles(tx *gorm.DB, params queryPageRolesParams) *gorm.DB {
 	Roles := params.Roles
 	Preload := params.Preload
 	ExcludeRoles := params.ExcludeRoles
+	OrderBy := params.OrderBy
 
 	if len(PagePkIDs) == 0 && len(Emails) == 0 && len(Roles) == 0 {
 		return tx
@@ -132,6 +145,10 @@ func buildQueryPageRoles(tx *gorm.DB, params queryPageRolesParams) *gorm.DB {
 		} else {
 			tx = tx.Where("email IN (?)", Emails)
 		}
+	}
+
+	if OrderBy != "" {
+		tx = tx.Order(OrderBy)
 	}
 	return tx
 }

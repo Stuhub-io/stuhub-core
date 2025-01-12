@@ -64,7 +64,7 @@ type PageMoveInput struct {
 }
 
 type PageListQuery struct {
-	OrgPkID            int64          `json:"org_pkid"`
+	OrgPkID            *int64         `json:"org_pkid"`
 	ViewTypes          []PageViewType `json:"view_type"`
 	ParentPagePkID     *int64         `json:"parent_page_pkid"`
 	IsArchived         *bool          `json:"is_archived"`
@@ -74,6 +74,7 @@ type PageListQuery struct {
 	GeneralRole        *PageRole      `json:"general_role"`
 	PagePkIDs          []int64        `json:"page_pkids"`
 	ExcludeGeneralRole []PageRole     `json:"exclude_general_role"`
+	PathBeginWith      string         `json:"path_begin_with"`
 }
 
 type PageGeneralAccessUpdateInput struct {

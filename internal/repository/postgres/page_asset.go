@@ -11,16 +11,27 @@ import (
 // Asset Page.
 func (r *PageRepository) CreateAsset(ctx context.Context, assetInput domain.AssetPageInput) (*domain.Page, *domain.Error) {
 
-	initPageResult, iErr := r.initPageModel(ctx, assetInput.PageInput)
+	initPageResult, iErr := r.initPageModel(preloadPageResult(r.store.DB(), PreloadPageResultParams{
+		Author: true, // Init Page with Parent Page Preload
+	}), assetInput.PageInput)
+
 	if iErr != nil {
 		return nil, iErr
 	}
 
 	newPage := initPageResult.Page
 
+	author := &model.User{}
+	if err := r.store.DB().Where("pkid = ?", newPage.AuthorPkid).First(author).Error; err != nil {
+		return nil, domain.ErrBadRequest
+	}
+
 	tx, doneTx := r.store.NewTransaction()
 
-	err := tx.DB().Create(&newPage).Error
+	err := preloadPageResult(r.store.DB(), PreloadPageResultParams{
+		Author: true,
+	}).Create(&newPage).Error
+
 	if err != nil {
 		return nil, doneTx(err)
 	}
@@ -41,8 +52,11 @@ func (r *PageRepository) CreateAsset(ctx context.Context, assetInput domain.Asse
 	parentFolder := initPageResult.ParentFolder
 	if parentFolder != nil {
 		if err := inheritPageRoles(tx.DB(), InheritPageRolesParams{
-			ParentFolder: *parentFolder,
-			NewPagePkID:  newPage.Pkid,
+			ParentFolder:            parentFolder.Page,
+			ParentFolderAuthorEmail: parentFolder.Author.Email,
+			NewPagePkID:             newPage.Pkid,
+			NewPageAuthorPkID:       author.Pkid,
+			NewPageAuthorEmail:      author.Email,
 		}); err != nil {
 			return nil, doneTx(err)
 		}

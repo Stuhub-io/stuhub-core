@@ -105,7 +105,7 @@ func (h *PageHandler) GetPages(c *gin.Context, user *domain.User) {
 	}
 
 	pages, err := h.pageService.GetPagesByOrgPkID(domain.PageListQuery{
-		OrgPkID:        query.OrgPkID,
+		OrgPkID:        &query.OrgPkID,
 		ViewTypes:      query.ViewTypes,
 		ParentPagePkID: query.ParentPagePkID,
 		Offset:         int(query.PaginationRequest.Page * query.PaginationRequest.Size),

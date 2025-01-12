@@ -286,7 +286,7 @@ func (r *PageRepository) GetByID(
 	var inheritPage *model.Page
 	if page.GeneralRole == domain.PageInherit.String() {
 		query := buildPageQuery(r.store.DB(), domain.PageListQuery{
-			OrgPkID:            *page.OrgPkid,
+			OrgPkID:            page.OrgPkid,
 			ExcludeGeneralRole: []domain.PageRole{domain.PageInherit},
 			PagePkIDs:          parentPagePkIDs,
 		})

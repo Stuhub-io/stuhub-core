@@ -9,6 +9,7 @@ import (
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/pageutils"
 	sliceutils "github.com/Stuhub-io/utils/slice"
+	"golang.org/x/exp/slices"
 	"gorm.io/gorm/clause"
 )
 
@@ -47,20 +48,31 @@ func (r *PageRepository) CreatePageRole(
 
 	// Inherit Role to Child Pages
 	childPath := pageutils.AppendPath(page.Path, strconv.FormatInt(page.Pkid, 10))
-	childPages := []model.Page{}
-	if err := tx.DB().Where("path LIKE ?", childPath+"%").Find(&childPages).Error; err != nil {
+	childPages := []PageResult{}
+
+	if err := buildPageQuery(preloadPageResult(r.store.DB(), PreloadPageResultParams{
+		Author: true,
+	}), domain.PageListQuery{
+		PathBeginWith: childPath,
+		IsAll:         true,
+	}).Find(&childPages).Error; err != nil {
 		return nil, done(err)
 	}
 
 	if len(childPages) != 0 {
-		newRoles := sliceutils.Map(childPages, func(page model.Page) model.PageRole {
-			return model.PageRole{
-				PagePkid: page.Pkid,
-				Email:    Email,
-				UserPkid: UserPkID,
-				Role:     domain.PageInherit.String(),
-			}
-		})
+		newRoles := sliceutils.Map(
+			sliceutils.Filter(childPages, func(cp PageResult) bool { // Ignore if add email is already page's author
+				return cp.Author.Email != Email
+			}),
+			func(page PageResult) model.PageRole {
+				return model.PageRole{
+					PagePkid: page.Pkid,
+					Email:    Email,
+					UserPkid: UserPkID,
+					Role:     domain.PageInherit.String(),
+				}
+			},
+		)
 
 		// Ignore if child already has user role
 		if err := tx.DB().Clauses(clause.OnConflict{
@@ -99,17 +111,16 @@ func (r *PageRepository) GetPageRoleByEmail(
 		}
 
 		parentPkIDs := pageutils.PagePathToPkIDs(page.Path)
+		slices.Reverse(parentPkIDs)
 
 		var basePageRole model.PageRole
 		query := buildQueryPageRoles(r.store.DB(), queryPageRolesParams{
 			Emails:       []string{email},
 			ExcludeRoles: []domain.PageRole{domain.PageInherit},
 			PagePkIDs:    parentPkIDs,
-			Preload: queryPageRolesPreloadOption{
-				Page: true,
-			},
+			OrderBy:      buildOrderByValuesClause("page_pkid", parentPkIDs),
 		})
-		if err := query.First(&basePageRole); err != nil {
+		if err := query.First(&basePageRole).Error; err != nil {
 			pageRole.Role = domain.PageViewer.String() // Default Role If Not Found inherit
 		} else {
 			pageRole.Role = basePageRole.Role
@@ -152,6 +163,7 @@ func (r *PageRepository) GetPageRoles(
 
 	// Get Actual Page Role for Inherit Access
 	parentPkIDs := pageutils.PagePathToPkIDs(page.Path)
+	slices.Reverse(parentPkIDs)
 
 	parentBasePageRoles, err := queryPageRoles(r.store.DB(), queryPageRolesParams{
 		Emails:       inheritRoleEmails,
@@ -160,6 +172,7 @@ func (r *PageRepository) GetPageRoles(
 		Preload: queryPageRolesPreloadOption{
 			Page: true,
 		},
+		OrderBy: buildOrderByValuesClause("page_pkid", parentPkIDs),
 	})
 
 	if err != nil {

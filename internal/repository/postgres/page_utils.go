@@ -1,8 +1,9 @@
 package postgres
 
 import (
-	"context"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/internal/repository/model"
@@ -20,19 +21,19 @@ type PageResult struct {
 
 type initPageModelResults struct {
 	Page         *model.Page
-	ParentFolder *model.Page
+	ParentFolder *PageResult
 }
 
 func (r *PageRepository) initPageModel(
-	ctx context.Context,
+	tx *gorm.DB,
 	pageInput domain.PageInput,
 ) (initPageModelResults, *domain.Error) {
 	path := ""
 	// get path
-	var parentFolder *model.Page
+	var parentFolder *PageResult
 
 	if pageInput.ParentPagePkID != nil {
-		if err := r.store.DB().Where("pkid = ?", pageInput.ParentPagePkID).First(&parentFolder).Error; err != nil {
+		if err := tx.Where("pkid = ?", pageInput.ParentPagePkID).First(&parentFolder).Error; err != nil {
 			return initPageModelResults{}, domain.NewErr("Parent Page not found", domain.BadRequestCode)
 		}
 		path = pageutils.AppendPath(parentFolder.Path, strconv.FormatInt(parentFolder.Pkid, 10))
@@ -89,7 +90,12 @@ func buildPageQuery(
 	tx *gorm.DB,
 	q domain.PageListQuery,
 ) *gorm.DB {
-	query := tx.Where("org_pkid = ?", q.OrgPkID)
+
+	query := tx
+
+	if q.OrgPkID != nil {
+		query = query.Where("org_pkid = ?", q.OrgPkID)
+	}
 
 	if q.IsArchived != nil {
 		if *q.IsArchived {
@@ -109,9 +115,21 @@ func buildPageQuery(
 		query = query.Where("pages.view_type IN ?", q.ViewTypes)
 	}
 
+	if q.PathBeginWith != "" {
+		query = query.Where("pages.path LIKE ?", q.PathBeginWith+"%")
+	}
+
 	query = query.Order("pages.updated_at desc").Offset(q.Offset)
 	if q.Limit > 0 {
 		query = query.Limit(q.Limit)
 	}
 	return query
+}
+
+func buildOrderByValuesClause(columnName string, ids []int64) string {
+	caseStatements := make([]string, len(ids))
+	for i, value := range ids {
+		caseStatements[i] = fmt.Sprintf("WHEN %d THEN %d", value, i)
+	}
+	return fmt.Sprintf("CASE %s %s ELSE %d END", columnName, strings.Join(caseStatements, " "), len(ids))
 }
