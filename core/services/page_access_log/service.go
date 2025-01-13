@@ -3,6 +3,7 @@ package pageAccessLog
 import (
 	"context"
 	"slices"
+	"sort"
 
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
@@ -122,6 +123,10 @@ func (s *Service) GetLogsByUser(
 				})
 			}
 		}
+
+		sort.Slice(log.ParentPages, func(i, j int) bool {
+			return log.ParentPages[i].PkID < log.ParentPages[j].PkID
+		})
 	}
 
 	return logs, err
