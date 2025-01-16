@@ -17,7 +17,7 @@ type UserRepository interface {
 	GetByID(ctx context.Context, id string) (*domain.User, *domain.Error)
 	GetUserByPkID(ctx context.Context, pkID int64) (*domain.User, *domain.Error)
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, *domain.Error)
-	GetOrCreateUserByEmail(ctx context.Context, email, salt string) (*domain.User, *domain.Error)
+	GetOrCreateUserByEmail(ctx context.Context, email, salt string) (*domain.User, *domain.Error, bool) // bool - iscreated
 	CreateUserWithGoogleInfo(
 		ctx context.Context,
 		email, salt, firstName, lastName, avatar string,
@@ -157,6 +157,26 @@ type PageRepository interface {
 		ctx context.Context,
 		input domain.PageRolePermissionCheckInput,
 	) domain.PageRolePermissions
+
+	SyncPageRoleWithNewUser(
+		ctx context.Context,
+		user domain.User,
+	) *domain.Error
+
+	// Page Role Request
+	CreatePageAccessRequest(
+		ctx context.Context,
+		createInput domain.PageRoleRequestCreateInput,
+	) (*domain.PageRoleRequestLog, *domain.Error)
+	ListPageAccessRequestByPagePkID(
+		ctx context.Context,
+		q domain.PageRoleRequestLogQuery,
+	) ([]domain.PageRoleRequestLog, *domain.Error)
+	UpdatePageAccessRequestStatus(
+		ctx context.Context,
+		q domain.PageRoleRequestLogQuery,
+		status domain.PageRoleRequestLogStatus,
+	) *domain.Error
 }
 
 type OrganizationInviteRepository interface {

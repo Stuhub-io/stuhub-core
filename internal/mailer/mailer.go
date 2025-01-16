@@ -100,7 +100,7 @@ func (m *Mailer) SendMailCustomTemplate(
 		m.logger.Error(err, err.Error())
 		return domain.ErrSendMail
 	}
-	fmt.Print("hello ", resp)
+	logger.L.Debug("Email sent successfully: " + resp.Body)
 	return nil
 }
 

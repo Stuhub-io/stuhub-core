@@ -15,6 +15,7 @@ type Service struct {
 
 type NewServiceParams struct {
 	ports.UserRepository
+	ports.PageRepository
 	config.Config
 }
 

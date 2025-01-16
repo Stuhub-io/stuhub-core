@@ -14,7 +14,7 @@ const TableNamePageAccessLog = "page_access_logs"
 type PageAccessLog struct {
 	Pkid         int64     `gorm:"column:pkid;type:bigint;primaryKey;autoIncrement:true" json:"pkid"`
 	PagePkid     int64     `gorm:"column:page_pkid;type:bigint;not null" json:"page_pkid"`
-	UserPkid     int64    `gorm:"column:user_pkid;type:bigint" json:"user_pkid"`
+	UserPkid     *int64    `gorm:"column:user_pkid;type:bigint" json:"user_pkid"`
 	Action       string    `gorm:"column:action;type:character varying(25);not null" json:"action"`
 	LastAccessed time.Time `gorm:"column:last_accessed;type:timestamp with time zone;not null;default:now()" json:"last_accessed"`
 }

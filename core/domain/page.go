@@ -84,10 +84,9 @@ type PageGeneralAccessUpdateInput struct {
 }
 
 type PageRoleCreateInput struct {
-	CallerPkID int64    `json:"author_pkid"`
-	PagePkID   int64    `json:"page_pkid"`
-	Email      string   `json:"email"`
-	Role       PageRole `json:"role"`
+	PagePkID int64    `json:"page_pkid"`
+	Email    string   `json:"email"`
+	Role     PageRole `json:"role"`
 }
 
 type PageRoleUpdateInput struct {
@@ -229,4 +228,64 @@ type PageRolePermissionCheckInput struct {
 type PageRolePermissionBatchCheckInput struct {
 	User  *User  `json:"user"`
 	Pages []Page `json:"pages"`
+}
+
+type PageRoleRequestLog struct {
+	PkID     int64                    `json:"pkid"`
+	PagePkID int64                    `json:"page_pkid"`
+	UserPkID *int64                   `json:"user_pkid"`
+	Email    string                   `json:"email"`
+	Status   PageRoleRequestLogStatus `json:"status"`
+	User     *User                    `json:"user"`
+}
+
+type PageRoleRequestLogStatus int
+
+const (
+	PRSLPending PageRoleRequestLogStatus = iota + 1
+	PRSLApproved
+	PRSLRejected
+)
+
+func (r PageRoleRequestLogStatus) String() string {
+	return [...]string{"pending", "approved", "rejected"}[r-1]
+}
+
+func PRSLFromString(val string) PageRoleRequestLogStatus {
+	switch val {
+	case "pending":
+		return PRSLPending
+	case "approved":
+		return PRSLApproved
+	case "rejected":
+		return PRSLRejected
+	default:
+		return PRSLPending
+	}
+}
+
+func (r *PageRoleRequestLogStatus) UnmarshalJSON(data []byte) error {
+	var value int
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+
+	switch PageRoleRequestLogStatus(value) {
+	case PRSLPending, PRSLApproved, PRSLRejected:
+		*r = PageRoleRequestLogStatus(value)
+		return nil
+	default:
+		return errors.New("invalid page role request log status, must be 1(pending) | 2(approved) | 3(rejected)")
+	}
+}
+
+type PageRoleRequestCreateInput struct {
+	PagePkID int64  `json:"page_pkid"`
+	Email    string `json:"email"`
+}
+
+type PageRoleRequestLogQuery struct {
+	PagePkIDs []int64
+	Status    []PageRoleRequestLogStatus
+	Emails    []string
 }

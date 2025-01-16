@@ -73,3 +73,12 @@ type UpdatePageRoleUserBody struct {
 type DeletePageRoleUserBody struct {
 	Email string `binding:"required" json:"email"`
 }
+
+type AcceptRequestPageAccess struct {
+	Email string          `binding:"required" json:"email"`
+	Role  domain.PageRole `binding:"required" json:"role"`
+}
+
+type RejectRequestPageAccess struct {
+	Emails []string `binding:"required" json:"emails,omitempty"`
+}

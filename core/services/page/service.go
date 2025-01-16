@@ -478,6 +478,10 @@ func (s *Service) AddPageRoleUser(
 	input domain.PageRoleCreateInput,
 	curUser *domain.User,
 ) (*domain.PageRoleUser, *domain.Error) {
+	if curUser == nil {
+		return nil, domain.ErrPermissionDenied
+	}
+
 	exisingPage, err := s.pageRepository.GetByID(
 		context.Background(),
 		"",
@@ -504,6 +508,7 @@ func (s *Service) AddPageRoleUser(
 		input.PagePkID,
 		input.Email,
 	)
+
 	if exisingPageRoleUser != nil {
 		return nil, domain.ErrExisitingPageRoleUser
 	}
@@ -658,4 +663,60 @@ func (s *Service) GetPageRolesByUser(ctx context.Context, pagePkID int64, user *
 		return nil
 	}
 	return &role.Role
+}
+
+func (s Service) RequestPagePermission(pageID string, Email string) *domain.Error {
+
+	page, pErr := s.pageRepository.GetByID(context.Background(), pageID, nil, domain.PageDetailOptions{})
+	if pErr != nil {
+		return pErr
+	}
+
+	_, err := s.pageRepository.CreatePageAccessRequest(context.Background(), domain.PageRoleRequestCreateInput{
+		PagePkID: page.PkID,
+		Email:    Email,
+	})
+	return err
+}
+
+func (s Service) ListRequestPagePermissions(pagePkID int64) ([]domain.PageRoleRequestLog, *domain.Error) {
+	return s.pageRepository.ListPageAccessRequestByPagePkID(context.Background(), domain.PageRoleRequestLogQuery{
+		PagePkIDs: []int64{pagePkID},
+		Status:    []domain.PageRoleRequestLogStatus{domain.PRSLPending},
+	})
+}
+
+func (s Service) RejectPagePermissions(pagePkID int64, emails []string) *domain.Error {
+	err1 := s.pageRepository.UpdatePageAccessRequestStatus(context.Background(), domain.PageRoleRequestLogQuery{
+		PagePkIDs: []int64{pagePkID},
+		Emails:    emails,
+	}, domain.PRSLRejected)
+
+	if err1 != nil {
+		return err1
+	}
+
+	// FIXME: Send Mail to notify request accepted
+	return nil
+}
+
+func (s Service) AcceptRequestPagePermission(input domain.PageRoleCreateInput, curUser *domain.User) *domain.Error {
+
+	_, err := s.AddPageRoleUser(input, curUser)
+
+	if err != nil {
+		return err
+	}
+
+	err1 := s.pageRepository.UpdatePageAccessRequestStatus(context.Background(), domain.PageRoleRequestLogQuery{
+		PagePkIDs: []int64{input.PagePkID},
+		Emails:    []string{input.Email},
+	}, domain.PRSLApproved)
+
+	if err1 != nil {
+		return err1
+	}
+
+	// FIXME: Send Mail to notify request accepted
+	return nil
 }
