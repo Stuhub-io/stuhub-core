@@ -86,6 +86,7 @@ func preloadPageResult(q *gorm.DB, option PreloadPageResultParams) *gorm.DB {
 	return q
 }
 
+// Alway include isAll -- to search for multiple (different parents).
 func buildPageQuery(
 	tx *gorm.DB,
 	q domain.PageListQuery,

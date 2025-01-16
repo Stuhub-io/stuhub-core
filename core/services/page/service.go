@@ -665,7 +665,7 @@ func (s *Service) GetPageRolesByUser(ctx context.Context, pagePkID int64, user *
 	return &role.Role
 }
 
-func (s Service) RequestPagePermission(pageID string, Email string) *domain.Error {
+func (s Service) RequestPagePermission(pageID string, email string) *domain.Error {
 
 	page, pErr := s.pageRepository.GetByID(context.Background(), pageID, nil, domain.PageDetailOptions{})
 	if pErr != nil {
@@ -674,8 +674,9 @@ func (s Service) RequestPagePermission(pageID string, Email string) *domain.Erro
 
 	_, err := s.pageRepository.CreatePageAccessRequest(context.Background(), domain.PageRoleRequestCreateInput{
 		PagePkID: page.PkID,
-		Email:    Email,
+		Email:    email,
 	})
+
 	return err
 }
 

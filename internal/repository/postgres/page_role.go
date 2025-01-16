@@ -389,33 +389,23 @@ func GetPermissionByRole(role domain.PageRole, isAuthenticated bool) (p domain.P
 }
 
 func (r *PageRepository) CreatePageAccessRequest(ctx context.Context, input domain.PageRoleRequestCreateInput) (*domain.PageRoleRequestLog, *domain.Error) {
-	tx, done := r.store.NewTransaction()
-	defer done(nil)
-
-	page := &model.Page{}
-
-	if err := buildPageQuery(tx.DB(), domain.PageListQuery{
-		PagePkIDs: []int64{input.PagePkID},
-	}).First(page).Error; err != nil {
-		return nil, done(err)
-	}
 
 	var UserPkID *int64
 	user := &model.User{}
 
-	if err := tx.DB().Where("email = ?", input.Email).First(user).Error; err == nil {
+	if err := r.store.DB().Where("email = ?", input.Email).First(user).Error; err == nil {
 		UserPkID = &user.Pkid
 	}
 
 	pageRoleRequest := model.PagePermissionRequestLog{
-		PagePkid: page.Pkid,
+		PagePkid: input.PagePkID,
 		Email:    input.Email,
 		Status:   domain.PRSLPending.String(),
 		UserPkid: UserPkID,
 	}
 
-	if err := tx.DB().Create(&pageRoleRequest).Error; err != nil {
-		return nil, done(err)
+	if err := r.store.DB().Create(&pageRoleRequest).Error; err != nil {
+		return nil, domain.NewErr(err.Error(), domain.InternalServerErrCode)
 	}
 
 	return pageutils.TransformPagePermissionRequestLogToDomain(pageutils.PagePermissionRequestLogToDomainParams{
