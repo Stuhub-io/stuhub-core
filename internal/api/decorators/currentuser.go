@@ -11,6 +11,7 @@ type HandlerWithCurrentUser func(*gin.Context, *domain.User)
 func CurrentUser(handler HandlerWithCurrentUser) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		currentUser, Ok := c.Keys[string(authutils.UserPayloadKey)].(*domain.User)
+
 		if !Ok {
 			handler(c, nil)
 			return

@@ -125,7 +125,7 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 			memberUser, err := s.userRepository.GetUserByEmail(context.Background(), info.Email)
 			if err != nil && err.Error == domain.NotFoundErr {
 				salt := s.hasher.GenerateSalt()
-				newUser, err := s.userRepository.GetOrCreateUserByEmail(context.Background(), info.Email, salt)
+				newUser, err, _ := s.userRepository.GetOrCreateUserByEmail(context.Background(), info.Email, salt)
 				if err != nil {
 					fmt.Printf("Failed to create new user: %s", info.Email)
 					return

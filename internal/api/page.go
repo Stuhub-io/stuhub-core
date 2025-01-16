@@ -78,6 +78,25 @@ func UsePageHandle(params NewPageHandlerParams) {
 		("/pages/:" + pageutils.PagePkIDParam + "/roles"),
 		decorators.CurrentUser(handler.DeletePageRoleUser),
 	)
+
+	// page role requests
+	router.POST(
+		("/pages/id/:" + pageutils.PageIDParam + "/role-requests"),
+		decorators.RequiredAuth(decorators.CurrentUser(handler.RequestPageAccess)),
+	)
+
+	router.GET(
+		("/pages/:" + pageutils.PagePkIDParam + "/role-requests"),
+		decorators.RequiredAuth(decorators.CurrentUser(handler.ListRequestPageAccesses)),
+	)
+	router.POST(
+		("/pages/:" + pageutils.PagePkIDParam + "/role-requests/accept"),
+		decorators.RequiredAuth(decorators.CurrentUser(handler.AcceptRequestPageAccess)),
+	)
+	router.POST(
+		("/pages/:" + pageutils.PagePkIDParam + "/role-requests/reject"),
+		decorators.RequiredAuth(decorators.CurrentUser(handler.RejectRequestPageAccesses)),
+	)
 }
 
 func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
@@ -373,10 +392,9 @@ func (h *PageHandler) AddPageRoleUser(c *gin.Context, user *domain.User) {
 	}
 
 	page, err := h.pageService.AddPageRoleUser(domain.PageRoleCreateInput{
-		CallerPkID: user.PkID,
-		PagePkID:   pagePkID,
-		Email:      body.Email,
-		Role:       body.Role,
+		PagePkID: pagePkID,
+		Email:    body.Email,
+		Role:     body.Role,
 	}, user)
 
 	if err != nil {
@@ -460,4 +478,86 @@ func (h *PageHandler) DeletePageRoleUser(c *gin.Context, user *domain.User) {
 	}
 
 	response.WithMessage(c, 200, "Role's deleted successfully!")
+}
+
+func (h *PageHandler) RequestPageAccess(c *gin.Context, user *domain.User) {
+	pageID, ok := pageutils.GetPageIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	er := h.pageService.RequestPagePermission(pageID, user.Email)
+
+	if er != nil {
+		response.WithErrorMessage(c, er.Code, er.Error, er.Message)
+		return
+	}
+
+	response.WithMessage(c, 200, "Request sent successfully!")
+}
+
+func (h *PageHandler) ListRequestPageAccesses(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	requests, err := h.pageService.ListRequestPagePermissions(pagePkID)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 200, requests)
+}
+
+func (h *PageHandler) AcceptRequestPageAccess(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	var body request.AcceptRequestPageAccess
+	if verr := request.Validate(c, &body); verr != nil {
+		response.BindError(c, verr.Error())
+		return
+	}
+	err := h.pageService.AcceptRequestPagePermission(domain.PageRoleCreateInput{
+		PagePkID: pagePkID,
+		Email:    body.Email,
+		Role:     body.Role,
+	}, user)
+
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithMessage(c, 200, "Request accepted successfully!")
+}
+
+func (h *PageHandler) RejectRequestPageAccesses(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	var body request.RejectRequestPageAccess
+	if verr := request.Validate(c, &body); verr != nil {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	err := h.pageService.RejectPagePermissions(pagePkID, body.Emails)
+
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithMessage(c, 200, "Request rejected successfully!")
 }

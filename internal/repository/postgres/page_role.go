@@ -9,7 +9,9 @@ import (
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/pageutils"
 	sliceutils "github.com/Stuhub-io/utils/slice"
+	"github.com/Stuhub-io/utils/userutils"
 	"golang.org/x/exp/slices"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -308,6 +310,19 @@ func (r *PageRepository) GetPagesRole(
 	return resultRoles, nil
 }
 
+func (r *PageRepository) SyncPageRoleWithNewUser(
+	ctx context.Context,
+	user domain.User,
+) *domain.Error {
+	// Update User PkID in Page Roles
+	if err := buildQueryPageRoles(r.store.DB(), queryPageRolesParams{
+		Emails: []string{user.Email},
+	}).Model(&model.PageRole{}).Update("user_pkid", user.PkID).Error; err != nil {
+		return domain.ErrDatabaseMutation
+	}
+	return nil
+}
+
 func (r *PageRepository) CheckPermission(
 	ctx context.Context,
 	input domain.PageRolePermissionCheckInput,
@@ -373,13 +388,105 @@ func GetPermissionByRole(role domain.PageRole, isAuthenticated bool) (p domain.P
 	return p
 }
 
-func (r *PageRepository) GetPermission(
-	ctx context.Context,
-	page domain.Page,
-	user *domain.User,
-) domain.PageRolePermissions {
-	return r.CheckPermission(ctx, domain.PageRolePermissionCheckInput{
-		User: user,
-		Page: page,
-	})
+func (r *PageRepository) CreatePageAccessRequest(ctx context.Context, input domain.PageRoleRequestCreateInput) (*domain.PageRoleRequestLog, *domain.Error) {
+	tx, done := r.store.NewTransaction()
+	defer done(nil)
+
+	page := &model.Page{}
+
+	if err := buildPageQuery(tx.DB(), domain.PageListQuery{
+		PagePkIDs: []int64{input.PagePkID},
+	}).First(page).Error; err != nil {
+		return nil, done(err)
+	}
+
+	var UserPkID *int64
+	user := &model.User{}
+
+	if err := tx.DB().Where("email = ?", input.Email).First(user).Error; err == nil {
+		UserPkID = &user.Pkid
+	}
+
+	pageRoleRequest := model.PagePermissionRequestLog{
+		PagePkid: page.Pkid,
+		Email:    input.Email,
+		Status:   domain.PRSLPending.String(),
+		UserPkid: UserPkID,
+	}
+
+	if err := tx.DB().Create(&pageRoleRequest).Error; err != nil {
+		return nil, done(err)
+	}
+
+	return pageutils.TransformPagePermissionRequestLogToDomain(pageutils.PagePermissionRequestLogToDomainParams{
+		Model: &pageRoleRequest,
+	}), nil
+}
+
+type PageRoleRequestLogResults struct {
+	model.PagePermissionRequestLog
+	User *model.User `gorm:"foreignKey:user_pkid"`
+}
+
+func (r *PageRepository) ListPageAccessRequestByPagePkID(ctx context.Context, q domain.PageRoleRequestLogQuery) ([]domain.PageRoleRequestLog, *domain.Error) {
+	// Write build query + preload utils for this
+	requests := []PageRoleRequestLogResults{}
+
+	query := buildPageAccessRequestQuery(r.store.DB().Preload("User"), q)
+
+	if err := query.Order("created_at desc").Find(&requests).Error; err != nil {
+		return nil, domain.ErrDatabaseQuery
+	}
+	// Remove Duplicate Requests, get latest request
+
+	listedEmail := make(map[string]bool, len(requests))
+	p := sliceutils.Map(
+		sliceutils.Filter(requests, func(r PageRoleRequestLogResults) bool {
+			if _, ok := listedEmail[r.Email]; ok {
+				return false
+			}
+			listedEmail[r.Email] = true
+			return true
+		}),
+		func(r PageRoleRequestLogResults) domain.PageRoleRequestLog {
+			return *pageutils.TransformPagePermissionRequestLogToDomain(pageutils.PagePermissionRequestLogToDomainParams{
+				Model: &r.PagePermissionRequestLog,
+				User:  userutils.TransformUserModelToDomain(r.User),
+			})
+		})
+	return p, nil
+}
+
+func (r *PageRepository) UpdatePageAccessRequestStatus(ctx context.Context, q domain.PageRoleRequestLogQuery, status domain.PageRoleRequestLogStatus) *domain.Error {
+	query := buildPageAccessRequestQuery(r.store.DB().Model(&PageRoleRequestLogResults{}), q)
+	if err := query.Update("status", status.String()).Error; err != nil {
+		return domain.ErrDatabaseMutation
+	}
+	return nil
+}
+
+func buildPageAccessRequestQuery(tx *gorm.DB, q domain.PageRoleRequestLogQuery) *gorm.DB {
+	query := tx
+
+	if len(q.PagePkIDs) != 0 {
+		if len(q.PagePkIDs) == 1 {
+			query = query.Where("page_pkid = ?", q.PagePkIDs[0])
+		} else {
+			query = query.Where("page_pkid IN ?", q.PagePkIDs)
+		}
+	}
+
+	if len(q.Status) != 0 {
+		query = query.Where("status IN ?", q.Status)
+	}
+
+	if len(q.Emails) != 0 {
+		if len(q.Emails) == 1 {
+			query = query.Where("email = ?", q.Emails)
+		} else {
+			query = query.Where("email IN ?", q.Emails)
+		}
+	}
+
+	return query
 }

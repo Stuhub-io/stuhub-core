@@ -137,6 +137,7 @@ func main() {
 	authService := auth.NewService(auth.NewServiceParams{
 		Config:         cfg,
 		UserRepository: userRepository,
+		PageRepository: pageRepository,
 		OauthService:   oauthService,
 		TokenMaker:     tokenMaker,
 		Mailer:         mailer,

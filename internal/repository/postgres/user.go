@@ -85,12 +85,13 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 	return userutils.TransformUserModelToDomain(&user), nil
 }
 
-func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email string, salt string) (*domain.User, *domain.Error) {
+func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email string, salt string) (*domain.User, *domain.Error, bool) {
 	var user model.User
 	err := r.store.DB().Where("email = ?", email).First(&user).Error
+	created := false
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, domain.ErrDatabaseQuery
+			return nil, domain.ErrDatabaseQuery, false
 		}
 
 		user = model.User{
@@ -99,12 +100,13 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 		}
 
 		err = r.store.DB().Create(&user).Error
+		created = true
 		if err != nil {
-			return nil, domain.ErrDatabaseQuery
+			return nil, domain.ErrDatabaseQuery, false
 		}
 	}
 
-	return userutils.TransformUserModelToDomain(&user), nil
+	return userutils.TransformUserModelToDomain(&user), nil, created
 }
 
 func (r *UserRepository) CreateUserWithGoogleInfo(ctx context.Context, email, salt, firstName, lastName, avatar string) (*domain.User, *domain.Error) {

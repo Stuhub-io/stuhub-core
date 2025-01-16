@@ -243,3 +243,26 @@ func TransformPageAccessLogsResultToDomain(result PageAccessLogsResult) domain.P
 		LastAccessed: result.LastAccessed.String(),
 	}
 }
+
+type PagePermissionRequestLogToDomainParams struct {
+	Model *model.PagePermissionRequestLog
+	User  *domain.User
+}
+
+func TransformPagePermissionRequestLogToDomain(params PagePermissionRequestLogToDomainParams) *domain.PageRoleRequestLog {
+	if params.Model == nil {
+		return nil
+	}
+
+	model := params.Model
+	user := params.User
+
+	return &domain.PageRoleRequestLog{
+		PkID:     model.Pkid,
+		PagePkID: model.PagePkid,
+		UserPkID: model.UserPkid,
+		Status:   domain.PRSLFromString(model.Status),
+		Email:    model.Email,
+		User:     user,
+	}
+}

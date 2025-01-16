@@ -101,7 +101,7 @@ func (r *PageAccessLogRepository) GetByUserPKID(
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	var accessLogs []domain.PageAccessLog
+	accessLogs := make([]domain.PageAccessLog, 0, len(result))
 	for _, row := range result {
 		accessLogs = append(accessLogs, pageutils.TransformPageAccessLogsResultToDomain(row))
 	}
@@ -117,7 +117,7 @@ func (r *PageAccessLogRepository) Upsert(
 ) (int64, *domain.Error) {
 	logModel := model.PageAccessLog{
 		PagePkid: pagePkID,
-		UserPkid: userPkID,
+		UserPkid: &userPkID,
 		Action:   action.String(),
 	}
 	if err := r.store.DB().Clauses(clause.OnConflict{

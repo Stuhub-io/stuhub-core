@@ -12,6 +12,7 @@ import (
 
 type Service struct {
 	userRepository ports.UserRepository
+	pageRepository ports.PageRepository
 	oauthService   ports.OauthService
 	mailer         ports.Mailer
 	tokenMaker     ports.TokenMaker
@@ -22,6 +23,7 @@ type Service struct {
 
 type NewServiceParams struct {
 	ports.UserRepository
+	ports.PageRepository
 	ports.OauthService
 	ports.Mailer
 	ports.TokenMaker
@@ -39,15 +41,21 @@ func NewService(params NewServiceParams) *Service {
 		config:         params.Config,
 		remoteRoute:    params.RemoteRoute,
 		hasher:         params.Hasher,
+		pageRepository: params.PageRepository,
 	}
 }
 
 // Send Magic Link if User not set password.
 func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEmailStepOneResp, *domain.Error) {
 	email := dto.Email
-	user, err := s.userRepository.GetOrCreateUserByEmail(context.Background(), email, s.hasher.GenerateSalt())
+	user, err, created := s.userRepository.GetOrCreateUserByEmail(context.Background(), email, s.hasher.GenerateSalt())
+
 	if err != nil {
 		return nil, err
+	}
+
+	if created {
+		go s.pageRepository.SyncPageRoleWithNewUser(context.Background(), *user)
 	}
 
 	// User can auth with Password
@@ -236,9 +244,12 @@ func (s *Service) AuthenUserByGoogle(dto AuthenByGoogleDto) (*AuthenByGoogleResp
 	if err != nil && err.Error == domain.NotFoundErr {
 		salt := s.hasher.GenerateSalt()
 		newUser, err := s.userRepository.CreateUserWithGoogleInfo(context.Background(), userInfo.Email, salt, userInfo.FirstName, userInfo.LastName, userInfo.Avatar)
+
 		if err != nil {
 			return nil, err
 		}
+
+		go s.pageRepository.SyncPageRoleWithNewUser(context.Background(), *newUser)
 
 		user = newUser
 	} else if err != nil {
