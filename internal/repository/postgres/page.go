@@ -9,6 +9,7 @@ import (
 	"github.com/Stuhub-io/core/domain"
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
+	"github.com/Stuhub-io/utils/organizationutils"
 	"github.com/Stuhub-io/utils/pageutils"
 	sliceutils "github.com/Stuhub-io/utils/slice"
 	"github.com/Stuhub-io/utils/userutils"
@@ -261,9 +262,10 @@ func (r *PageRepository) GetByID(
 	var page PageResult
 
 	query := preloadPageResult(r.store.DB().Model(&page), PreloadPageResultParams{
-		Asset:  detailOption.Asset,
-		Doc:    detailOption.Document,
-		Author: detailOption.Author,
+		Asset:        detailOption.Asset,
+		Doc:          detailOption.Document,
+		Author:       detailOption.Author,
+		Organization: detailOption.Organization,
 	})
 
 	if pageID == "" && pagePkID == nil {
@@ -301,9 +303,10 @@ func (r *PageRepository) GetByID(
 		pageutils.PageModelToDomainParams{
 			Page: &page.Page,
 			PageBody: pageutils.PageBodyParams{
-				Document: pageutils.TransformDocModelToDomain(page.Doc),
-				Asset:    pageutils.TransformAssetModalToDomain(page.Asset),
-				Author:   userutils.TransformUserModelToDomain(page.Author),
+				Document:     pageutils.TransformDocModelToDomain(page.Doc),
+				Asset:        pageutils.TransformAssetModalToDomain(page.Asset),
+				Author:       userutils.TransformUserModelToDomain(page.Author),
+				Organization: organizationutils.TransformOrganizationModelToDomain_Plain(page.Organization),
 			},
 			InheritFromPage: pageutils.TransformPageModelToDomain(
 				pageutils.PageModelToDomainParams{

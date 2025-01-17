@@ -3,7 +3,6 @@ package mailer
 import (
 	"fmt"
 	"html/template"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -16,29 +15,50 @@ import (
 )
 
 type Mailer struct {
+	from      string
 	address   string
+	endpoint  string
+	host      string
 	clientKey string
 	logger    logger.Logger
 }
 
 type NewMailerParams struct {
+	From      string
 	Address   string
 	ClientKey string
 	Logger    logger.Logger
 }
 
+func (m *Mailer) addEndpoint(endpoint string) *Mailer {
+	m.endpoint = endpoint
+	return m
+}
+
+func (m *Mailer) addHost(host string) *Mailer {
+	m.host = host
+	return m
+}
+
 func NewMailer(params NewMailerParams) ports.Mailer {
 	return &Mailer{
+		from:      params.From,
 		address:   params.Address,
+		endpoint:  "/v3/mail/send",
+		host:      "https://api.sendgrid.com",
 		clientKey: params.ClientKey,
 		logger:    params.Logger,
 	}
 }
 
 func (m *Mailer) SendMail(payload ports.SendSendGridMailPayload) *domain.Error {
+	from := m.from
+	if payload.FromName != nil {
+		from = *payload.FromName
+	}
+
 	v3Mail := mail.NewV3Mail()
-	from := mail.NewEmail(payload.FromName, m.address)
-	v3Mail.SetFrom(from)
+	v3Mail.SetFrom(mail.NewEmail(from, m.address))
 	v3Mail.SetTemplateID(payload.TemplateId)
 	v3Mail.Subject = payload.Subject
 
@@ -50,9 +70,9 @@ func (m *Mailer) SendMail(payload ports.SendSendGridMailPayload) *domain.Error {
 	v3Mail.AddPersonalizations(p)
 
 	request := sendgrid.GetRequest(
-		os.Getenv("SENDGRID_API_KEY"),
-		"/v3/mail/send",
-		"https://api.sendgrid.com",
+		m.clientKey,
+		m.endpoint,
+		m.host,
 	)
 	request.Method = "POST"
 	request.Body = mail.GetRequestBody(v3Mail)
@@ -68,9 +88,13 @@ func (m *Mailer) SendMail(payload ports.SendSendGridMailPayload) *domain.Error {
 func (m *Mailer) SendMailCustomTemplate(
 	payload ports.SendSendGridMailCustomTemplatePayload,
 ) *domain.Error {
+	from := m.from
+	if payload.FromName != nil {
+		from = *payload.FromName
+	}
+
 	v3Mail := mail.NewV3Mail()
-	from := mail.NewEmail(payload.FromName, m.address)
-	v3Mail.SetFrom(from)
+	v3Mail.SetFrom(mail.NewEmail(from, m.address))
 	v3Mail.Subject = payload.Subject
 
 	htmlContent, perr := m.parseHTMLTemplateFile(payload.TemplateHTMLName, payload.Data)
@@ -89,9 +113,9 @@ func (m *Mailer) SendMailCustomTemplate(
 	v3Mail.AddPersonalizations(p)
 
 	request := sendgrid.GetRequest(
-		os.Getenv("SENDGRID_API_KEY"),
-		"/v3/mail/send",
-		"https://api.sendgrid.com",
+		m.clientKey,
+		m.endpoint,
+		m.host,
 	)
 	request.Method = "POST"
 	request.Body = mail.GetRequestBody(v3Mail)
@@ -100,7 +124,9 @@ func (m *Mailer) SendMailCustomTemplate(
 		m.logger.Error(err, err.Error())
 		return domain.ErrSendMail
 	}
+
 	logger.L.Debug("Email sent successfully: " + resp.Body)
+
 	return nil
 }
 

@@ -2,6 +2,7 @@ package page
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
@@ -482,11 +483,13 @@ func (s *Service) AddPageRoleUser(
 		return nil, domain.ErrPermissionDenied
 	}
 
-	exisingPage, err := s.pageRepository.GetByID(
+	existingPage, err := s.pageRepository.GetByID(
 		context.Background(),
 		"",
 		&input.PagePkID,
-		domain.PageDetailOptions{},
+		domain.PageDetailOptions{
+			Organization: true,
+		},
 	)
 	if err != nil {
 		return nil, err
@@ -494,7 +497,7 @@ func (s *Service) AddPageRoleUser(
 
 	curRole := s.GetPageRolesByUser(context.Background(), input.PagePkID, curUser)
 	permissions := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-		Page:     *exisingPage,
+		Page:     *existingPage,
 		User:     curUser,
 		PageRole: curRole,
 	})
@@ -519,7 +522,6 @@ func (s *Service) AddPageRoleUser(
 	}
 
 	err = s.mailer.SendMailCustomTemplate(ports.SendSendGridMailCustomTemplatePayload{
-		FromName: "Stuhub.IO",
 		ToName: userutils.GetUserFullName(
 			pageRoleUser.User.FirstName,
 			pageRoleUser.User.LastName,
@@ -527,7 +529,11 @@ func (s *Service) AddPageRoleUser(
 		ToAddress:        pageRoleUser.User.Email,
 		TemplateHTMLName: "share_people",
 		Data: map[string]string{
-			"url": pageRoleUser.Role.String(), // TODO: build share link
+			"sender": userutils.GetUserFullName(
+				curUser.FirstName,
+				curUser.LastName,
+			),
+			"url": fmt.Sprintf("%s/%s/%s", s.cfg.RemoteBaseURL, existingPage.Organization.Slug, existingPage.ID),
 		},
 		Subject: "Share with you",
 	})

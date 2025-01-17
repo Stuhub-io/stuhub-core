@@ -3,7 +3,7 @@ package ports
 import "github.com/Stuhub-io/core/domain"
 
 type SendSendGridMailPayload struct {
-	FromName   string
+	FromName   *string
 	ToName     string
 	ToAddress  string
 	TemplateId string
@@ -13,7 +13,7 @@ type SendSendGridMailPayload struct {
 }
 
 type SendSendGridMailCustomTemplatePayload struct {
-	FromName         string
+	FromName         *string
 	ToName           string
 	ToAddress        string
 	TemplateHTMLName string

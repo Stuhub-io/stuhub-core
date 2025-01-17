@@ -83,6 +83,7 @@ func main() {
 	hasher := hasher.NewScrypt([]byte(cfg.HashPwSecretKey))
 
 	mailer := mailer.NewMailer(mailer.NewMailerParams{
+		From:      "Stuhub.IO",
 		Address:   cfg.SendgridEmailFrom,
 		ClientKey: cfg.SendgridKey,
 		Logger:    logger,

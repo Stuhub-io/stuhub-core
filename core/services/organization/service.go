@@ -150,8 +150,9 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 				return
 			}
 
+			fromName := fmt.Sprintf("%s via Stuhub", ownerFullName)
 			err = s.mailer.SendMail(ports.SendSendGridMailPayload{
-				FromName:   ownerFullName + " via Stuhub",
+				FromName:   &fromName,
 				ToName:     "",
 				ToAddress:  info.Email,
 				TemplateId: s.cfg.SendgridOrgInvitationTemplateId,

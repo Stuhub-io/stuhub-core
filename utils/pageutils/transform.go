@@ -30,9 +30,10 @@ func TransformDocModelToDomain(doc *model.Document) *domain.Document {
 }
 
 type PageBodyParams struct {
-	Document *domain.Document
-	Asset    *domain.Asset
-	Author   *domain.User
+	Document     *domain.Document
+	Asset        *domain.Asset
+	Author       *domain.User
+	Organization *domain.Organization
 }
 
 type PageModelToDomainParams struct {
@@ -84,6 +85,7 @@ func TransformPageModelToDomain(
 		Path:             model.Path,
 		GeneralRole:      domain.PageRoleFromString(model.GeneralRole),
 		Author:           pageBody.Author,
+		Organization:     pageBody.Organization,
 		InheritFromPage:  inheritFromPage,
 		Permissions:      Permissions,
 		ParentPage:       params.ParentPage,
