@@ -157,6 +157,7 @@ func main() {
 	})
 	pageService := page.NewService(page.NewServiceParams{
 		Config:                  cfg,
+		Logger:                  logger,
 		PageRepository:          pageRepository,
 		PageAccessLogRepository: pageAccessLogsRepository,
 		Mailer:                  mailer,

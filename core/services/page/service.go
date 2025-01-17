@@ -7,12 +7,14 @@ import (
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
+	"github.com/Stuhub-io/logger"
 	"github.com/Stuhub-io/utils/pageutils"
 	"github.com/Stuhub-io/utils/userutils"
 )
 
 type Service struct {
 	cfg                     config.Config
+	logger                  logger.Logger
 	pageRepository          ports.PageRepository
 	pageAccessLogRepository ports.PageAccessLogRepository
 	orgRepository           ports.OrganizationRepository
@@ -21,6 +23,7 @@ type Service struct {
 
 type NewServiceParams struct {
 	config.Config
+	logger.Logger
 	ports.PageRepository
 	ports.PageAccessLogRepository
 	ports.OrganizationRepository
@@ -30,6 +33,7 @@ type NewServiceParams struct {
 func NewService(params NewServiceParams) *Service {
 	return &Service{
 		cfg:                     params.Config,
+		logger:                  params.Logger,
 		pageRepository:          params.PageRepository,
 		pageAccessLogRepository: params.PageAccessLogRepository,
 		mailer:                  params.Mailer,
@@ -325,7 +329,6 @@ func (s *Service) CreateDocumentPage(
 	pageInput domain.DocumentPageInput,
 	curUser *domain.User,
 ) (*domain.Page, *domain.Error) {
-
 	parentPagePkID := pageInput.ParentPagePkID
 	if parentPagePkID != nil {
 		parentPage, err := s.pageRepository.GetByID(
@@ -478,9 +481,9 @@ func (s *Service) CreateAssetPage(
 func (s *Service) AddPageRoleUser(
 	input domain.PageRoleCreateInput,
 	curUser *domain.User,
-) (*domain.PageRoleUser, *domain.Error) {
+) (*domain.PageRoleUser, *domain.Page, *domain.Error) {
 	if curUser == nil {
-		return nil, domain.ErrPermissionDenied
+		return nil, nil, domain.ErrPermissionDenied
 	}
 
 	existingPage, err := s.pageRepository.GetByID(
@@ -492,7 +495,7 @@ func (s *Service) AddPageRoleUser(
 		},
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	curRole := s.GetPageRolesByUser(context.Background(), input.PagePkID, curUser)
@@ -503,7 +506,7 @@ func (s *Service) AddPageRoleUser(
 	})
 
 	if !permissions.CanShare {
-		return nil, domain.ErrPermissionDenied
+		return nil, nil, domain.ErrPermissionDenied
 	}
 
 	exisingPageRoleUser, _ := s.pageRepository.GetPageRoleByEmail(
@@ -513,12 +516,12 @@ func (s *Service) AddPageRoleUser(
 	)
 
 	if exisingPageRoleUser != nil {
-		return nil, domain.ErrExisitingPageRoleUser
+		return nil, nil, domain.ErrExisitingPageRoleUser
 	}
 
 	pageRoleUser, err := s.pageRepository.CreatePageRole(context.Background(), input)
 	if err != nil {
-		return nil, domain.ErrDatabaseMutation
+		return nil, nil, domain.ErrDatabaseMutation
 	}
 
 	err = s.mailer.SendMailCustomTemplate(ports.SendSendGridMailCustomTemplatePayload{
@@ -538,10 +541,10 @@ func (s *Service) AddPageRoleUser(
 		Subject: "Share with you",
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return pageRoleUser, nil
+	return pageRoleUser, existingPage, nil
 }
 
 func (s *Service) GetPageRoleUsers(
@@ -626,8 +629,7 @@ func (s *Service) DeletePageRoleUser(
 	input domain.PageRoleDeleteInput,
 	curUser *domain.User,
 ) *domain.Error {
-
-	exisingPage, err := s.pageRepository.GetByID(
+	existingPage, err := s.pageRepository.GetByID(
 		context.Background(),
 		"",
 		&input.PagePkID,
@@ -639,7 +641,7 @@ func (s *Service) DeletePageRoleUser(
 
 	curRole := s.GetPageRolesByUser(context.Background(), input.PagePkID, curUser)
 	permissions := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-		Page:     *exisingPage,
+		Page:     *existingPage,
 		User:     curUser,
 		PageRole: curRole,
 	})
@@ -672,7 +674,6 @@ func (s *Service) GetPageRolesByUser(ctx context.Context, pagePkID int64, user *
 }
 
 func (s Service) RequestPagePermission(pageID string, email string) *domain.Error {
-
 	page, pErr := s.pageRepository.GetByID(context.Background(), pageID, nil, domain.PageDetailOptions{})
 	if pErr != nil {
 		return pErr
@@ -694,36 +695,80 @@ func (s Service) ListRequestPagePermissions(pagePkID int64) ([]domain.PageRoleRe
 }
 
 func (s Service) RejectPagePermissions(pagePkID int64, emails []string) *domain.Error {
-	err1 := s.pageRepository.UpdatePageAccessRequestStatus(context.Background(), domain.PageRoleRequestLogQuery{
+	existingPage, err := s.pageRepository.GetByID(
+		context.Background(),
+		"",
+		&pagePkID,
+		domain.PageDetailOptions{},
+	)
+	if err != nil {
+		return err
+	}
+
+	err = s.pageRepository.UpdatePageAccessRequestStatus(context.Background(), domain.PageRoleRequestLogQuery{
 		PagePkIDs: []int64{pagePkID},
 		Emails:    emails,
 	}, domain.PRSLRejected)
-
-	if err1 != nil {
-		return err1
-	}
-
-	// FIXME: Send Mail to notify request accepted
-	return nil
-}
-
-func (s Service) AcceptRequestPagePermission(input domain.PageRoleCreateInput, curUser *domain.User) *domain.Error {
-
-	_, err := s.AddPageRoleUser(input, curUser)
 
 	if err != nil {
 		return err
 	}
 
-	err1 := s.pageRepository.UpdatePageAccessRequestStatus(context.Background(), domain.PageRoleRequestLogQuery{
+	for _, email := range emails {
+		go func(email string) {
+			err = s.mailer.SendMailCustomTemplate(ports.SendSendGridMailCustomTemplatePayload{
+				ToName:           email,
+				ToAddress:        email,
+				TemplateHTMLName: "share_request_rejected",
+				Data: map[string]string{
+					"page": existingPage.Name,
+				},
+				Subject: "Access request reply",
+			})
+			if err != nil {
+				s.logger.Info(err.Message)
+			}
+		}(email)
+	}
+
+	return nil
+}
+
+func (s Service) AcceptRequestPagePermission(input domain.PageRoleCreateInput, curUser *domain.User) *domain.Error {
+	_, pageDetails, err := s.AddPageRoleUser(input, curUser)
+	if err != nil {
+		return err
+	}
+
+	err = s.pageRepository.UpdatePageAccessRequestStatus(context.Background(), domain.PageRoleRequestLogQuery{
 		PagePkIDs: []int64{input.PagePkID},
 		Emails:    []string{input.Email},
 	}, domain.PRSLApproved)
 
-	if err1 != nil {
-		return err1
+	if err != nil {
+		return err
 	}
 
-	// FIXME: Send Mail to notify request accepted
+	err = s.mailer.SendMailCustomTemplate(ports.SendSendGridMailCustomTemplatePayload{
+		ToName: userutils.GetUserFullName(
+			curUser.FirstName,
+			curUser.LastName,
+		),
+		ToAddress:        input.Email,
+		TemplateHTMLName: "share_request_accepted",
+		Data: map[string]string{
+			"page": pageDetails.Name,
+			"sender": userutils.GetUserFullName(
+				curUser.FirstName,
+				curUser.LastName,
+			),
+			"url": fmt.Sprintf("%s/%s/%s", s.cfg.RemoteBaseURL, pageDetails.Organization.Slug, pageDetails.ID),
+		},
+		Subject: "Access request reply",
+	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
