@@ -1,6 +1,8 @@
 package api
 
 import (
+	"time"
+
 	"github.com/Stuhub-io/core/domain"
 	pageAccessLog "github.com/Stuhub-io/core/services/page_access_log"
 	"github.com/Stuhub-io/internal/api/decorators"
@@ -34,8 +36,8 @@ func UsePageAccessLogHandler(params NewPageAccessLogHandlerParams) {
 
 func (h *PageAccessLogHandler) GetLogsList(c *gin.Context, user *domain.User) {
 	var queryParams struct {
-		Offset int `binding:"omitempty,gte=0" form:"offset"`
-		Limit  int `binding:"omitempty,gt=0"  form:"limit"`
+		Cursor *time.Time `binding:"omitempty" form:"cursor"`
+		Limit  int        `binding:"omitempty,gt=0"  form:"limit"`
 	}
 
 	if err := c.ShouldBindQuery(&queryParams); err != nil {
@@ -43,18 +45,29 @@ func (h *PageAccessLogHandler) GetLogsList(c *gin.Context, user *domain.User) {
 		return
 	}
 
+	var cursor time.Time
+	if queryParams.Cursor.IsZero() {
+		cursor = time.Now()
+	} else {
+		cursor = *queryParams.Cursor
+	}
+
 	if queryParams.Limit == 0 {
 		queryParams.Limit = 20
 	}
 
-	logs, err := h.PageAccessLogService.GetLogsByUser(domain.OffsetBasedPagination{
-		Offset: queryParams.Offset,
+	cursorPagination := domain.CursorPagination[time.Time]{
+		Cursor: cursor,
 		Limit:  queryParams.Limit,
-	}, user)
+	}
+	logs, nextCursor, err := h.PageAccessLogService.GetLogsByUser(cursorPagination, user)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
 	}
 
-	response.WithData(c, 200, logs)
+	response.WithCursorPagination(c, 200, logs, domain.CursorPagination[*time.Time]{
+		NextCursor: nextCursor,
+		Limit:      queryParams.Limit,
+	})
 }

@@ -60,6 +60,24 @@ func TransformOrganizationModelToDomain(model OrganizationWithMembers) *domain.O
 	}
 }
 
+func TransformOrganizationModelToDomain_Plain(model *model.Organization) *domain.Organization {
+	if model == nil {
+		return nil
+	}
+
+	return &domain.Organization{
+		ID:          model.ID,
+		PkId:        model.Pkid,
+		OwnerID:     model.OwnerID,
+		Name:        model.Name,
+		Slug:        model.Slug,
+		Description: model.Description,
+		Avatar:      model.Avatar,
+		CreatedAt:   model.CreatedAt.String(),
+		UpdatedAt:   model.UpdatedAt.String(),
+	}
+}
+
 func TransformOrganizationModelToDomain_Many(models []OrganizationWithMembers) []*domain.Organization {
 	domainOrgs := make([]*domain.Organization, 0, len(models))
 	for _, org := range models {

@@ -148,9 +148,10 @@ func PageViewFromString(val string) PageViewType {
 }
 
 type PageDetailOptions struct {
-	Document bool `json:"document"`
-	Asset    bool `json:"asset"`
-	Author   bool `json:"author"`
+	Document     bool `json:"document"`
+	Asset        bool `json:"asset"`
+	Author       bool `json:"author"`
+	Organization bool `json:"organization"`
 }
 
 type PageRole int
