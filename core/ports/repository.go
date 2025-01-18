@@ -195,7 +195,7 @@ type OrganizationInviteRepository interface {
 type PageAccessLogRepository interface {
 	GetByUserPKID(
 		ctx context.Context,
-		query domain.OffsetBasedPagination,
+		query domain.CursorPagination[time.Time],
 		userPkID int64,
 	) ([]domain.PageAccessLog, *domain.Error)
 	Upsert(

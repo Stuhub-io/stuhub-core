@@ -4,6 +4,7 @@ import (
 	"context"
 	"slices"
 	"sort"
+	"time"
 
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
@@ -29,10 +30,15 @@ func NewService(params NewServiceParams) *Service {
 }
 
 func (s *Service) GetLogsByUser(
-	query domain.OffsetBasedPagination,
+	query domain.CursorPagination[time.Time],
 	user *domain.User,
-) ([]domain.PageAccessLog, *domain.Error) {
+) ([]domain.PageAccessLog, *time.Time, *domain.Error) {
 	logs, err := s.pageAccessLogRepository.GetByUserPKID(context.Background(), query, user.PkID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	nextCursor := domain.CalculateNextCursor[domain.PageAccessLog, time.Time](query.Limit, logs, "LastAccessed")
 
 	flatPages := sliceutils.FlatMap(logs, func(log domain.PageAccessLog) []domain.Page {
 		return append(log.ParentPages, log.Page)
@@ -129,5 +135,5 @@ func (s *Service) GetLogsByUser(
 		})
 	}
 
-	return logs, err
+	return logs, nextCursor, err
 }

@@ -25,12 +25,12 @@ type DataResponse struct {
 	Data    any    `json:"data"`
 }
 
-type PaginationResponse struct {
-	Status     string            `json:"status"`
-	Code       int               `json:"code"`
-	Message    string            `json:"message,omitempty"`
-	Data       any               `json:"data"`
-	Pagination domain.Pagination `json:"pagination"`
+type PaginationResponse[T any] struct {
+	Status     string `json:"status"`
+	Code       int    `json:"code"`
+	Message    string `json:"message,omitempty"`
+	Data       any    `json:"data"`
+	Pagination T      `json:"pagination"`
 }
 
 const (
@@ -60,7 +60,19 @@ func WithData(c *gin.Context, code int, data any, message ...string) {
 func WithPagination(c *gin.Context, code int, data any, pagination domain.Pagination, message ...string) {
 	msg := getMessage("", message...)
 
-	c.JSON(code, &PaginationResponse{
+	c.JSON(code, &PaginationResponse[domain.Pagination]{
+		Status:     StatusSuccess,
+		Code:       code,
+		Message:    msg,
+		Data:       data,
+		Pagination: pagination,
+	})
+}
+
+func WithCursorPagination[K domain.Cursor](c *gin.Context, code int, data any, pagination domain.CursorPagination[K], message ...string) {
+	msg := getMessage("", message...)
+
+	c.JSON(code, &PaginationResponse[domain.CursorPagination[K]]{
 		Status:     StatusSuccess,
 		Code:       code,
 		Message:    msg,

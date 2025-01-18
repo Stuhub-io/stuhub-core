@@ -242,7 +242,7 @@ func TransformPageAccessLogsResultToDomain(result PageAccessLogsResult) domain.P
 				},
 			}
 		}),
-		LastAccessed: result.LastAccessed.String(),
+		LastAccessed: result.LastAccessed,
 	}
 }
 

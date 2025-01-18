@@ -1,6 +1,7 @@
 package commonutils
 
 import (
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -55,4 +56,18 @@ func Filter[T any](slice []T, test func(T) bool) []T {
 		}
 	}
 	return result
+}
+
+func IsIntegerType(field reflect.Value) bool {
+	// Check for signed integers
+	if field.Kind() == reflect.Int || field.Kind() == reflect.Int8 || field.Kind() == reflect.Int16 ||
+		field.Kind() == reflect.Int32 || field.Kind() == reflect.Int64 {
+		return true
+	}
+	// Check for unsigned integers
+	if field.Kind() == reflect.Uint || field.Kind() == reflect.Uint8 || field.Kind() == reflect.Uint16 ||
+		field.Kind() == reflect.Uint32 || field.Kind() == reflect.Uint64 {
+		return true
+	}
+	return false
 }
