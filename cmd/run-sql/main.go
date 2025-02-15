@@ -31,6 +31,6 @@ func main() {
 	cacheStore := cache.NewCacheStore(tempCache)
 
 	dbStore := store.NewDBStore(postgresDB, cacheStore)
-	dbStore.DB().Exec("ALTER TABLE page_permission_request_log ALTER COLUMN user_pkid DROP NOT NULL;")
+	dbStore.DB().Exec("CREATE UNIQUE INDEX unique_user_page_idx ON page_star (user_pkid, page_pkid);")
 	fmt.Print("done")
 }

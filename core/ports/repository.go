@@ -99,6 +99,7 @@ type PageRepository interface {
 		pageID string,
 		pagePkID *int64,
 		detailOption domain.PageDetailOptions,
+		actorPkID *int64,
 	) (*domain.Page, *domain.Error)
 	Archive(ctx context.Context, pagePkID int64) (*domain.Page, *domain.Error)
 	UpdateGeneralAccess(
@@ -177,6 +178,10 @@ type PageRepository interface {
 		q domain.PageRoleRequestLogQuery,
 		status domain.PageRoleRequestLogStatus,
 	) *domain.Error
+
+	// Page Star
+	StarPage(ctx context.Context, input domain.StarPageInput) (*domain.PageStar, *domain.Error)
+	UnstarPage(ctx context.Context, input domain.StarPageInput) *domain.Error
 }
 
 type OrganizationInviteRepository interface {

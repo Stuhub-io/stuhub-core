@@ -41,23 +41,23 @@ func (r *PageRepository) List(
 	curUser *domain.User,
 ) ([]domain.Page, *domain.Error) {
 
+	// QUERY PAGES
 	var results []PageResult
-
 	query := buildPageQuery(preloadPageResult(r.store.DB(), PreloadPageResultParams{
 		Asset:     true,
 		Doc:       true,
 		Author:    true,
 		PageRoles: true,
+		PageStars: true,
 	}), q)
 
 	if err := query.Find(&results).Error; err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	// non inherit parent role map
-	directPageRoleMap := make(map[int64]model.PageRole)
-	// nont inherit general role map
-	generalPageRoleMap := make(map[int64]domain.PageRole)
+	// FILL UP PERMISSIONS
+	userPageRoleLookupMap := make(map[int64]model.PageRole)
+	generalPageRoleLookupMap := make(map[int64]domain.PageRole)
 
 	// Find missing direct role for inherit direct roles
 	missingPagePkIDs := make([]int64, 0, len(results))
@@ -65,13 +65,12 @@ func (r *PageRepository) List(
 	missingGeneralPagePkIDs := make([]int64, 0, len(results))
 
 	for _, result := range results {
-		// Handle General Role
 		if result.GeneralRole != domain.PageInherit.String() {
-			generalPageRoleMap[result.Pkid] = domain.PageRoleFromString(result.GeneralRole)
+			generalPageRoleLookupMap[result.Pkid] = domain.PageRoleFromString(result.GeneralRole)
 		} else {
 			parentPkIDs := pageutils.PagePathToPkIDs(result.Path)
 			for _, pkID := range parentPkIDs {
-				if _, ok := generalPageRoleMap[pkID]; !ok {
+				if _, ok := generalPageRoleLookupMap[pkID]; !ok {
 					missingGeneralPagePkIDs = append(missingGeneralPagePkIDs, pkID)
 				}
 			}
@@ -85,13 +84,13 @@ func (r *PageRepository) List(
 			})
 
 			if curUserRole != nil && curUserRole.Role != domain.PageInherit.String() {
-				directPageRoleMap[result.Pkid] = *curUserRole
+				userPageRoleLookupMap[result.Pkid] = *curUserRole
 			}
 
 			if curUserRole != nil && curUserRole.Role == domain.PageInherit.String() {
 				parentPkIDs := pageutils.PagePathToPkIDs(result.Path)
 				for _, pkID := range parentPkIDs {
-					if _, ok := directPageRoleMap[pkID]; !ok {
+					if _, ok := userPageRoleLookupMap[pkID]; !ok {
 						missingPagePkIDs = append(missingPagePkIDs, pkID)
 					}
 				}
@@ -113,7 +112,7 @@ func (r *PageRepository) List(
 	}
 
 	for _, page := range generalBasePages {
-		generalPageRoleMap[page.Pkid] = domain.PageRoleFromString(page.GeneralRole)
+		generalPageRoleLookupMap[page.Pkid] = domain.PageRoleFromString(page.GeneralRole)
 	}
 	// Fill missing direct roles
 	if curUser != nil {
@@ -129,8 +128,8 @@ func (r *PageRepository) List(
 		}
 
 		for _, role := range curUserIndirectRoles {
-			if _, ok := directPageRoleMap[role.PagePkid]; !ok {
-				directPageRoleMap[role.PagePkid] = role.PageRole
+			if _, ok := userPageRoleLookupMap[role.PagePkid]; !ok {
+				userPageRoleLookupMap[role.PagePkid] = role.PageRole
 			}
 		}
 	}
@@ -138,7 +137,7 @@ func (r *PageRepository) List(
 	findInheritGeneralRole := func(parentPkIds []int64) domain.PageRole {
 		slices.Reverse(parentPkIds)
 		for _, pkID := range parentPkIds {
-			if role, ok := generalPageRoleMap[pkID]; ok {
+			if role, ok := generalPageRoleLookupMap[pkID]; ok {
 				return role
 			}
 		}
@@ -148,7 +147,7 @@ func (r *PageRepository) List(
 	findCurPageRole := func(parentPkIDs []int64) *domain.PageRole {
 		slices.Reverse(parentPkIDs)
 		for _, pkID := range parentPkIDs {
-			if role, ok := directPageRoleMap[pkID]; ok {
+			if role, ok := userPageRoleLookupMap[pkID]; ok {
 				role := domain.PageRoleFromString(role.Role)
 				return &role
 			}
@@ -184,6 +183,11 @@ func (r *PageRepository) List(
 			directUserRole = &role
 		}
 
+		var curUserPKID *int64 = nil
+		if curUser != nil {
+			curUserPKID = &curUser.PkID
+		}
+
 		domainPage := pageutils.TransformPageModelToDomain(
 			pageutils.PageModelToDomainParams{
 				Page: &result.Page,
@@ -192,6 +196,7 @@ func (r *PageRepository) List(
 					Asset:    pageutils.TransformAssetModalToDomain(result.Asset),
 					Author:   userutils.TransformUserModelToDomain(result.Author),
 				},
+				PageStar: pageutils.GetPageStarByUserPkID(result.PageStars, curUserPKID),
 			},
 		)
 
@@ -257,6 +262,7 @@ func (r *PageRepository) GetByID(
 	pageID string,
 	pagePkID *int64,
 	detailOption domain.PageDetailOptions,
+	actorPkID *int64,
 ) (*domain.Page, *domain.Error) {
 
 	var page PageResult
@@ -266,6 +272,7 @@ func (r *PageRepository) GetByID(
 		Doc:          detailOption.Document,
 		Author:       detailOption.Author,
 		Organization: detailOption.Organization,
+		PageStars:    true,
 	})
 
 	if pageID == "" && pagePkID == nil {
@@ -313,6 +320,7 @@ func (r *PageRepository) GetByID(
 					Page: inheritPage,
 				},
 			),
+			PageStar: pageutils.GetPageStarByUserPkID(page.PageStars, actorPkID),
 		},
 	), nil
 }

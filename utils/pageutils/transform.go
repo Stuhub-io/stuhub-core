@@ -2,6 +2,7 @@ package pageutils
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/Stuhub-io/core/domain"
@@ -43,6 +44,7 @@ type PageModelToDomainParams struct {
 	InheritFromPage *domain.Page
 	Permissions     *domain.PageRolePermissions
 	ParentPage      *domain.Page
+	PageStar        *domain.PageStar
 }
 
 func TransformPageModelToDomain(
@@ -89,6 +91,7 @@ func TransformPageModelToDomain(
 		InheritFromPage:  inheritFromPage,
 		Permissions:      Permissions,
 		ParentPage:       params.ParentPage,
+		PageStar:         params.PageStar,
 	}
 }
 
@@ -267,4 +270,38 @@ func TransformPagePermissionRequestLogToDomain(params PagePermissionRequestLogTo
 		Email:    model.Email,
 		User:     user,
 	}
+}
+
+type PageStarToDomainParams struct {
+	Model *model.PageStar
+	// User   *domain.User
+	// Page   *domain.Page
+}
+
+func TransformPageStarResultToDomain(params PageStarToDomainParams) *domain.PageStar {
+	return &domain.PageStar{
+		PkID:     params.Model.Pkid,
+		PagePkID: params.Model.PagePkid,
+		UserPkID: params.Model.UserPkid,
+	}
+}
+
+func GetPageStarByUserPkID(stars []model.PageStar, usrPkID *int64) *domain.PageStar {
+	if usrPkID == nil || len(stars) == 0 {
+		return nil
+	}
+
+	if len(stars) == 0 {
+		return nil
+	}
+	star := sliceutils.Filter(stars, func(star model.PageStar) bool {
+		return star.UserPkid == *usrPkID
+	})
+	if len(star) == 0 {
+		return nil
+	}
+	fmt.Println("star[0]", star[0])
+	return TransformPageStarResultToDomain(PageStarToDomainParams{
+		Model: &star[0],
+	})
 }

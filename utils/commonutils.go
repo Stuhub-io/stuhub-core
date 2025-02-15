@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func GetSlugResolution(existingSlugs []string, slug string) string {
@@ -70,4 +71,12 @@ func IsIntegerType(field reflect.Value) bool {
 		return true
 	}
 	return false
+}
+
+func CurTimestampAsFloat64() float64 {
+	return float64(time.Now().UnixNano()) / 1000000000
+}
+
+func NillableField[T any](value T) *T {
+	return &value
 }
