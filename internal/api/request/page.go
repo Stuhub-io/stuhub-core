@@ -82,3 +82,7 @@ type AcceptRequestPageAccess struct {
 type RejectRequestPageAccess struct {
 	Emails []string `binding:"required" json:"emails,omitempty"`
 }
+
+type ToggleStarPageBody struct {
+	PagePkID int64 `binding:"required" json:"page_pkid"`
+}

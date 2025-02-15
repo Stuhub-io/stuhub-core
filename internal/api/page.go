@@ -97,6 +97,14 @@ func UsePageHandle(params NewPageHandlerParams) {
 		("/pages/:" + pageutils.PagePkIDParam + "/role-requests/reject"),
 		decorators.RequiredAuth(decorators.CurrentUser(handler.RejectRequestPageAccesses)),
 	)
+	router.POST(
+		("/pages/:" + pageutils.PagePkIDParam + "/star"),
+		decorators.RequiredAuth(decorators.CurrentUser(handler.AddPageToStarred)),
+	)
+	router.POST(
+		("/pages/:" + pageutils.PagePkIDParam + "/unstar"),
+		decorators.RequiredAuth(decorators.CurrentUser(handler.RemovePageFromStarred)),
+	)
 }
 
 func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
@@ -560,4 +568,56 @@ func (h *PageHandler) RejectRequestPageAccesses(c *gin.Context, user *domain.Use
 	}
 
 	response.WithMessage(c, 200, "Request rejected successfully!")
+}
+
+func (h *PageHandler) AddPageToStarred(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	var body request.ToggleStarPageBody
+	if verr := request.Validate(c, &body); verr != nil {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	err := h.pageService.AddPageToStarred(domain.StarPageInput{
+		PagePkID:      pagePkID,
+		ActorUserPkID: user.PkID,
+	}, user)
+
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithMessage(c, 200, "Page added to starred successfully!")
+}
+
+func (h *PageHandler) RemovePageFromStarred(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	var body request.ToggleStarPageBody
+	if verr := request.Validate(c, &body); verr != nil {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	err := h.pageService.RemovePageFromStarred(domain.StarPageInput{
+		PagePkID:      pagePkID,
+		ActorUserPkID: user.PkID,
+	}, user)
+
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithMessage(c, 200, "Page added to starred successfully!")
 }

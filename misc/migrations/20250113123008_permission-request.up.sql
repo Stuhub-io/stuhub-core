@@ -12,4 +12,5 @@ CREATE TABLE IF NOT EXISTS "page_permission_request_log" (
     
     CONSTRAINT fk_page_permission_request_log_user
         FOREIGN KEY (user_pkid)
-        REFERENCES "users" (pkid) ON DELETE CASCADE)
+        REFERENCES "users" (pkid) ON DELETE CASCADE
+)

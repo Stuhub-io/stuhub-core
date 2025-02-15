@@ -29,6 +29,7 @@ type Page struct {
 	InheritFromPage  *Page                `json:"inherit_from_page"`
 	Permissions      *PageRolePermissions `json:"permissions"`
 	ParentPage       *Page                `json:"parent_page"`
+	PageStar         *PageStar            `json:"page_star"`
 }
 
 type PageRoleUser struct {

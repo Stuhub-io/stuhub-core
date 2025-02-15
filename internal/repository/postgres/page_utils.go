@@ -18,6 +18,7 @@ type PageResult struct {
 	Author       *model.User         `gorm:"foreignKey:author_pkid"`
 	Organization *model.Organization `gorm:"foreignKey:org_pkid"`
 	PageRoles    []model.PageRole    `gorm:"foreignKey:page_pkid"`
+	PageStars    []model.PageStar    `gorm:"foreignKey:page_pkid"`
 }
 
 type initPageModelResults struct {
@@ -69,6 +70,7 @@ type PreloadPageResultParams struct {
 	Author       bool
 	Organization bool
 	PageRoles    bool
+	PageStars    bool
 }
 
 func preloadPageResult(q *gorm.DB, option PreloadPageResultParams) *gorm.DB {
@@ -88,6 +90,10 @@ func preloadPageResult(q *gorm.DB, option PreloadPageResultParams) *gorm.DB {
 	if option.PageRoles {
 		q = q.Preload("PageRoles")
 	}
+	if option.PageStars {
+		q = q.Preload("PageStars")
+	}
+
 	return q
 }
 
@@ -117,6 +123,7 @@ func buildPageQuery(
 			query = query.Where("pages.parent_page_pkid IS NULL")
 		}
 	}
+
 	if (len(q.ViewTypes)) > 0 {
 		query = query.Where("pages.view_type IN ?", q.ViewTypes)
 	}

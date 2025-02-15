@@ -54,6 +54,7 @@ func (s *Service) GetPagesByOrgPkID(
 			"",
 			parentPagePkID,
 			domain.PageDetailOptions{},
+			nil,
 		)
 		if err != nil {
 			return nil, err
@@ -87,6 +88,7 @@ func (s *Service) UpdatePageByPkID(
 		"",
 		&pagePkID,
 		domain.PageDetailOptions{},
+		nil,
 	)
 	if err != nil {
 		return nil, err
@@ -124,6 +126,7 @@ func (s *Service) GetPageDetailByID(
 
 	var pagePkID *int64
 
+	// FIXME: remove public token features
 	if pageID == "" {
 		token, err := s.pageRepository.GetPublicTokenByID(context.Background(), publicTokenID)
 		if token.ArchivedAt != "" {
@@ -135,6 +138,10 @@ func (s *Service) GetPageDetailByID(
 		pagePkID = &token.PagePkID
 	}
 
+	var userPkID *int64 = nil
+	if curUser != nil {
+		userPkID = &curUser.PkID
+	}
 	d, e = s.pageRepository.GetByID(
 		context.Background(),
 		pageID,
@@ -144,6 +151,7 @@ func (s *Service) GetPageDetailByID(
 			Document: true,
 			Author:   true,
 		},
+		userPkID,
 	)
 
 	if e != nil {
@@ -178,7 +186,7 @@ func (s *Service) GetPageDetailByID(
 
 	if len(parentPkIDs) > 0 {
 		parentPagePkID := parentPkIDs[len(parentPkIDs)-1]
-		parentPage, e = s.pageRepository.GetByID(context.Background(), "", &parentPagePkID, domain.PageDetailOptions{})
+		parentPage, e = s.pageRepository.GetByID(context.Background(), "", &parentPagePkID, domain.PageDetailOptions{}, nil)
 		if e != nil {
 			return d, e
 		}
@@ -207,6 +215,7 @@ func (s *Service) ArchivedPageByPkID(
 		"",
 		&pagePkID,
 		domain.PageDetailOptions{},
+		nil,
 	)
 	if err != nil {
 		return nil, err
@@ -238,6 +247,7 @@ func (s *Service) MovePageByPkID(
 		"",
 		&pagePkID,
 		domain.PageDetailOptions{},
+		nil,
 	)
 	if err != nil {
 		return nil, err
@@ -266,6 +276,7 @@ func (s *Service) CreatePublicPageToken(
 		pageID,
 		nil,
 		domain.PageDetailOptions{},
+		nil,
 	)
 	if err != nil {
 		return nil, domain.ErrDatabaseQuery
@@ -280,6 +291,7 @@ func (s *Service) ArchiveAllPublicPageToken(pageID string) (e *domain.Error) {
 		pageID,
 		nil,
 		domain.PageDetailOptions{},
+		nil,
 	)
 	if err != nil {
 		return domain.ErrDatabaseQuery
@@ -299,6 +311,7 @@ func (s *Service) UpdateGeneralAccess(
 		"",
 		&pagePkID,
 		domain.PageDetailOptions{},
+		nil,
 	)
 
 	if err != nil {
@@ -336,6 +349,7 @@ func (s *Service) CreateDocumentPage(
 			"",
 			parentPagePkID,
 			domain.PageDetailOptions{},
+			nil,
 		)
 		if err != nil {
 			return nil, err
@@ -377,6 +391,7 @@ func (s *Service) UpdateDocumentContentByPkID(
 		"",
 		&pagePkID,
 		domain.PageDetailOptions{},
+		nil,
 	)
 	if err != nil {
 		return nil, err
@@ -431,6 +446,7 @@ func (s *Service) CreateAssetPage(
 			"",
 			parentPagePkID,
 			domain.PageDetailOptions{},
+			nil,
 		)
 		if err != nil {
 			return nil, err
@@ -493,6 +509,7 @@ func (s *Service) AddPageRoleUser(
 		domain.PageDetailOptions{
 			Organization: true,
 		},
+		nil,
 	)
 	if err != nil {
 		return nil, nil, err
@@ -559,6 +576,7 @@ func (s *Service) GetPageRoleUsers(
 		"",
 		&pagePkID,
 		domain.PageDetailOptions{},
+		nil,
 	)
 	if err != nil {
 		return nil, err
@@ -596,6 +614,7 @@ func (s *Service) UpdatePageRoleUser(
 		"",
 		&input.PagePkID,
 		domain.PageDetailOptions{},
+		nil,
 	)
 
 	curRole := s.GetPageRolesByUser(context.Background(), input.PagePkID, curUser)
@@ -634,6 +653,7 @@ func (s *Service) DeletePageRoleUser(
 		"",
 		&input.PagePkID,
 		domain.PageDetailOptions{},
+		nil,
 	)
 	if err != nil {
 		return err
@@ -674,7 +694,8 @@ func (s *Service) GetPageRolesByUser(ctx context.Context, pagePkID int64, user *
 }
 
 func (s Service) RequestPagePermission(pageID string, email string) *domain.Error {
-	page, pErr := s.pageRepository.GetByID(context.Background(), pageID, nil, domain.PageDetailOptions{})
+
+	page, pErr := s.pageRepository.GetByID(context.Background(), pageID, nil, domain.PageDetailOptions{}, nil)
 	if pErr != nil {
 		return pErr
 	}
@@ -700,6 +721,7 @@ func (s Service) RejectPagePermissions(pagePkID int64, emails []string) *domain.
 		"",
 		&pagePkID,
 		domain.PageDetailOptions{},
+		nil,
 	)
 	if err != nil {
 		return err
@@ -770,5 +792,70 @@ func (s Service) AcceptRequestPagePermission(input domain.PageRoleCreateInput, c
 		return err
 	}
 
+	return nil
+}
+
+func (s Service) AddPageToStarred(input domain.StarPageInput, curUser *domain.User) *domain.Error {
+	// Handler Permissions
+	page, pErr := s.pageRepository.GetByID(
+		context.Background(),
+		"",
+		&input.PagePkID,
+		domain.PageDetailOptions{
+			Author: true,
+		},
+		nil,
+	)
+	if pErr != nil {
+		return pErr
+	}
+
+	curRole := s.GetPageRolesByUser(context.Background(), input.PagePkID, curUser)
+	permission := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
+		Page:     *page,
+		User:     curUser,
+		PageRole: curRole,
+	})
+
+	if !permission.CanView {
+		return domain.ErrPermissionDenied
+	}
+
+	_, err := s.pageRepository.StarPage(context.Background(), input)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s Service) RemovePageFromStarred(input domain.StarPageInput, curUser *domain.User) *domain.Error {
+	// Handler Permissions
+	page, pErr := s.pageRepository.GetByID(
+		context.Background(),
+		"",
+		&input.PagePkID,
+		domain.PageDetailOptions{
+			Author: true,
+		},
+		nil,
+	)
+	if pErr != nil {
+		return pErr
+	}
+
+	curRole := s.GetPageRolesByUser(context.Background(), input.PagePkID, curUser)
+	permission := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
+		Page:     *page,
+		User:     curUser,
+		PageRole: curRole,
+	})
+
+	if !permission.CanView {
+		return domain.ErrPermissionDenied
+	}
+	err := s.pageRepository.UnstarPage(context.Background(), input)
+	if err != nil {
+		return err
+	}
 	return nil
 }
