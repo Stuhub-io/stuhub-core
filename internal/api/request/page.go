@@ -25,6 +25,7 @@ type GetPagesQuery struct {
 	IsArchived     *bool                 `form:"is_archived,omitempty"      json:"is_archived,omitempty"`
 	All            bool                  `form:"all,omitempty"              json:"all,omitempty"`
 	GeneralRole    *domain.PageRole      `form:"general_role,omitempty"     json:"general_role,omitempty"`
+	IsStarred      *bool                 `form:"is_starred,omitempty"       json:"is_starred,omitempty"`
 	PaginationRequest
 }
 

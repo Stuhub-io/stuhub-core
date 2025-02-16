@@ -105,6 +105,10 @@ func buildPageQuery(
 
 	query := tx
 
+	if q.IsStarredByUserPkID != nil {
+		query = query.Joins("JOIN page_star ON page_star.page_pkid = pages.pkid").Where("page_star.user_pkid = ?", *q.IsStarredByUserPkID)
+	}
+
 	if q.OrgPkID != nil {
 		query = query.Where("org_pkid = ?", q.OrgPkID)
 	}
@@ -136,6 +140,7 @@ func buildPageQuery(
 	if q.Limit > 0 {
 		query = query.Limit(q.Limit)
 	}
+
 	return query
 }
 

@@ -131,15 +131,22 @@ func (h *PageHandler) GetPages(c *gin.Context, user *domain.User) {
 		return
 	}
 
+	// get starred page if only authenticated
+	var starredByUserPkID *int64 = nil
+	if query.IsStarred != nil && *query.IsStarred && user != nil {
+		starredByUserPkID = &user.PkID
+	}
+
 	pages, err := h.pageService.GetPagesByOrgPkID(domain.PageListQuery{
-		OrgPkID:        &query.OrgPkID,
-		ViewTypes:      query.ViewTypes,
-		ParentPagePkID: query.ParentPagePkID,
-		Offset:         int(query.PaginationRequest.Page * query.PaginationRequest.Size),
-		IsAll:          query.All,
-		Limit:          int(query.PaginationRequest.Size),
-		IsArchived:     query.IsArchived,
-		GeneralRole:    query.GeneralRole,
+		OrgPkID:             &query.OrgPkID,
+		ViewTypes:           query.ViewTypes,
+		ParentPagePkID:      query.ParentPagePkID,
+		Offset:              int(query.PaginationRequest.Page * query.PaginationRequest.Size),
+		IsAll:               query.All,
+		Limit:               int(query.PaginationRequest.Size),
+		IsArchived:          query.IsArchived,
+		GeneralRole:         query.GeneralRole,
+		IsStarredByUserPkID: starredByUserPkID,
 	}, user)
 
 	if err != nil {

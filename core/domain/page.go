@@ -66,17 +66,18 @@ type PageMoveInput struct {
 }
 
 type PageListQuery struct {
-	OrgPkID            *int64         `json:"org_pkid"`
-	ViewTypes          []PageViewType `json:"view_type"`
-	ParentPagePkID     *int64         `json:"parent_page_pkid"`
-	IsArchived         *bool          `json:"is_archived"`
-	Offset             int            `json:"offset"`
-	Limit              int            `json:"limit"`
-	IsAll              bool           `json:"all"`
-	GeneralRole        *PageRole      `json:"general_role"`
-	PagePkIDs          []int64        `json:"page_pkids"`
-	ExcludeGeneralRole []PageRole     `json:"exclude_general_role"`
-	PathBeginWith      string         `json:"path_begin_with"`
+	OrgPkID             *int64         `json:"org_pkid"`
+	ViewTypes           []PageViewType `json:"view_type"`
+	ParentPagePkID      *int64         `json:"parent_page_pkid"`
+	IsArchived          *bool          `json:"is_archived"`
+	Offset              int            `json:"offset"`
+	Limit               int            `json:"limit"`
+	IsAll               bool           `json:"all"`
+	GeneralRole         *PageRole      `json:"general_role"`
+	PagePkIDs           []int64        `json:"page_pkids"`
+	ExcludeGeneralRole  []PageRole     `json:"exclude_general_role"`
+	PathBeginWith       string         `json:"path_begin_with"`
+	IsStarredByUserPkID *int64         `json:"is_starred_by_user_pkid"`
 }
 
 type PageGeneralAccessUpdateInput struct {
