@@ -36,8 +36,8 @@ func UsePageAccessLogHandler(params NewPageAccessLogHandlerParams) {
 
 func (h *PageAccessLogHandler) GetLogsList(c *gin.Context, user *domain.User) {
 	var queryParams struct {
-		Cursor *time.Time `binding:"omitempty" form:"cursor"`
-		Limit  int        `binding:"omitempty,gt=0"  form:"limit"`
+		Cursor *time.Time `binding:"omitempty"      form:"cursor"`
+		Limit  int        `binding:"omitempty,gt=0" form:"limit"`
 	}
 
 	if err := c.ShouldBindQuery(&queryParams); err != nil {
