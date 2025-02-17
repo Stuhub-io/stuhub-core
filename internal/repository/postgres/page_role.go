@@ -338,22 +338,16 @@ func (r *PageRepository) CheckPermission(
 
 	// User is Author
 	if page.AuthorPkID != nil && user.PkID == *page.AuthorPkID {
+		// Toggle all to True
 		permissions.CanDelete = true
 		permissions.CanEdit = true
 		permissions.CanMove = true
 		permissions.CanShare = true
 		permissions.CanView = true
+		permissions.CanDownload = true
 
 		return permissions
 	}
-
-	// // Dont pass in direct role
-	// if pageRoleUser == nil {
-	// 	role, err := r.GetPageRoleByEmail(ctx, page.PkID, user.Email)
-	// 	if err == nil {
-	// 		pageRoleUser = &role.Role
-	// 	}
-	// }
 
 	if pageRoleUser != nil {
 		permissions = GetPermissionByRole(*pageRoleUser, true)
@@ -368,6 +362,7 @@ func (r *PageRepository) CheckPermission(
 func GetPermissionByRole(role domain.PageRole, isAuthenticated bool) (p domain.PageRolePermissions) {
 	if role != domain.PageRestrict && !isAuthenticated {
 		p.CanView = true
+		p.CanDownload = true
 		return p
 	}
 	switch role {
