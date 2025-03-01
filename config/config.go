@@ -8,7 +8,7 @@ import (
 )
 
 // default path to env for running without DOCKER.
-const DEFAULT_ENV_PATH = "build/staging/api"
+const DEFAULT_ENV_PATH = "build/local/api"
 const DEFAULT_ENV_FILENAME = ".env"
 
 type Loader interface {
@@ -34,6 +34,8 @@ type Config struct {
 	DBDsn          string
 
 	RedisUrl string
+
+	ElasticSearchURL string
 
 	SecretKey                       string
 	SendgridKey                     string
@@ -100,6 +102,8 @@ func generateConfigFromViper(v *viper.Viper) Config {
 		DBDsn:     v.GetString("DB_DSN"),
 
 		RedisUrl: v.GetString("REDIS_URL"),
+
+		ElasticSearchURL: v.GetString("ELASTIC_SEARCH_URL"),
 
 		SecretKey:                       v.GetString("SECRET_KEY"),
 		SendgridKey:                     v.GetString("SENDGRID_API_KEY"),

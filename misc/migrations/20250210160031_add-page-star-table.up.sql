@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS page_star (
         REFERENCES users (pkid) ON DELETE CASCADE,
 
     CONSTRAINT fk_page_star_page
-        REFERENCES pages (pkid) ON DELETE CASCADE,
+        FOREIGN KEY (page_pkid)
+        REFERENCES pages (pkid) ON DELETE CASCADE
 );
 
 CREATE UNIQUE INDEX unique_user_page_idx ON page_star (user_pkid, page_pkid);

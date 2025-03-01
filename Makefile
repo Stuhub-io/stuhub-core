@@ -34,9 +34,9 @@ setup-hosted-pg:
 	@ make migrate-prod-up	
 
 up: # Startup / Spinup Docker Compose and air
-	@ docker compose -f local.yml up --build -d --remove-orphans
+	@ docker-compose -f local.yml up --build -d --remove-orphans
 
-down: docker-stop               ## Stop Docker
+down: docker-teardown            ## Stop Docker
 
 destroy: docker-teardown clean  ## Teardown (removes volumes, tmp files, etc...)
 
@@ -49,13 +49,13 @@ docker-stop:
 	@ docker compose -f local.yml down
 
 docker-teardown:
-	@ docker compose -f local.yml down --remove-orphans -v
+	@ docker-compose -f local.yml down --remove-orphans -v
 
 hosted-pg-up: 
 	@ docker compose -f local-hosted-pg.yml up --build -d --remove-orphans
 
 # ~~~ Database ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-POSTGRESQL_DSN = postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)
+POSTGRESQL_DSN = postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable
 
 # NOTE: run command with ENV = production for production database
 migrate-up:

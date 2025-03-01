@@ -14,6 +14,8 @@ database:
       "assets",
       "public_token",
       "page_access_logs",
+      "page_permission_request_log",
+      "page_star",
     ]
   outPath: "./internal/repository/model"
   withUnitTest: false

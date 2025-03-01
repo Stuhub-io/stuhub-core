@@ -1,8 +1,6 @@
 package postgres
 
 import (
-	"fmt"
-
 	"github.com/Stuhub-io/logger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -14,8 +12,6 @@ func open(dsn string, isDebug bool, logger logger.Logger) (*gorm.DB, error) {
 		DSN:                  dsn,
 		PreferSimpleProtocol: true,
 	}), &gorm.Config{})
-
-	fmt.Println(dsn)
 
 	if err != nil {
 		logger.Fatalf(err, "failed to open database connection")

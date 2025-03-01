@@ -1,24 +1,24 @@
 version: "3.9"
 services:
-  api:
-    build:
-      context: .
-      dockerfile: build/local/api/Dockerfile
-    container_name: api
-    depends_on:
-      pgsql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    env_file:
-      - build/local/api/.env
-    ports:
-      - 5000:5000
-    volumes:
-      - .:/app:z
-    command: /start.sh
-    networks:
-      - stuhub-api
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: build/local/api/Dockerfile
+  #   container_name: api
+  #   depends_on:
+  #     pgsql:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   env_file:
+  #     - build/local/api/.env
+  #   ports:
+  #     - 5000:5000
+  #   volumes:
+  #     - .:/app:z
+  #   command: /start.sh
+  #   networks:
+  #     - stuhub-api
 
   pgsql:
     hostname: postgres
@@ -40,27 +40,47 @@ services:
       - local_postgres_data_backups:/backups
     networks:
       - stuhub-api
-      
+
   redis:
     build:
       context: .
       dockerfile: build/local/redis/Dockerfile
     container_name: redis-cache
+    privileged: true
     env_file:
       - build/local/redis/.env
-    command: redis-server --save 20 1 --loglevel warning --requirepass stuhub
+    command: sh -c "./init.sh"
     ports:
       - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "ping"]
-      interval: 10s 
-      timeout: 5s 
-      retries: 2  
+      interval: 10s
+      timeout: 5s
+      retries: 2
     volumes:
       - local_redis_data:/root/redis
     networks:
       - stuhub-api
-  
+
+  elasticsearch:
+    image: elasticsearch:8.17.1
+    container_name: elasticsearch
+    ports:
+      - 9200:9200
+    environment:
+      - discovery.type=single-node # Run in single-node mode
+      - xpack.security.enabled=false # Disable security for simplicity
+      - ES_JAVA_OPTS=-Xms250m -Xmx250m
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+      interval: 20s
+      timeout: 1s
+      retries: 5
+    volumes:
+      - local_es_data:/usr/share/elasticsearch/data
+    networks:
+      - stuhub-api
+
 networks:
   stuhub-api:
     driver: bridge
@@ -69,3 +89,4 @@ volumes:
   local_postgres_data: {}
   local_postgres_data_backups: {}
   local_redis_data: {}
+  local_es_data: {}

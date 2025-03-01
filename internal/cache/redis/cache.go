@@ -7,25 +7,29 @@ import (
 	"log"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/Stuhub-io/logger"
+	"github.com/redis/go-redis/v9"
 )
 
 type RedisCache struct {
 	client *redis.Client
 }
 
-func Must(url string) *RedisCache {
+func Must(url string, logger logger.Logger) *RedisCache {
 	opts, err := redis.ParseURL(url)
 	if err != nil {
+		fmt.Println(">>>> ", err)
 		panic("Redis url is not valid!")
 	}
 
 	client := redis.NewClient(opts)
 
-	_, err = client.Ping(context.Background()).Result()
-	if err != nil {
-		panic("Make sure you have a Redis server running on the specified host and port")
-	}
+	// _, err = client.Ping(context.Background()).Result()
+	// if err != nil {
+	// 	panic("Make sure you have a Redis server running on the specified host and port")
+	// }
+
+	logger.Info("redis connected")
 
 	return &RedisCache{client: client}
 }

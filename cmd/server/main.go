@@ -21,12 +21,14 @@ import (
 	"github.com/Stuhub-io/internal/api"
 	"github.com/Stuhub-io/internal/api/middleware"
 	"github.com/Stuhub-io/internal/cache"
+	"github.com/Stuhub-io/internal/cache/redis"
 	"github.com/Stuhub-io/internal/hasher"
 	"github.com/Stuhub-io/internal/mailer"
 	"github.com/Stuhub-io/internal/oauth"
 	"github.com/Stuhub-io/internal/remote"
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/postgres"
+	"github.com/Stuhub-io/internal/search/elasticsearch"
 	"github.com/Stuhub-io/internal/token"
 	"github.com/Stuhub-io/internal/uploader"
 	"github.com/Stuhub-io/logger"
@@ -35,26 +37,6 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	swagger "github.com/swaggo/gin-swagger"
 )
-
-//	@title			Swagger Example API
-//	@version		1.0
-//	@description	This is a sample server celler server.
-//	@termsOfService	http://swagger.io/terms/
-
-//	@contact.name	API Support
-//	@contact.url	http://www.swagger.io/support
-//	@contact.email	support@swagger.io
-
-//	@license.name	Apache 2.0
-//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
-
-//	@host		localhost:5000
-//	@BasePath	/api/v1
-
-//	@securityDefinitions.basic	BasicAuth
-
-// @externalDocs.description	OpenAPI
-// @externalDocs.url			https://swagger.io/resources/open-api/
 
 type TempCache struct{}
 
@@ -65,19 +47,19 @@ func (TempCache) Delete(key string) error {
 }
 
 func main() {
-
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
 
 	logger := logger.NewLogrusLogger()
 
 	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug, logger)
 
-	tempCache := TempCache{}
-	// redisCache := redis.Must(cfg.RedisUrl)
+	redisCache := redis.Must(cfg.RedisUrl, logger)
+
+	elasticSearch := elasticsearch.Must(cfg.ElasticSearchURL, logger)
 
 	tokenMaker := token.Must(cfg.SecretKey)
 
-	cacheStore := cache.NewCacheStore(tempCache)
+	cacheStore := cache.NewCacheStore(redisCache)
 	dbStore := store.NewDBStore(postgresDB, cacheStore)
 
 	hasher := hasher.NewScrypt([]byte(cfg.HashPwSecretKey))
@@ -123,9 +105,12 @@ func main() {
 		},
 	)
 
-	cloudinaryUploader := uploader.NewCloudinaryUploader(cfg)
+	// indexers
+	pageIndexer := elasticsearch.NewPageIndexer(elasticSearch)
+	pageIndexer.Index(context.Background())
 
 	// services
+	cloudinaryUploader := uploader.NewCloudinaryUploader(cfg)
 	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{
 		TokenMaker:     tokenMaker,
 		UserRepository: userRepository,

@@ -19,7 +19,7 @@ echo "${DBUrl}"
 /wait-for-it.sh "${DB_HOST}:${DB_PORT}" --timeout=100
 >&2 echo "DB is available"
 
-/wait-for-it.sh "${CACHE_HOST}:${CACHE_PORT}" --timeout=100
->&2 echo "CACHE is available"
+/wait-for-it.sh "${REDIS_HOST}:${REDIS_PORT}" --timeout=100
+>&2 echo "REDIS is available"
 
 exec "$@"
