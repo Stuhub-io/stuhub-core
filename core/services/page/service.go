@@ -142,6 +142,7 @@ func (s *Service) GetPageDetailByID(
 	if curUser != nil {
 		userPkID = &curUser.PkID
 	}
+
 	d, e = s.pageRepository.GetByID(
 		context.Background(),
 		pageID,
@@ -171,7 +172,7 @@ func (s *Service) GetPageDetailByID(
 		return nil, domain.ErrPermissionDenied
 	}
 
-	if d.ViewType != domain.PageViewTypeFolder {
+	if d.ViewType != domain.PageViewTypeFolder && curUser != nil {
 		go s.pageAccessLogRepository.Upsert(
 			context.Background(),
 			d.PkID,
