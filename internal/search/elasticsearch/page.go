@@ -74,7 +74,7 @@ func (i *PageIndexer) Search(ctx context.Context, args domain.SearchIndexedPageP
 					},
 				},
 			},
-			"minimum_should_match": 1, // Ensures at least one condition is satisfied
+			"minimum_should_match": 1,
 		},
 	})
 
@@ -107,7 +107,7 @@ func (i *PageIndexer) Search(ctx context.Context, args domain.SearchIndexedPageP
 						},
 					},
 				},
-				"minimum_should_match": 1, // Ensures at least one condition is satisfied
+				"minimum_should_match": 1,
 			},
 		})
 	}
