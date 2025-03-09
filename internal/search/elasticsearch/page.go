@@ -21,6 +21,7 @@ type PageIndexer struct {
 func NewPageIndexer(client *elasticsearch.Client, logger logger.Logger) *PageIndexer {
 	return &PageIndexer{
 		client: client,
+		logger: logger,
 		index:  "page",
 	}
 }
@@ -184,8 +185,7 @@ func (i *PageIndexer) Update(ctx context.Context, page domain.IndexedPage) error
 	req := esapi.UpdateRequest{
 		Index:      i.index,
 		DocumentID: page.ID,
-		Body:       bytes.NewReader(data),
-		Refresh:    "true",
+		Body:       bytes.NewReader([]byte(fmt.Sprintf(`{"doc":%s}`, data))),
 	}
 
 	resp, err := req.Do(context.Background(), i.client)
