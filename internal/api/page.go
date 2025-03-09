@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/services/page"
 	"github.com/Stuhub-io/internal/api/decorators"
@@ -35,6 +37,7 @@ func UsePageHandle(params NewPageHandlerParams) {
 	router.POST("/pages", decorators.CurrentUser(handler.CreateDocument))
 	router.GET("/pages/id/:"+pageutils.PageIDParam, decorators.CurrentUser(handler.GetPage))
 	router.PUT(("/pages/:" + pageutils.PagePkIDParam), decorators.CurrentUser(handler.UpdatePage))
+	router.GET(("/pages/quick-search"), decorators.CurrentUser(handler.QuickSearch))
 
 	router.PUT(
 		"/pages/:"+pageutils.PagePkIDParam+"/content",
@@ -620,11 +623,38 @@ func (h *PageHandler) RemovePageFromStarred(c *gin.Context, user *domain.User) {
 		PagePkID:      pagePkID,
 		ActorUserPkID: user.PkID,
 	}, user)
-
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
 	}
 
 	response.WithMessage(c, 200, "Page added to starred successfully!")
+}
+
+func (h *PageHandler) QuickSearch(c *gin.Context, user *domain.User) {
+	var queryParams struct {
+		Keyword    string  `binding:"required" form:"keyword"`
+		ViewType   *string `binding:"omitempty" form:"view_type"`
+		AuthorPkID *int64  `binding:"omitempty" form:"author_pkid"`
+	}
+
+	if err := c.ShouldBindQuery(&queryParams); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	fmt.Print(">>> Params: ", queryParams)
+
+	pages, err := h.pageService.QuickSearch(domain.SearchIndexedPageParams{
+		UserPkID:   user.PkID,
+		Keyword:    queryParams.Keyword,
+		ViewType:   queryParams.ViewType,
+		AuthorPkID: queryParams.AuthorPkID,
+	})
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 200, pages)
 }
