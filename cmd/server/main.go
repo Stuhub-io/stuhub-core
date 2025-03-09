@@ -106,8 +106,7 @@ func main() {
 	)
 
 	// indexers
-	pageIndexer := elasticsearch.NewPageIndexer(elasticSearch)
-	pageIndexer.Index(context.Background())
+	pageIndexer := elasticsearch.NewPageIndexer(elasticSearch, logger)
 
 	// services
 	cloudinaryUploader := uploader.NewCloudinaryUploader(cfg)
@@ -146,6 +145,7 @@ func main() {
 		PageRepository:          pageRepository,
 		PageAccessLogRepository: pageAccessLogsRepository,
 		Mailer:                  mailer,
+		PageIndexer:             pageIndexer,
 	})
 	uploadService := upload.NewUploadService(upload.NewUploadServiceParams{
 		Config:   cfg,

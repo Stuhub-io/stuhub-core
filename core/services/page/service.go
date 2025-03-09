@@ -19,6 +19,7 @@ type Service struct {
 	pageAccessLogRepository ports.PageAccessLogRepository
 	orgRepository           ports.OrganizationRepository
 	mailer                  ports.Mailer
+	pageIndexer             ports.PageIndexer
 }
 
 type NewServiceParams struct {
@@ -28,6 +29,7 @@ type NewServiceParams struct {
 	ports.PageAccessLogRepository
 	ports.OrganizationRepository
 	ports.Mailer
+	ports.PageIndexer
 }
 
 func NewService(params NewServiceParams) *Service {
@@ -38,6 +40,7 @@ func NewService(params NewServiceParams) *Service {
 		pageAccessLogRepository: params.PageAccessLogRepository,
 		mailer:                  params.Mailer,
 		orgRepository:           params.OrganizationRepository,
+		pageIndexer:             params.PageIndexer,
 	}
 }
 
@@ -374,10 +377,24 @@ func (s *Service) CreateDocumentPage(
 
 	// FIXME: Check if user is a member of the organization
 	page, err := s.pageRepository.CreateDocumentPage(context.Background(), pageInput)
-
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation
 	}
+
+	go s.pageIndexer.Index(context.Background(), domain.IndexedPage{
+		PkID:           page.PkID,
+		ID:             page.ID,
+		Name:           page.Name,
+		AuthorPkID:     curUser.PkID,
+		AuthorFullName: userutils.GetUserFullName(curUser.FirstName, curUser.LastName),
+		SharedPKIDs:    make([]int64, 0),
+		ViewType:       page.ViewType.String(),
+		Content:        "",
+		CreatedAt:      page.CreatedAt,
+		UpdatedAt:      page.UpdatedAt,
+		ArchivedAt:     page.ArchivedAt,
+	})
+
 	return page, nil
 }
 
@@ -386,7 +403,6 @@ func (s *Service) UpdateDocumentContentByPkID(
 	content domain.DocumentInput,
 	curUser *domain.User,
 ) (d *domain.Page, e *domain.Error) {
-
 	page, err := s.pageRepository.GetByID(
 		context.Background(),
 		"",
@@ -419,6 +435,23 @@ func (s *Service) UpdateDocumentContentByPkID(
 	}
 
 	d, e = s.pageRepository.UpdateContent(context.Background(), pagePkID, content)
+	if e != nil {
+		return nil, e
+	}
+
+	go s.pageIndexer.Update(context.Background(), domain.IndexedPage{
+		PkID:           page.PkID,
+		ID:             page.ID,
+		Name:           page.Name,
+		AuthorPkID:     curUser.PkID,
+		AuthorFullName: userutils.GetUserFullName(curUser.FirstName, curUser.LastName),
+		SharedPKIDs:    make([]int64, 0),
+		ViewType:       page.ViewType.String(),
+		Content:        content.JsonContent,
+		CreatedAt:      page.CreatedAt,
+		UpdatedAt:      page.UpdatedAt,
+		ArchivedAt:     page.ArchivedAt,
+	})
 
 	return d, e
 }
@@ -489,6 +522,20 @@ func (s *Service) CreateAssetPage(
 		curUser.PkID,
 		domain.PageUpload,
 	)
+
+	go s.pageIndexer.Index(context.Background(), domain.IndexedPage{
+		PkID:           page.PkID,
+		ID:             page.ID,
+		Name:           page.Name,
+		AuthorPkID:     curUser.PkID,
+		AuthorFullName: userutils.GetUserFullName(curUser.FirstName, curUser.LastName),
+		SharedPKIDs:    make([]int64, 0),
+		ViewType:       page.ViewType.String(),
+		Content:        "",
+		CreatedAt:      page.CreatedAt,
+		UpdatedAt:      page.UpdatedAt,
+		ArchivedAt:     page.ArchivedAt,
+	})
 
 	return page, nil
 }
@@ -859,4 +906,13 @@ func (s Service) RemovePageFromStarred(input domain.StarPageInput, curUser *doma
 		return err
 	}
 	return nil
+}
+
+func (s Service) QuickSearch(args domain.SearchIndexedPageParams) (*[]domain.QuickSearchPage, *domain.Error) {
+	pages, err := s.pageIndexer.Search(context.Background(), args)
+	if err != nil {
+		return nil, domain.ErrInternalServerError
+	}
+
+	return pages, nil
 }
