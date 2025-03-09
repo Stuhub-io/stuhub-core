@@ -1,17 +1,17 @@
 package domain
 
 type IndexedPage struct {
-	PkID           int64   `json:"pkid"`
-	ID             string  `json:"id"`
-	Name           string  `json:"name"`
-	AuthorPkID     int64   `json:"author_pkid"`
-	AuthorFullName string  `json:"author_fullname"`
-	SharedPKIDs    []int64 `json:"shared_pkids"`
-	ViewType       string  `json:"view_type"`
-	Content        string  `json:"content"`
-	CreatedAt      string  `json:"created_at"`
-	UpdatedAt      string  `json:"updated_at"`
-	ArchivedAt     string  `json:"archived_at"`
+	PkID           int64   `json:"pkid,omitempty"`
+	ID             string  `json:"id,omitempty"`
+	Name           string  `json:"name,omitempty"`
+	AuthorPkID     int64   `json:"author_pkid,omitempty"`
+	AuthorFullName string  `json:"author_fullname,omitempty"`
+	SharedPKIDs    []int64 `json:"shared_pkids,omitempty"`
+	ViewType       string  `json:"view_type,omitempty"`
+	Content        string  `json:"content,omitempty"`
+	CreatedAt      string  `json:"created_at,omitempty"`
+	UpdatedAt      string  `json:"updated_at,omitempty"`
+	ArchivedAt     string  `json:"archived_at,omitempty"`
 }
 
 type SearchIndexedPageParams struct {
