@@ -1,8 +1,6 @@
 package api
 
 import (
-	"fmt"
-
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/services/page"
 	"github.com/Stuhub-io/internal/api/decorators"
@@ -642,8 +640,6 @@ func (h *PageHandler) QuickSearch(c *gin.Context, user *domain.User) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-
-	fmt.Print(">>> Params: ", queryParams)
 
 	pages, err := h.pageService.QuickSearch(domain.SearchIndexedPageParams{
 		UserPkID:   user.PkID,
