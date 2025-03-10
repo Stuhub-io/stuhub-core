@@ -10,7 +10,8 @@ export
 
 # ~~~ Dev without Docker ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 dev:
-	@air -c .air.toml
+	@go run ./cmd/elasticsearch-indexer-redis/main.go -env build/local/api & \
+	air -c .air.toml
 
 run-cmd:
 	@ read -p "Please provide cmd file name: " Name; \

@@ -20,6 +20,7 @@ type Service struct {
 	orgRepository           ports.OrganizationRepository
 	mailer                  ports.Mailer
 	pageIndexer             ports.PageIndexer
+	pagePublisher           ports.PageMessageBrokerPublisher
 }
 
 type NewServiceParams struct {
@@ -30,6 +31,7 @@ type NewServiceParams struct {
 	ports.OrganizationRepository
 	ports.Mailer
 	ports.PageIndexer
+	ports.PageMessageBrokerPublisher
 }
 
 func NewService(params NewServiceParams) *Service {
@@ -41,6 +43,7 @@ func NewService(params NewServiceParams) *Service {
 		mailer:                  params.Mailer,
 		orgRepository:           params.OrganizationRepository,
 		pageIndexer:             params.PageIndexer,
+		pagePublisher:           params.PageMessageBrokerPublisher,
 	}
 }
 
