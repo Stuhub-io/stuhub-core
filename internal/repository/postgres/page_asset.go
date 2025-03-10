@@ -6,6 +6,7 @@ import (
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/pageutils"
+	"github.com/Stuhub-io/utils/userutils"
 )
 
 // Asset Page.
@@ -69,7 +70,8 @@ func (r *PageRepository) CreateAsset(ctx context.Context, assetInput domain.Asse
 		pageutils.PageModelToDomainParams{
 			Page: newPage,
 			PageBody: pageutils.PageBodyParams{
-				Asset: pageutils.TransformAssetModalToDomain(&asset),
+				Author: userutils.TransformUserModelToDomain(author),
+				Asset:  pageutils.TransformAssetModalToDomain(&asset),
 			},
 		},
 	), nil

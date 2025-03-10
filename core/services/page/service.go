@@ -121,6 +121,12 @@ func (s *Service) UpdatePageByPkID(
 	}
 
 	d, e = s.pageRepository.Update(context.Background(), pagePkID, updateInput)
+	if e != nil {
+		return nil, e
+	}
+
+	s.pagePublisher.Updated(context.Background(), d)
+
 	return d, e
 }
 
@@ -384,19 +390,7 @@ func (s *Service) CreateDocumentPage(
 		return nil, domain.ErrDatabaseMutation
 	}
 
-	go s.pageIndexer.Index(context.Background(), domain.IndexedPage{
-		PkID:           page.PkID,
-		ID:             page.ID,
-		Name:           page.Name,
-		AuthorPkID:     curUser.PkID,
-		AuthorFullName: userutils.GetUserFullName(curUser.FirstName, curUser.LastName),
-		SharedPKIDs:    make([]int64, 0),
-		ViewType:       page.ViewType.String(),
-		Content:        "",
-		CreatedAt:      page.CreatedAt,
-		UpdatedAt:      page.UpdatedAt,
-		ArchivedAt:     page.ArchivedAt,
-	})
+	s.pagePublisher.Created(context.Background(), page)
 
 	return page, nil
 }
@@ -442,19 +436,7 @@ func (s *Service) UpdateDocumentContentByPkID(
 		return nil, e
 	}
 
-	go s.pageIndexer.Update(context.Background(), domain.IndexedPage{
-		PkID:           page.PkID,
-		ID:             page.ID,
-		Name:           page.Name,
-		AuthorPkID:     curUser.PkID,
-		AuthorFullName: userutils.GetUserFullName(curUser.FirstName, curUser.LastName),
-		SharedPKIDs:    make([]int64, 0),
-		ViewType:       page.ViewType.String(),
-		Content:        content.JsonContent,
-		CreatedAt:      page.CreatedAt,
-		UpdatedAt:      page.UpdatedAt,
-		ArchivedAt:     page.ArchivedAt,
-	})
+	s.pagePublisher.Updated(context.Background(), d)
 
 	return d, e
 }
@@ -526,19 +508,7 @@ func (s *Service) CreateAssetPage(
 		domain.PageUpload,
 	)
 
-	go s.pageIndexer.Index(context.Background(), domain.IndexedPage{
-		PkID:           page.PkID,
-		ID:             page.ID,
-		Name:           page.Name,
-		AuthorPkID:     curUser.PkID,
-		AuthorFullName: userutils.GetUserFullName(curUser.FirstName, curUser.LastName),
-		SharedPKIDs:    make([]int64, 0),
-		ViewType:       page.ViewType.String(),
-		Content:        "",
-		CreatedAt:      page.CreatedAt,
-		UpdatedAt:      page.UpdatedAt,
-		ArchivedAt:     page.ArchivedAt,
-	})
+	s.pagePublisher.Created(context.Background(), page)
 
 	return page, nil
 }

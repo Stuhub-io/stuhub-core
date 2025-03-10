@@ -6,6 +6,7 @@ import (
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/pageutils"
+	"github.com/Stuhub-io/utils/userutils"
 	"gorm.io/gorm/clause"
 )
 
@@ -76,6 +77,7 @@ func (r *PageRepository) CreateDocumentPage(
 		pageutils.PageModelToDomainParams{
 			Page: newPage,
 			PageBody: pageutils.PageBodyParams{
+				Author:   userutils.TransformUserModelToDomain(author),
 				Document: pageutils.TransformDocModelToDomain(&document),
 			},
 		},
@@ -104,10 +106,16 @@ func (r *PageRepository) UpdateContent(
 		return nil, domain.ErrDatabaseMutation
 	}
 
+	author := &model.User{}
+	if err := r.store.DB().Where("pkid = ?", page.AuthorPkid).First(author).Error; err != nil {
+		return nil, domain.ErrBadRequest
+	}
+
 	return pageutils.TransformPageModelToDomain(
 		pageutils.PageModelToDomainParams{
 			Page: &page,
 			PageBody: pageutils.PageBodyParams{
+				Author:   userutils.TransformUserModelToDomain(author),
 				Document: pageutils.TransformDocModelToDomain(&doc),
 			},
 		},
