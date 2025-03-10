@@ -71,3 +71,7 @@ func (c *RedisCache) Delete(key string) error {
 
 	return nil
 }
+
+func (c *RedisCache) GetClient() *redis.Client {
+	return c.client
+}
