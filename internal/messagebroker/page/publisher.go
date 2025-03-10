@@ -20,7 +20,7 @@ func NewPageMessageBrokerPublisher(client *redis.Client) *PageMessageBrokerPubli
 	}
 }
 
-func (p *PageMessageBrokerPublisher) Created(ctx context.Context, page domain.Page) error {
+func (p *PageMessageBrokerPublisher) Created(ctx context.Context, page *domain.Page) error {
 	return p.publish(ctx, "page.created", page)
 }
 
@@ -28,7 +28,7 @@ func (p *PageMessageBrokerPublisher) Deleted(ctx context.Context, id string) err
 	return p.publish(ctx, "page.deleted", id)
 }
 
-func (p *PageMessageBrokerPublisher) Updated(ctx context.Context, page domain.Page) error {
+func (p *PageMessageBrokerPublisher) Updated(ctx context.Context, page *domain.Page) error {
 	return p.publish(ctx, "page.updated", page)
 }
 

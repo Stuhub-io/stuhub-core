@@ -2,21 +2,24 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 
 	"github.com/Stuhub-io/config"
+	"github.com/Stuhub-io/core/domain"
 	internalRedis "github.com/Stuhub-io/internal/cache/redis"
 	"github.com/Stuhub-io/internal/search/elasticsearch"
 	"github.com/Stuhub-io/logger"
+	"github.com/Stuhub-io/utils/userutils"
 )
 
 func main() {
@@ -115,13 +118,37 @@ func (s *Server) ListenAndServe() error {
 
 	go func() {
 		for msg := range ch {
-			s.logger.Info("Received message: " + msg.Channel)
+			s.logger.Info("received message: " + msg.Channel)
 
 			switch msg.Channel {
-			case "page.created", "page.updated":
-				s.logger.Info("Record saved")
-				fmt.Println(msg.Payload)
+			case "page.created":
+				var page domain.Page
+
+				if err := json.NewDecoder(strings.NewReader(msg.Payload)).Decode(&page); err != nil {
+					s.logger.Infof("invalid page payload: %s", err.Error())
+					break
+				}
+
+				if err := s.pageIndexer.Index(context.Background(), transformDomainToIndexed(page)); err != nil {
+					s.logger.Infof("failed to index page: %s", err.Error())
+				}
+
+				s.logger.Infof("index page with id %s successfully", page.ID)
+			case "page.updated":
+				var page domain.Page
+
+				if err := json.NewDecoder(strings.NewReader(msg.Payload)).Decode(&page); err != nil {
+					s.logger.Infof("invalid page payload: %s", err.Error())
+					break
+				}
+
+				if err := s.pageIndexer.Update(context.Background(), transformDomainToIndexed(page)); err != nil {
+					s.logger.Infof("failed to update indexed page: %s", err.Error())
+				}
+
+				s.logger.Infof("update indexed page with id %s successfully", page.ID)
 			}
+
 		}
 
 		s.logger.Info("No more messages to consume. Exiting.")
@@ -145,5 +172,26 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		case <-s.done:
 			return nil
 		}
+	}
+}
+
+func transformDomainToIndexed(page domain.Page) domain.IndexedPage {
+	content := ""
+	if page.ViewType == domain.PageViewTypeDoc {
+		content = page.Document.JsonContent
+	}
+
+	return domain.IndexedPage{
+		PkID:           page.PkID,
+		ID:             page.ID,
+		Name:           page.Name,
+		AuthorPkID:     *page.AuthorPkID,
+		AuthorFullName: userutils.GetUserFullName(page.Author.FirstName, page.Author.LastName),
+		SharedPKIDs:    make([]int64, 0),
+		ViewType:       page.ViewType.String(),
+		Content:        content,
+		CreatedAt:      page.CreatedAt,
+		UpdatedAt:      page.UpdatedAt,
+		ArchivedAt:     page.ArchivedAt,
 	}
 }
