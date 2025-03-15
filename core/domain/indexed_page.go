@@ -6,7 +6,7 @@ type IndexedPage struct {
 	Name           string  `json:"name,omitempty"`
 	AuthorPkID     int64   `json:"author_pkid,omitempty"`
 	AuthorFullName string  `json:"author_fullname,omitempty"`
-	SharedPKIDs    []int64 `json:"shared_pkids,omitempty"`
+	SharedPkIDs    []int64 `json:"shared_pkids,omitempty"`
 	ViewType       string  `json:"view_type,omitempty"`
 	Content        string  `json:"content,omitempty"`
 	CreatedAt      string  `json:"created_at,omitempty"`

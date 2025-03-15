@@ -12,6 +12,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 )
 
+const MaxSearchPagesSize = 5
+
 type PageIndexer struct {
 	client *elasticsearch.Client
 	logger logger.Logger
@@ -114,11 +116,16 @@ func (i *PageIndexer) Search(ctx context.Context, args domain.SearchIndexedPageP
 	}
 
 	query := map[string]interface{}{
+		"size": MaxSearchPagesSize,
 		"query": map[string]interface{}{
 			"bool": map[string]interface{}{
 				"must": must,
 			},
 		},
+		"sort": []map[string]interface{}{
+			{"_score": map[string]string{"order": "desc"}},
+		},
+		// "_source": []string{"id"}, // Specific fields
 	}
 
 	var buf bytes.Buffer

@@ -147,8 +147,9 @@ func (s *Server) ListenAndServe() error {
 				}
 
 				s.logger.Infof("update indexed page with id %s successfully", page.ID)
+			case "page.roles.updated":
+				// TODO update shared_pkids
 			}
-
 		}
 
 		s.logger.Info("No more messages to consume. Exiting.")
@@ -187,7 +188,7 @@ func transformDomainToIndexed(page domain.Page) domain.IndexedPage {
 		Name:           page.Name,
 		AuthorPkID:     *page.AuthorPkID,
 		AuthorFullName: userutils.GetUserFullName(page.Author.FirstName, page.Author.LastName),
-		SharedPKIDs:    make([]int64, 0),
+		SharedPkIDs:    make([]int64, 0),
 		ViewType:       page.ViewType.String(),
 		Content:        content,
 		CreatedAt:      page.CreatedAt,

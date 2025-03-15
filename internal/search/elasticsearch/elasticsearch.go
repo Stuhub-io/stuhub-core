@@ -14,6 +14,11 @@ func open(url string, logger logger.Logger) (*elasticsearch.Client, error) {
 		return nil, err
 	}
 
+	if _, err = es.Ping(); err != nil {
+		logger.Fatalf(err, "failed to ping elasticsearch")
+		return nil, err
+	}
+
 	logger.Info("elasticsearch connected")
 
 	return es, nil
