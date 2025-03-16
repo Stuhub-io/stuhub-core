@@ -32,6 +32,17 @@ type Page struct {
 	PageStar         *PageStar            `json:"page_star"`
 }
 
+type QuickSearchPage struct {
+	PkID           int64  `json:"pkid"`
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	AuthorPkID     int64  `json:"author_pkid"`
+	AuthorFullName string `json:"author_fullname"`
+	ViewType       string `json:"view_type"`
+	UpdatedAt      string `json:"updated_at"`
+	ArchivedAt     string `json:"archived_at"`
+}
+
 type PageRoleUser struct {
 	PkID            int64    `json:"pkid"`
 	PagePkID        int64    `json:"page_pkid"`

@@ -80,6 +80,15 @@ func GetDefaultConfigLoaders() []Loader {
 	return loaders
 }
 
+func GetConfigLoaders(envPath string) []Loader {
+	loaders := []Loader{
+		NewEnvReader(),
+		NewFileLoader(DEFAULT_ENV_FILENAME, envPath),
+	}
+
+	return loaders
+}
+
 func generateConfigFromViper(v *viper.Viper) Config {
 	allowedOrigins := strings.Split(v.GetString("ALLOWED_ORIGINS"), ",")
 
