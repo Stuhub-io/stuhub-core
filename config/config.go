@@ -8,7 +8,7 @@ import (
 )
 
 // default path to env for running without DOCKER.
-const DEFAULT_ENV_PATH = "build/local/api"
+const DEFAULT_ENV_PATH = "build/staging/api"
 const DEFAULT_ENV_FILENAME = ".env"
 
 type Loader interface {

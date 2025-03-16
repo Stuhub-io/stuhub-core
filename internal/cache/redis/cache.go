@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/Stuhub-io/logger"
-	"github.com/redis/go-redis/v9"
+	redis "github.com/redis/go-redis/v9"
 )
 
 type RedisCache struct {

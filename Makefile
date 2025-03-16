@@ -20,21 +20,13 @@ run-cmd:
 setup:
 	@ echo "Setting up the project dependencies ..."
 	@ make install-deps
-	@ make deps
+	@ echo "Installed required tools"
 	@ make down
 	@ make up
 	@ make migrate-up
 
-setup-hosted-pg:
-	@ echo "Setting up the project dependencies ..."
-	@ make install-deps
-	@ make deps
-	@ make down
-	@ make hosted-pg-up
-	@ make migrate-prod-up	
-
 up: # Startup / Spinup Docker Compose and air
-	@ docker-compose -f local.yml up --build -d --remove-orphans
+	@ docker compose -f local.yml up --build -d --remove-orphans
 
 down: docker-teardown            ## Stop Docker
 
@@ -42,20 +34,21 @@ destroy: docker-teardown clean  ## Teardown (removes volumes, tmp files, etc...)
 
 install-deps: install-golangci-lint install-air install-golang-migrate install-gorm-gentool
 
-deps:
-	@ echo "Required Tools Are Available"
-
 docker-stop:
 	@ docker compose -f local.yml down
 
 docker-teardown:
-	@ docker-compose -f local.yml down --remove-orphans -v
+	@ docker compose -f local.yml down --remove-orphans -v
 
 hosted-pg-up: 
 	@ docker compose -f local-hosted-pg.yml up --build -d --remove-orphans
 
 # ~~~ Database ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 POSTGRESQL_DSN = postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable
+
+# Run this command to sync the staging database to local
+dump-staging-to-local:
+	@ docker exec -it db-sync /sync.sh
 
 # NOTE: run command with ENV = production for production database
 migrate-up:

@@ -1,24 +1,24 @@
 version: "3.9"
 services:
-  # api:
-  #   build:
-  #     context: .
-  #     dockerfile: build/local/api/Dockerfile
-  #   container_name: api
-  #   depends_on:
-  #     pgsql:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #   env_file:
-  #     - build/local/api/.env
-  #   ports:
-  #     - 5000:5000
-  #   volumes:
-  #     - .:/app:z
-  #   command: /start.sh
-  #   networks:
-  #     - stuhub-api
+  api:
+    build:
+      context: .
+      dockerfile: build/local/api/Dockerfile
+    container_name: api
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - build/local/api/.env
+    ports:
+      - 5000:5000
+    volumes:
+      - .:/app:z
+    command: /start.sh
+    networks:
+      - stuhub-api
 
   pgsql:
     hostname: postgres
@@ -97,7 +97,22 @@ services:
       retries: 3
     ports:
       - 5601:5601
-
+    
+  db-sync:
+    build:
+      context: .
+      dockerfile: build/local/db-sync/Dockerfile
+    container_name: db-sync
+    depends_on:
+      pgsql:
+        condition: service_healthy
+    env_file:
+      - build/local/db-sync/.env
+    volumes:
+      - local_postgres_data_backups:/backups # Share backup storage with pgsql
+    networks:
+      - stuhub-api
+    
 networks:
   stuhub-api:
     driver: bridge
