@@ -28,6 +28,7 @@ import (
 	"github.com/Stuhub-io/internal/remote"
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/postgres"
+	"github.com/Stuhub-io/internal/repository/scylla"
 	"github.com/Stuhub-io/internal/search/elasticsearch"
 	"github.com/Stuhub-io/internal/token"
 	"github.com/Stuhub-io/internal/uploader"
@@ -53,6 +54,8 @@ func main() {
 
 	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug, logger)
 
+	scyllaDB := scylla.Must(cfg.ScyllaHosts, cfg.ScyllaKeyspace, cfg.Debug, logger)
+
 	redisCache := redis.Must(cfg.RedisUrl, logger)
 
 	elasticSearch := elasticsearch.Must(cfg.ElasticSearchURL, logger)
@@ -60,7 +63,7 @@ func main() {
 	tokenMaker := token.Must(cfg.SecretKey)
 
 	cacheStore := cache.NewCacheStore(redisCache)
-	dbStore := store.NewDBStore(postgresDB, cacheStore)
+	dbStore := store.NewDBStore(postgresDB, cacheStore, scyllaDB)
 
 	hasher := hasher.NewScrypt([]byte(cfg.HashPwSecretKey))
 

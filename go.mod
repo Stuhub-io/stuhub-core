@@ -8,6 +8,7 @@ require (
 	github.com/elastic/go-elasticsearch/v8 v8.17.1
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
+	github.com/gocql/gocql v1.7.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
@@ -24,7 +25,12 @@ require (
 	gorm.io/gorm v1.25.12
 )
 
-require github.com/elastic/elastic-transport-go/v8 v8.6.1 // indirect
+require (
+	github.com/elastic/elastic-transport-go/v8 v8.6.1 // indirect
+	github.com/golang/snappy v0.0.3 // indirect
+	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
+	gopkg.in/inf.v0 v0.9.1 // indirect
+)
 
 require (
 	cloud.google.com/go/compute v1.24.0 // indirect

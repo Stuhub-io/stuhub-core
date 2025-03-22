@@ -98,6 +98,7 @@ services:
     ports:
       - 5601:5601
     
+  # Service for running sync back remote staging to local
   db-sync:
     build:
       context: .
@@ -112,7 +113,32 @@ services:
       - local_postgres_data_backups:/backups # Share backup storage with pgsql
     networks:
       - stuhub-api
-    
+
+  # CASSANDRA
+  scylla:
+    image: scylladb/scylla
+    container_name: scylla
+    volumes:
+      - local_scylla_data:/var/lib/scylla
+    ports:
+      - "9042:9042"
+    networks:
+      - stuhub-api
+    command: --broadcast-address 0.0.0.0 --broadcast-rpc-address 0.0.0.0 --rpc-address 0.0.0.0 
+  
+  init-scylla:
+    build:
+      context: .
+      dockerfile: build/local/init-scylla/Dockerfile
+    container_name: init-scylla
+    command: /start.sh
+    env_file:
+      - build/local/init-scylla/.env
+    depends_on:
+      - scylla
+    networks:
+      - stuhub-api
+  
 networks:
   stuhub-api:
     driver: bridge
@@ -122,3 +148,4 @@ volumes:
   local_postgres_data_backups: {}
   local_redis_data: {}
   local_es_data: {}
+  local_scylla_data: {}

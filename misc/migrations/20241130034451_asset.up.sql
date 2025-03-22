@@ -1,8 +1,8 @@
 -- Drop the existing CHECK constraint
-ALTER TABLE "pages" DROP CONSTRAINT IF EXISTS "pages_view_type_check";
+ALTER TABLE IF EXISTS "pages" DROP CONSTRAINT IF EXISTS "pages_view_type_check";
 
 -- Add the new CHECK constraint with the additional option
-ALTER TABLE "pages" 
+ALTER TABLE IF EXISTS "pages" 
 ADD CONSTRAINT "pages_view_type_check" 
 CHECK (view_type IN ('document', 'folder', 'asset'));
 

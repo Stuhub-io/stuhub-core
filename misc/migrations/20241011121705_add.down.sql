@@ -1,4 +1,4 @@
-ALTER TABLE "pages"
-DROP COLUMN "node_id";
+ALTER TABLE IF EXISTS "pages"
+DROP COLUMN IF EXISTS "node_id";
 
 DROP INDEX IF EXISTS page_node_id_idx;

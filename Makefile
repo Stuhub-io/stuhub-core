@@ -8,6 +8,9 @@ ENV ?= local # local | production | staggning
 include ./build/$(ENV)/postgres/.env
 export
 
+include ./build/$(ENV)/init-scylla/.env
+export
+
 # ~~~ Dev without Docker ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 dev:
 	@air -c .air.toml
@@ -78,6 +81,28 @@ dump-schema:
 
 open-db: # CLI for open db using tablePlus only
 	open $(POSTGRESQL_DSN)
+
+# ~~~ Cassandra ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+SCYLLA_DB = cassandra://$(SCYLLA_USER):$(SCYLLA_PASSWORD)@localhost:9042/$(SCYLLA_KEYSPACE)
+
+echo-scylla-db:
+	@ echo $(SCYLLA_DB)
+
+migrate-scylla-create:
+	@ read -p "Please provide name for the migration: " Name; \
+    migrate create -ext cql -dir misc/migrations_scylla $${Name}
+migrate-scylla-up:
+	@ migrate -database $(SCYLLA_DB) -path=misc/migrations_scylla --verbose up
+
+migrate-scylla-down:
+	@ migrate -database $(SCYLLA_DB) -path=misc/migrations_scylla --verbose down $(VERSION)
+
+migrate-scylla-force:
+	@ migrate -database $(SCYLLA_DB) -path=misc/migrations_scylla --verbose force $(VERSION)
+
+migrate-scylla-drop:
+	@ migrate  -database $(SCYLLA_DB) -path=misc/migrations_scylla drop
+
 
 # ~~~ Modules support ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 tidy:

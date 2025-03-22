@@ -11,4 +11,4 @@ CREATE TABLE IF NOT EXISTS "organization_invites" (
         REFERENCES "users" (pkid) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_invite_pkid ON "organization_invites" (id);
+CREATE INDEX IF NOT EXISTS idx_invite_pkid ON "organization_invites" (id);

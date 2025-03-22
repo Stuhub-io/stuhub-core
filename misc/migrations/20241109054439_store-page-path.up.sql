@@ -1,5 +1,5 @@
 ALTER TABLE IF EXISTS "pages"
-ADD COLUMN "path" TEXT NOT NULL DEFAULT '';
+ADD COLUMN IF NOT EXISTS "path" TEXT NOT NULL DEFAULT '';
 
 -- Update paths for all outer pages
 UPDATE pages

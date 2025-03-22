@@ -1,2 +1,2 @@
-ALTER TABLE "pages"
+ALTER TABLE IF EXISTS "pages"
 DROP COLUMN IF EXISTS "cover_image";

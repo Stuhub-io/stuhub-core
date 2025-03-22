@@ -22,6 +22,7 @@ BEGIN
     LOOP
         -- Insert corresponding document entry
         INSERT INTO documents (page_pkid, content, json_content)
-        VALUES (page_pkid, '', NULL);
+        VALUES (page_pkid, '', NULL)
+        ON CONFLICT DO NOTHING;
     END LOOP;
 END $$;

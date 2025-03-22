@@ -210,3 +210,14 @@ type PageAccessLogRepository interface {
 		action domain.PageAccessAction,
 	) (int64, *domain.Error)
 }
+
+type ActivityRepository interface {
+	List(
+		ctx context.Context,
+		query domain.ActivityListQuery,
+	) ([]domain.Activity, *domain.Error)
+	Create(
+		ctx context.Context,
+		input domain.ActivityInput,
+	) (*domain.Activity, *domain.Error)
+}

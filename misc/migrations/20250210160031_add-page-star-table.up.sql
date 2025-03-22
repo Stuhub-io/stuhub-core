@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS page_star (
+CREATE TABLE IF NOT EXISTS "page_star" (
     "pkid" BIGSERIAL PRIMARY KEY,
     "page_pkid" BIGINT NOT NULL,
     "user_pkid" BIGINT NOT NULL,
@@ -14,4 +14,4 @@ CREATE TABLE IF NOT EXISTS page_star (
         REFERENCES pages (pkid) ON DELETE CASCADE
 );
 
-CREATE UNIQUE INDEX unique_user_page_idx ON page_star (user_pkid, page_pkid);
+CREATE UNIQUE INDEX IF NOT EXISTS "unique_user_page_idx" ON "page_star" (user_pkid, page_pkid);

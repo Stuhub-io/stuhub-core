@@ -1,2 +1,2 @@
-ALTER TABLE "pages"
+ALTER TABLE IF EXISTS "pages"
 ALTER COLUMN "general_role" SET NOT NULL;

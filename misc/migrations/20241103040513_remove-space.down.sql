@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS "space_member" (
 );
 
 -- 3. Re-add the `space_pkid` column in `pages`
-ALTER TABLE "pages"
-ADD COLUMN "space_pkid" BIGINT;
+ALTER TABLE IF EXISTS "pages"
+ADD COLUMN IF NOT EXISTS "space_pkid" BIGINT;
 
 -- 4. Set `space_pkid` in `pages` based on `org_pkid`
 UPDATE "pages" SET "space_pkid" = spaces.pkid
@@ -22,8 +22,8 @@ FROM spaces
 WHERE spaces.org_pkid = pages.org_pkid;
 
 -- 5. Remove the `org_pkid` column and foreign key constraint from `pages`
-ALTER TABLE "pages"
+ALTER TABLE IF EXISTS "pages"
 DROP CONSTRAINT IF EXISTS fk_page_organization;
 
-ALTER TABLE "pages"
-DROP COLUMN "org_pkid";
+ALTER TABLE IF EXISTS "pages"
+DROP COLUMN IF EXISTS "org_pkid";

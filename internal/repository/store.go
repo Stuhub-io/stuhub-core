@@ -3,20 +3,23 @@ package store
 import (
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
+	"github.com/gocql/gocql"
 	"gorm.io/gorm"
 )
 
 type TxEndFunc func(error) *domain.Error
 
 type DBStore struct {
-	Database   *gorm.DB
-	CacheStore ports.CacheStore
+	Database    *gorm.DB         // Primary DB
+	LogDatabase *gocql.Session   // Secondary DB
+	CacheStore  ports.CacheStore // Cache store
 }
 
-func NewDBStore(db *gorm.DB, cacheStore ports.CacheStore) *DBStore {
+func NewDBStore(db *gorm.DB, cacheStore ports.CacheStore, logDb *gocql.Session) *DBStore {
 	return &DBStore{
-		Database:   db,
-		CacheStore: cacheStore,
+		Database:    db,
+		CacheStore:  cacheStore,
+		LogDatabase: logDb,
 	}
 }
 
@@ -54,4 +57,8 @@ func (d *DBStore) NewTransaction() (*DBStore, TxEndFunc) {
 
 func (d *DBStore) SetNewDB(db *gorm.DB) {
 	d.Database = db
+}
+
+func (d *DBStore) LogDB() *gocql.Session {
+	return d.LogDatabase
 }

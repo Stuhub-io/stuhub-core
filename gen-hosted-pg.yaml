@@ -3,20 +3,7 @@ database:
   dsn: "postgresql://postgres.pybsblhawjcweeukqwfg:71102TonyynoT@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
   db: "postgres"
   tables:
-    [
-      "users",
-      "organizations",
-      "organization_member",
-      "pages",
-      "page_roles",
-      "documents",
-      "organization_invites",
-      "assets",
-      "public_token",
-      "page_access_logs",
-      "page_permission_request_log",
-      "page_star"
-    ]
+    []
   outPath: "./internal/repository/model"
   withUnitTest: false
   fieldNullable: true

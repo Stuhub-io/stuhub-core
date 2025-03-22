@@ -2,20 +2,28 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/Stuhub-io/config"
-	"github.com/Stuhub-io/internal/cache"
-	store "github.com/Stuhub-io/internal/repository"
-	"github.com/Stuhub-io/internal/repository/postgres"
 	"github.com/Stuhub-io/logger"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-type TempCache struct{}
+func open(dsn string, isDebug bool, logger logger.Logger) (*gorm.DB, error) {
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN:                  dsn,
+		PreferSimpleProtocol: true,
+	}), &gorm.Config{})
 
-func (TempCache) Set(key string, value any, duration time.Duration) error { return nil }
-func (TempCache) Get(key string) (string, error)                          { return "", nil }
-func (TempCache) Delete(key string) error                                 { return nil }
+	if err != nil {
+		logger.Fatalf(err, "failed to open database connection")
+
+		return nil, err
+	}
+
+	logger.Info("database connected")
+	return db, nil
+}
 
 func main() {
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
@@ -23,14 +31,11 @@ func main() {
 	fmt.Print(cfg)
 
 	logger := logger.NewLogrusLogger()
+	db, err := open(cfg.DBDsn, true, logger)
+	if err != nil {
+		logger.Fatalf(err, "failed to open database connection")
+	}
 
-	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug, logger)
-
-	// redisCache := redis.Must(cfg.RedisUrl)
-	tempCache := TempCache{}
-	cacheStore := cache.NewCacheStore(tempCache)
-
-	dbStore := store.NewDBStore(postgresDB, cacheStore)
-	dbStore.DB().Exec("CREATE UNIQUE INDEX unique_user_page_idx ON page_star (user_pkid, page_pkid);")
+	db.Exec("ALTER TABLE page_access_logs ALTER COLUMN user_pkid DROP NOT NULL;")
 	fmt.Print("done")
 }

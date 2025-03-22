@@ -37,6 +37,9 @@ type Config struct {
 
 	ElasticSearchURL string
 
+	ScyllaHosts    []string
+	ScyllaKeyspace string
+
 	SecretKey                       string
 	SendgridKey                     string
 	SendgridSetPasswordTemplateId   string
@@ -100,6 +103,9 @@ func generateConfigFromViper(v *viper.Viper) Config {
 		DBPass:    v.GetString("DB_PASS"),
 		DBSslMode: v.GetBool("DB_SSL_MODE"),
 		DBDsn:     v.GetString("DB_DSN"),
+
+		ScyllaHosts:    strings.Split(v.GetString("LOG_DB_HOSTS"), ","),
+		ScyllaKeyspace: v.GetString("SCYLLA_KEYSPACE"),
 
 		RedisUrl: v.GetString("REDIS_URL"),
 

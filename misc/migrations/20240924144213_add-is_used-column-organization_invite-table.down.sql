@@ -1,2 +1,2 @@
-ALTER TABLE "organization_invites"
-DROP COLUMN "is_used";
+ALTER TABLE IF EXISTS "organization_invites"
+DROP COLUMN IF EXISTS "is_used";

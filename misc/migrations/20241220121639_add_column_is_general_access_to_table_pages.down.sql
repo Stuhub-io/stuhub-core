@@ -1,2 +1,2 @@
-ALTER TABLE "pages"
-DROP COLUMN "is_general_access";
+ALTER TABLE IF EXISTS "pages"
+DROP COLUMN IF EXISTS "is_general_access";

@@ -13,8 +13,8 @@ const TableNamePageStar = "page_star"
 // PageStar mapped from table <page_star>
 type PageStar struct {
 	Pkid      int64     `gorm:"column:pkid;type:bigint;primaryKey;autoIncrement:true" json:"pkid"`
-	PagePkid  int64     `gorm:"column:page_pkid;type:bigint;not null" json:"page_pkid"`
-	UserPkid  int64     `gorm:"column:user_pkid;type:bigint;not null" json:"user_pkid"`
+	PagePkid  int64     `gorm:"column:page_pkid;type:bigint;not null;uniqueIndex:unique_user_page_idx,priority:1" json:"page_pkid"`
+	UserPkid  int64     `gorm:"column:user_pkid;type:bigint;not null;uniqueIndex:unique_user_page_idx,priority:2" json:"user_pkid"`
 	CreatedAt time.Time `gorm:"column:created_at;type:timestamp with time zone;not null;default:now()" json:"created_at"`
 	Order     float64   `gorm:"column:order;type:double precision;not null" json:"order"`
 }

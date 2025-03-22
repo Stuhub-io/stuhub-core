@@ -1,2 +1,2 @@
 ALTER TABLE pages
-DROP COLUMN archived_at;
+DROP COLUMN IF EXISTS archived_at;
