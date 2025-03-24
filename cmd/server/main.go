@@ -24,6 +24,7 @@ import (
 	"github.com/Stuhub-io/internal/cache/redis"
 	"github.com/Stuhub-io/internal/hasher"
 	"github.com/Stuhub-io/internal/mailer"
+	messagebroker "github.com/Stuhub-io/internal/messagebroker/page"
 	"github.com/Stuhub-io/internal/oauth"
 	"github.com/Stuhub-io/internal/remote"
 	store "github.com/Stuhub-io/internal/repository"
@@ -109,8 +110,10 @@ func main() {
 	)
 
 	// indexers
-	pageIndexer := elasticsearch.NewPageIndexer(elasticSearch)
-	pageIndexer.Index(context.Background())
+	pageIndexer := elasticsearch.NewPageIndexer(elasticSearch, logger)
+
+	// publishers
+	pagePublisher := messagebroker.NewPageRedisMessageBroker(redisCache.GetClient())
 
 	// services
 	cloudinaryUploader := uploader.NewCloudinaryUploader(cfg)
@@ -144,11 +147,13 @@ func main() {
 		OrganizationInviteRepository: organizationInviteRepository,
 	})
 	pageService := page.NewService(page.NewServiceParams{
-		Config:                  cfg,
-		Logger:                  logger,
-		PageRepository:          pageRepository,
-		PageAccessLogRepository: pageAccessLogsRepository,
-		Mailer:                  mailer,
+		Config:                     cfg,
+		Logger:                     logger,
+		PageRepository:             pageRepository,
+		PageAccessLogRepository:    pageAccessLogsRepository,
+		Mailer:                     mailer,
+		PageIndexer:                pageIndexer,
+		PageMessageBrokerPublisher: pagePublisher.Publisher(),
 	})
 	uploadService := upload.NewUploadService(upload.NewUploadServiceParams{
 		Config:   cfg,
@@ -221,6 +226,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGTERM)
 	<-quit
 
+	pagePublisher.Close()
 	shutdownServer(srv, cfg.GetShutdownTimeout(), logger)
 }
 

@@ -225,8 +225,13 @@ func (r *PageRepository) Update(
 	pagePkID int64,
 	updateInput domain.PageUpdateInput,
 ) (*domain.Page, *domain.Error) {
-	var page = model.Page{}
-	if dbErr := r.store.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
+	var page PageResult
+	query := preloadPageResult(r.store.DB().Model(&page), PreloadPageResultParams{
+		Doc:    true,
+		Author: true,
+	})
+
+	if dbErr := query.Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
 		return nil, domain.NewErr("Page not found", domain.BadRequestCode)
 	}
 	if updateInput.Name != nil && updateInput.Name != &page.Name {
@@ -252,7 +257,11 @@ func (r *PageRepository) Update(
 
 	return pageutils.TransformPageModelToDomain(
 		pageutils.PageModelToDomainParams{
-			Page: &page,
+			Page: &page.Page,
+			PageBody: pageutils.PageBodyParams{
+				Author:   userutils.TransformUserModelToDomain(page.Author),
+				Document: pageutils.TransformDocModelToDomain(page.Doc),
+			},
 		},
 	), nil
 }
