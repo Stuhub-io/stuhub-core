@@ -23,12 +23,12 @@ func GetPageIDParam(c *gin.Context) (string, bool) {
 }
 
 func GetPagePkIDParam(c *gin.Context) (int64, bool) {
-	pagePkID := c.Params.ByName(PagePkIDParam)
-	if pagePkID == "" {
+	pagePkIDStr := c.Params.ByName(PagePkIDParam)
+	if pagePkIDStr == "" {
 		return int64(-1), false
 	}
-	docPkID, _ := strconv.Atoi(pagePkID)
-	return int64(docPkID), true
+	pagePkID, _ := strconv.Atoi(pagePkIDStr)
+	return int64(pagePkID), true
 }
 
 func GetPublicTokenIDParam(c *gin.Context) (string, bool) {

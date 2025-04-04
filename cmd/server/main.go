@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Stuhub-io/config"
+	"github.com/Stuhub-io/core/services/activity"
 	"github.com/Stuhub-io/core/services/auth"
 	"github.com/Stuhub-io/core/services/organization"
 	"github.com/Stuhub-io/core/services/page"
@@ -50,11 +51,15 @@ func (TempCache) Delete(key string) error {
 func main() {
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
 
+	fmt.Print("\n\n\n\n")
+	fmt.Print(cfg.ScyllaHosts)
+	fmt.Print("\n\n\n\n")
+
 	logger := logger.NewLogrusLogger()
 
 	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug, logger)
 
-	scyllaDB := scylla.Must(cfg.ScyllaHosts, cfg.ScyllaKeyspace, cfg.Debug, logger)
+	scyllaDB := scylla.Must(cfg.ScyllaHosts, cfg.ScyllaPort, cfg.ScyllaKeyspace, cfg.Debug, logger)
 
 	redisCache := redis.Must(cfg.RedisUrl, logger)
 
@@ -107,6 +112,10 @@ func main() {
 			Store: dbStore,
 		},
 	)
+	activityRepository := scylla.NewActivityRepository(scylla.ActivityRepositoryParams{
+		Cfg:   cfg,
+		Store: dbStore,
+	})
 
 	// indexers
 	pageIndexer := elasticsearch.NewPageIndexer(elasticSearch)
@@ -149,6 +158,7 @@ func main() {
 		PageRepository:          pageRepository,
 		PageAccessLogRepository: pageAccessLogsRepository,
 		Mailer:                  mailer,
+		ActivityRepository:      activityRepository,
 	})
 	uploadService := upload.NewUploadService(upload.NewUploadServiceParams{
 		Config:   cfg,
@@ -157,6 +167,14 @@ func main() {
 	pageAccessLogService := pageAccessLog.NewService(pageAccessLog.NewServiceParams{
 		PageRepository:          pageRepository,
 		PageAccessLogRepository: pageAccessLogsRepository,
+	})
+
+	activityService := activity.NewService(activity.NewServiceParams{
+		PageRepository:         pageRepository,
+		Config:                 cfg,
+		Logger:                 logger,
+		OrganizationRepository: orgRepository,
+		ActivityRepository:     activityRepository,
 	})
 
 	// handlers
@@ -190,6 +208,11 @@ func main() {
 			Router:               v1,
 			AuthMiddleware:       authMiddleware,
 			PageAccessLogService: pageAccessLogService,
+		})
+		api.UseActivityHandler(api.NewActivityHandlerParams{
+			Router:          v1,
+			AuthMiddleware:  authMiddleware,
+			ActivityService: activityService,
 		})
 	}
 

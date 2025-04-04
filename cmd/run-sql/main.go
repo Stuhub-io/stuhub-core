@@ -2,14 +2,16 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/logger"
+	"github.com/gocql/gocql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func open(dsn string, isDebug bool, logger logger.Logger) (*gorm.DB, error) {
+func Open(dsn string, isDebug bool, logger logger.Logger) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  dsn,
 		PreferSimpleProtocol: true,
@@ -25,17 +27,44 @@ func open(dsn string, isDebug bool, logger logger.Logger) (*gorm.DB, error) {
 	return db, nil
 }
 
+func OpenScylla(hosts []string, port string, keyspace string, isDebug bool, logger logger.Logger) *gocql.Session {
+	nPort, err := strconv.Atoi(port)
+	if err != nil {
+		logger.Fatalf(err, "failed to convert port to int: %v")
+		panic(err)
+	}
+	cluster := gocql.NewCluster(hosts...)
+	cluster.Port = nPort
+	cluster.Keyspace = keyspace
+	cluster.Consistency = gocql.Quorum
+
+	session, err := cluster.CreateSession()
+
+	if err != nil {
+		logger.Fatalf(err, "failed to create Cassandra session: %v")
+		panic(err)
+	}
+
+	if isDebug {
+		session.SetConsistency(gocql.Quorum)
+	}
+
+	logger.Info("SCylla connected")
+	return session
+}
+
 func main() {
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
 
 	fmt.Print(cfg)
 
 	logger := logger.NewLogrusLogger()
-	db, err := open(cfg.DBDsn, true, logger)
+
+	db, err := Open(cfg.DBDsn, true, logger)
 	if err != nil {
 		logger.Fatalf(err, "failed to open database connection")
 	}
 
-	db.Exec("ALTER TABLE page_access_logs ALTER COLUMN user_pkid DROP NOT NULL;")
+	db.Exec("")
 	fmt.Print("done")
 }

@@ -1,6 +1,11 @@
 package scylla
 
 import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	store "github.com/Stuhub-io/internal/repository"
@@ -23,7 +28,107 @@ func NewActivityRepository(params ActivityRepositoryParams) *ActivityRepository 
 	}
 }
 
-func (r *ActivityRepository) List() ([]domain.Activity, *domain.Error) {
-	r.store.LogDB()
-	return nil, nil
+func (r *ActivityRepository) List(ctx context.Context, q domain.ActivityListQuery) ([]domain.Activity, *domain.Error) {
+
+	queryStr, args := buildActivityQuery(q)
+	iter := r.store.LogDB().Query(queryStr, args...).Iter()
+
+	activities := make([]domain.Activity, 0, iter.NumRows())
+
+	curActivity := domain.Activity{}
+	var createdTime time.Time
+	for iter.Scan(
+		&curActivity.ActorPkID,
+		&curActivity.PagePkID,
+		&curActivity.ActionCode,
+		&curActivity.Label,
+		&curActivity.MetaData,
+		&createdTime,
+	) {
+		curActivity.CreatedAt = createdTime.Format(time.RFC3339)
+		activities = append(activities, curActivity)
+	}
+
+	if err := iter.Close(); err != nil {
+		return nil, domain.NewErr(err.Error(), domain.InternalServerErrCode)
+	}
+
+	return activities, nil
+}
+
+func (r *ActivityRepository) Create(ctx context.Context, input domain.ActivityInput) (*domain.Activity, *domain.Error) {
+	// Get the current time for created_at
+	createdAt := time.Now().UTC()
+	if err := r.store.LogDB().Query(
+		`INSERT INTO activity (actor_pkid, page_pkid, action_code, label, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+		input.ActorPkID,
+		input.PagePkID,
+		input.ActionCode,
+		input.Label,
+		input.MetaData,
+		createdAt,
+	).Exec(); err != nil {
+		return nil, domain.NewErr(err.Error(), domain.InternalServerErrCode)
+	}
+
+	return &domain.Activity{
+		ActorPkID:  input.ActorPkID,
+		PagePkID:   input.PagePkID,
+		ActionCode: input.ActionCode,
+		Label:      input.Label,
+		MetaData:   input.MetaData,
+		CreatedAt:  createdAt.Format(time.RFC3339),
+	}, nil
+}
+
+func buildActivityQuery(query domain.ActivityListQuery) (string, []interface{}) {
+	baseQuery := `SELECT pkid, actor_pkid, page_pkid, action_code, label, metadata, created_at FROM activity`
+
+	var conditions []string
+	var args []interface{}
+	paramCount := 1
+
+	// Filter By `ACTION_CODE`
+	if len(query.ActionCodes) > 0 {
+		placeholders := make([]string, len(query.ActionCodes))
+		for i, code := range query.ActionCodes {
+			placeholders[i] = fmt.Sprintf("$%d", paramCount)
+			paramCount++
+			args = append(args, string(code))
+		}
+		conditions = append(conditions, fmt.Sprintf("action_code IN (%s)", strings.Join(placeholders, ", ")))
+	}
+
+	// Add filter for ActorPkIDs if provided
+	if len(query.ActorPkIDs) > 0 {
+		placeholders := make([]string, len(query.ActorPkIDs))
+		for i, id := range query.ActorPkIDs {
+			placeholders[i] = fmt.Sprintf("$%d", paramCount)
+			paramCount++
+			args = append(args, id)
+		}
+		conditions = append(conditions, fmt.Sprintf("actor_pkid IN (%s)", strings.Join(placeholders, ", ")))
+	}
+
+	// Add filter for PagePkIDs if provided
+	if len(query.PagePkIDs) > 0 {
+		placeholders := make([]string, len(query.PagePkIDs))
+		for i, id := range query.PagePkIDs {
+			placeholders[i] = fmt.Sprintf("$%d", paramCount)
+			paramCount++
+			args = append(args, id)
+		}
+		conditions = append(conditions, fmt.Sprintf("page_pkid IN (%s)", strings.Join(placeholders, ", ")))
+	}
+
+	// Construct the final query
+	finalQuery := baseQuery
+	if len(conditions) > 0 {
+		finalQuery += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	// Add semicolon at the end of the query
+	finalQuery += ";"
+
+	return finalQuery, args
 }

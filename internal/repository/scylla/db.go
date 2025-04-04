@@ -1,6 +1,8 @@
 package scylla
 
 import (
+	"strconv"
+
 	"github.com/Stuhub-io/logger"
 	gocql "github.com/gocql/gocql"
 )
@@ -17,13 +19,24 @@ func NewCQLLogger(logger logger.Logger) *CQLLogger {
 
 // Trace method logs query execution details
 func (c *CQLLogger) Trace(traceId []byte) {
-	c.logger.Debug("CQL: " + string(traceId))
+
 }
 
-func Must(hosts []string, keyspace string, isDebug bool, logger logger.Logger) *gocql.Session {
+func Must(hosts []string, port string, keyspace string, isDebug bool, logger logger.Logger) *gocql.Session {
+	nPort, err := strconv.Atoi(port)
+	if err != nil {
+		logger.Fatalf(err, "failed to convert port to int: %v")
+		panic(err)
+	}
 	cluster := gocql.NewCluster(hosts...)
+	cluster.Port = nPort
 	cluster.Keyspace = keyspace
 	cluster.Consistency = gocql.Quorum
+
+	// FIXME: Possible enable SSL
+	// cluster.SslOpts = &gocql.SslOptions{
+	// 	EnableHostVerification: true,
+	// }
 
 	session, err := cluster.CreateSession()
 	session.SetTrace(NewCQLLogger(logger))

@@ -336,21 +336,22 @@ func (r *PageRepository) Archive(
 
 	now := time.Now()
 	page.ArchivedAt = &now
+	page.ParentPagePkid = nil
 
 	tx, done := r.store.NewTransaction()
 
 	descendantPath := pageutils.AppendPath(page.Path, strconv.FormatInt(page.Pkid, 10))
 
-	// Archive current page
+	// Archive current page, Move page to root
 	if dbErr := tx.DB().Clauses(clause.Locking{
-		Strength: clause.LockingStrengthShare,
-	}, clause.Returning{}).Select("ArchivedAt").Save(&page).Error; dbErr != nil {
+		Strength: clause.LockingStrengthShare, // FIXME: Need Locking ?
+	}, clause.Returning{}).Select("ArchivedAt", "ParentPagePkid").Save(&page).Error; dbErr != nil {
 		return nil, done(dbErr)
 	}
 
 	// Archive childrens
 	if dbErr := tx.DB().Clauses(clause.Locking{
-		Strength: clause.LockingStrengthShare,
+		Strength: clause.LockingStrengthShare, // FIXME: Need Locking ?
 	}, clause.Returning{}).
 		Model(&model.Page{}).
 		Where("path LIKE ? AND archived_at IS NULL", descendantPath+"%").

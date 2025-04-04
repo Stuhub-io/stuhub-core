@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS "activity" (
-    pkid BIGINT PRIMARY KEY,
     actor_pkid BIGINT,
     page_pkid BIGINT,
     action_code TEXT,
     label TEXT,
-    metadata TEXT,  -- JSONB is not supported, store JSON as a string
-    created_at TIMESTAMP
-);
+    metadata TEXT,
+    created_at TIMESTAMP,
+    PRIMARY KEY ((actor_pkid), created_at)
+) WITH CLUSTERING ORDER BY (created_at DESC);

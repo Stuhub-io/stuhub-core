@@ -12,39 +12,76 @@ import (
 type Service struct {
 	cfg                config.Config
 	logger             logger.Logger
-	activityRepository ports.ActivityRepository
 	pageRepository     ports.PageRepository
-	mailer             ports.Mailer
+	activityRepository ports.ActivityRepository
+	orgRepository      ports.OrganizationRepository
 }
 
 type NewServiceParams struct {
 	config.Config
 	logger.Logger
-	ports.ActivityRepository
 	ports.PageRepository
-	ports.Mailer
+	ports.ActivityRepository
+	ports.OrganizationRepository
 }
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
 		cfg:                params.Config,
 		logger:             params.Logger,
-		activityRepository: params.ActivityRepository,
 		pageRepository:     params.PageRepository,
-		mailer:             params.Mailer,
+		activityRepository: params.ActivityRepository,
+		orgRepository:      params.OrganizationRepository,
 	}
 }
 
-func (s *Service) CreateActivity(input domain.ActivityInput) (d *domain.Activity, e *domain.Error) {
-	d, e = s.activityRepository.Create(context.Background(), input)
-	return d, e
+func (s Service) TrackUserVisitPage(curUser *domain.User, pagePkID int64) *domain.Error {
+	if curUser == nil {
+		return domain.ErrUnauthorized
+	}
+
+	p, e := s.pageRepository.GetByID(context.Background(), "", &pagePkID, domain.PageDetailOptions{}, nil)
+
+	if e != nil {
+		return e
+	}
+
+	label := "User Visited Page"
+	_, er := s.activityRepository.Create(context.Background(), domain.ActivityInput{
+		ActionCode: domain.ActionUserVisitPage,
+		ActorPkID:  curUser.PkID,
+		PagePkID:   &p.PkID,
+		OrgPkID:    &p.OrganizationPkID,
+		Label:      &label,
+	})
+	if er != nil {
+		return er
+	}
+	return nil
 }
 
-func (s *Service) ListActivity(query domain.ActivityListQuery) (d []domain.Activity, e *domain.Error) {
-	d, e = s.activityRepository.List(context.Background(), query)
-	return d, e
-}
+func (s Service) TrackUserVisitOrganization(curUser *domain.User, orgPkID int64) *domain.Error {
+	if curUser == nil {
+		return domain.ErrUnauthorized
+	}
+	org, e := s.orgRepository.GetOrgByPkID(context.Background(), orgPkID)
 
-func (s *Service) ListLatestActivity(query domain.ActivityListQuery) (d []domain.Activity, e *domain.Error) {
-	return d, e
+	if e != nil {
+		return e
+	}
+
+	label := "User Visited Page"
+
+	_, er := s.activityRepository.Create(context.Background(), domain.ActivityInput{
+		ActionCode: domain.ActionUserVisitPage,
+		ActorPkID:  curUser.PkID,
+		PagePkID:   nil,
+		OrgPkID:    &org.PkId,
+		Label:      &label,
+	})
+	if er != nil {
+		return er
+	}
+
+	return nil
 }

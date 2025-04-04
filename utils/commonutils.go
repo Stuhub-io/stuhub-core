@@ -1,6 +1,7 @@
 package commonutils
 
 import (
+	"encoding/json"
 	"reflect"
 	"strconv"
 	"strings"
@@ -79,4 +80,26 @@ func CurTimestampAsFloat64() float64 {
 
 func NillableField[T any](value T) *T {
 	return &value
+}
+
+func RetryFunc(retryCount int, f func() error) error {
+	var err error
+	for range retryCount {
+		err = f()
+		if err == nil {
+			return nil
+		}
+	}
+	return err
+}
+
+func ToJsonStr(v interface{}) string {
+	if v == nil {
+		return ""
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }

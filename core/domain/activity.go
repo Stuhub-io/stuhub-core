@@ -3,21 +3,22 @@ package domain
 type ActionCode string
 
 const (
-	ActionUserCreatePage           ActionCode = "user.create.page"
-	ActionUserModifiedPageDocument ActionCode = "user.modify.page.document"
-	ActionUserRemovePage           ActionCode = "user.remove.page"
-	ActionUserVisitPage            ActionCode = "user.visit.page"
+	ActionUserCreatePage     ActionCode = "user.create.page"
+	ActionUserRemovePage     ActionCode = "user.remove.page"
+	ActionUserMovePage       ActionCode = "user.move.page"
+	ActionUserVisitPage      ActionCode = "user.visit.page"
+	ActionUserUpdatePageInfo ActionCode = "user.update.page"
 )
 
 func (a ActionCode) String() string {
 	return string(a)
 }
+
 func ActionCodeFromString(s string) ActionCode {
 	return ActionCode(s)
 }
 
 type Activity struct {
-	PkID       int64      `json:"pkid"`
 	ActorPkID  int64      `json:"actor_pkid"`
 	Actor      *User      `json:"actor"`
 	PagePkID   *int64     `json:"page_pkid"`
@@ -30,16 +31,22 @@ type Activity struct {
 }
 
 type ActivityListQuery struct {
-	PkIDs       []int64      `json:"pkids"`
-	ActionCodes []ActionCode `json:"action_code"`
-	ActorPkIDs  []int64      `json:"actor_pkid"`
-	PagePkIDs   []int64      `json:"page_pkid"`
+	ActionCodes []ActionCode `json:"action_codes"`
+	ActorPkIDs  []int64      `json:"actor_pkids"`
+	PagePkIDs   []int64      `json:"page_pkids"`
 }
 
 type ActivityInput struct {
 	ActionCode ActionCode `json:"action_code"`
 	ActorPkID  int64      `json:"actor_pkid"`
 	PagePkID   *int64     `json:"page_pkid"`
+	OrgPkID    *int64     `json:"org_pkid"`
 	Label      *string    `json:"label"`
 	MetaData   *string    `json:"meta_data"`
+}
+
+type ActivityMetaParams struct {
+	ActionCode ActionCode
+	Actor      *User
+	Page       *Page
 }

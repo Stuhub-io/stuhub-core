@@ -8,6 +8,8 @@ import (
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
 	"github.com/Stuhub-io/logger"
+	commonutils "github.com/Stuhub-io/utils"
+	"github.com/Stuhub-io/utils/activityutils"
 	"github.com/Stuhub-io/utils/pageutils"
 	"github.com/Stuhub-io/utils/userutils"
 )
@@ -18,6 +20,7 @@ type Service struct {
 	pageRepository          ports.PageRepository
 	pageAccessLogRepository ports.PageAccessLogRepository
 	orgRepository           ports.OrganizationRepository
+	activityRepository      ports.ActivityRepository
 	mailer                  ports.Mailer
 }
 
@@ -27,6 +30,7 @@ type NewServiceParams struct {
 	ports.PageRepository
 	ports.PageAccessLogRepository
 	ports.OrganizationRepository
+	ports.ActivityRepository
 	ports.Mailer
 }
 
@@ -38,6 +42,7 @@ func NewService(params NewServiceParams) *Service {
 		pageAccessLogRepository: params.PageAccessLogRepository,
 		mailer:                  params.Mailer,
 		orgRepository:           params.OrganizationRepository,
+		activityRepository:      params.ActivityRepository,
 	}
 }
 
@@ -115,6 +120,32 @@ func (s *Service) UpdatePageByPkID(
 	}
 
 	d, e = s.pageRepository.Update(context.Background(), pagePkID, updateInput)
+
+	// Log Activity
+	// FIXME: Move rename to separate API
+	// go func() {
+	// 	commonutils.RetryFunc(3, func() error {
+	// 		metadata := commonutils.ToJsonStr(activityutils.UserUpdatePageInfoMeta{
+	// 			OldPageName:  page.Name,
+	// 			OldPageCover: page.CoverImage,
+	// 			OldViewType:  page.ViewType.String(),
+	// 		})
+
+	// 		_, err := s.activityRepository.Create(context.Background(), domain.ActivityInput{
+	// 			ActionCode: domain.ActionUserUpdatePageInfo,
+	// 			PagePkID:   &page.PkID,
+	// 			ActorPkID:  user.PkID,
+	// 			MetaData:   &metadata,
+	// 		})
+	// 		if err != nil {
+	// 			e := fmt.Errorf(err.Message)
+	// 			s.logger.Error(e, "[Activity]: Failed to log activity for update page info")
+	// 			return e
+	// 		}
+	// 		return nil
+	// 	})
+	// }()
+
 	return d, e
 }
 
@@ -234,6 +265,44 @@ func (s *Service) ArchivedPageByPkID(
 	}
 
 	d, e = s.pageRepository.Archive(context.Background(), pagePkID)
+
+	var pP *domain.Page = nil
+	if page.ParentPagePkID != nil {
+		p, pErr := s.pageRepository.GetByID(context.Background(), "", page.ParentPagePkID, domain.PageDetailOptions{}, nil)
+		if pErr != nil {
+			return d, e
+		}
+		pP = p
+	}
+
+	go func() {
+		commonutils.RetryFunc(3, func() error {
+			pPName := ""
+			if pP != nil {
+				pPName = pP.Name
+			}
+			metadata := commonutils.ToJsonStr(activityutils.UserRemovePageMeta{
+				OldParentPagePkID: page.ParentPagePkID,
+				OldParentPageName: &pPName,
+			})
+
+			_, err := s.activityRepository.Create(context.Background(), domain.ActivityInput{
+				ActionCode: domain.ActionUserRemovePage,
+				PagePkID:   &page.PkID,
+				OrgPkID:    &page.OrganizationPkID,
+				ActorPkID:  curUser.PkID,
+				MetaData:   &metadata,
+			})
+
+			if err != nil {
+				e := fmt.Errorf(err.Message)
+				s.logger.Error(e, "[Activity]: Failed to log activity for remove page")
+				return e
+			}
+			return nil
+		})
+	}()
+
 	return d, e
 }
 
@@ -243,7 +312,8 @@ func (s *Service) MovePageByPkID(
 	curUser *domain.User,
 ) (d *domain.Page, e *domain.Error) {
 
-	page, err := s.pageRepository.GetByID(
+	// Check Permission
+	p, err := s.pageRepository.GetByID(
 		context.Background(),
 		"",
 		&pagePkID,
@@ -256,7 +326,7 @@ func (s *Service) MovePageByPkID(
 
 	curRole := s.GetPageRolesByUser(context.Background(), pagePkID, curUser)
 	permissions := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
-		Page:     *page,
+		Page:     *p,
 		User:     curUser,
 		PageRole: curRole,
 	})
@@ -266,6 +336,44 @@ func (s *Service) MovePageByPkID(
 	}
 
 	d, e = s.pageRepository.Move(context.Background(), pagePkID, moveInput.ParentPagePkID)
+
+	parentPage, err := s.pageRepository.GetByID(context.Background(), "", moveInput.ParentPagePkID, domain.PageDetailOptions{}, nil)
+	if err != nil {
+		return d, e
+	}
+	// Log Activity
+	go func() {
+		commonutils.RetryFunc(3, func() error {
+			var pName *string = nil
+			if parentPage != nil {
+				pName = &parentPage.Name
+			}
+			var oldPName *string = nil
+			oldPName = &p.Name
+
+			metadata := commonutils.ToJsonStr(activityutils.UserMovePageMeta{
+				OldParentPagePkID: p.ParentPagePkID,
+				NewParentPagePkID: d.ParentPagePkID,
+				OldParentPageName: oldPName,
+				NewParentPageName: pName,
+			})
+			_, err := s.activityRepository.Create(context.Background(), domain.ActivityInput{
+				ActionCode: domain.ActionUserMovePage,
+				PagePkID:   &d.PkID,
+				OrgPkID:    &d.OrganizationPkID,
+				ActorPkID:  curUser.PkID,
+				MetaData:   &metadata,
+			})
+
+			if err != nil {
+				e := fmt.Errorf(err.Message)
+				s.logger.Error(e, "[Activity]: Failed to log activity for move page")
+				return e
+			}
+			return nil
+		})
+	}()
+
 	return d, e
 }
 
@@ -344,8 +452,11 @@ func (s *Service) CreateDocumentPage(
 	curUser *domain.User,
 ) (*domain.Page, *domain.Error) {
 	parentPagePkID := pageInput.ParentPagePkID
+	var parentPage *domain.Page
+
+	// Check Parent Page Permission
 	if parentPagePkID != nil {
-		parentPage, err := s.pageRepository.GetByID(
+		parent, err := s.pageRepository.GetByID(
 			context.Background(),
 			"",
 			parentPagePkID,
@@ -355,6 +466,7 @@ func (s *Service) CreateDocumentPage(
 		if err != nil {
 			return nil, err
 		}
+		parentPage = parent
 
 		curRole := s.GetPageRolesByUser(context.Background(), *pageInput.ParentPagePkID, curUser)
 		permission := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
@@ -378,6 +490,38 @@ func (s *Service) CreateDocumentPage(
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation
 	}
+	// Log Activity
+	go func() {
+		commonutils.RetryFunc(3, func() error {
+			var pName *string = nil
+			if parentPage != nil {
+				pName = &parentPage.Name
+			}
+
+			metadata := commonutils.ToJsonStr(activityutils.UserCreatePageMeta{
+				ParentPagePkID: pageInput.ParentPagePkID,
+				ParentPageName: pName,
+				NewPageName:    page.Name,
+				NewPagePkID:    page.PkID,
+				NewPageID:      page.ID,
+			})
+
+			_, err := s.activityRepository.Create(context.Background(), domain.ActivityInput{
+				ActionCode: domain.ActionUserCreatePage,
+				PagePkID:   &page.PkID,
+				OrgPkID:    &page.OrganizationPkID,
+				ActorPkID:  curUser.PkID,
+				MetaData:   &metadata,
+			})
+			if err != nil {
+				e := fmt.Errorf(err.Message)
+				s.logger.Error(e, "Failed to log activity")
+				return e
+			}
+			return nil
+		})
+	}()
+
 	return page, nil
 }
 
@@ -394,6 +538,7 @@ func (s *Service) UpdateDocumentContentByPkID(
 		domain.PageDetailOptions{},
 		nil,
 	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -418,7 +563,26 @@ func (s *Service) UpdateDocumentContentByPkID(
 		)
 	}
 
+	// Activity Log
 	d, e = s.pageRepository.UpdateContent(context.Background(), pagePkID, content)
+	go func() {
+		commonutils.RetryFunc(3, func() error {
+			metadata := commonutils.ToJsonStr(activityutils.UserVisitePageMeta{})
+
+			_, err := s.activityRepository.Create(context.Background(), domain.ActivityInput{
+				ActionCode: domain.ActionUserCreatePage,
+				PagePkID:   &page.PkID,
+				ActorPkID:  curUser.PkID,
+				MetaData:   &metadata,
+			})
+			if err != nil {
+				e := fmt.Errorf(err.Message)
+				s.logger.Error(e, "Failed to log activity")
+				return e
+			}
+			return nil
+		})
+	}()
 
 	return d, e
 }
@@ -441,14 +605,16 @@ func (s *Service) CreateAssetPage(
 ) (*domain.Page, *domain.Error) {
 
 	parentPagePkID := assetInput.ParentPagePkID
+	var parentPage *domain.Page
 	if parentPagePkID != nil {
-		parentPage, err := s.pageRepository.GetByID(
+		parent, err := s.pageRepository.GetByID(
 			context.Background(),
 			"",
 			parentPagePkID,
 			domain.PageDetailOptions{},
 			nil,
 		)
+		parentPage = parent
 		if err != nil {
 			return nil, err
 		}
@@ -482,6 +648,37 @@ func (s *Service) CreateAssetPage(
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation
 	}
+	// Log Activity
+	go func() {
+		commonutils.RetryFunc(3, func() error {
+			var pName *string = nil
+			if parentPage != nil {
+				pName = &parentPage.Name
+			}
+
+			metadata := commonutils.ToJsonStr(activityutils.UserCreatePageMeta{
+				ParentPagePkID: assetInput.ParentPagePkID,
+				ParentPageName: pName,
+				NewPageName:    page.Name,
+				NewPagePkID:    page.PkID,
+				NewPageID:      page.ID,
+			})
+
+			_, err := s.activityRepository.Create(context.Background(), domain.ActivityInput{
+				ActionCode: domain.ActionUserCreatePage,
+				PagePkID:   &page.PkID,
+				OrgPkID:    &page.OrganizationPkID,
+				ActorPkID:  curUser.PkID,
+				MetaData:   &metadata,
+			})
+			if err != nil {
+				e := fmt.Errorf(err.Message)
+				s.logger.Error(e, "Failed to log activity")
+				return e
+			}
+			return nil
+		})
+	}()
 
 	go s.pageAccessLogRepository.Upsert(
 		context.Background(),
@@ -859,4 +1056,22 @@ func (s Service) RemovePageFromStarred(input domain.StarPageInput, curUser *doma
 		return err
 	}
 	return nil
+}
+
+func (s Service) CreateUserActivity(input domain.ActivityInput, curUser *domain.User) *domain.Error {
+	// FIXME: Check Permissions
+
+	_, err := s.activityRepository.Create(context.Background(), input)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// FIXME: TODO
+func (s Service) ListPageActivitiesByPagePkID(q domain.ActivityListQuery, curUser *domain.User) (d []domain.Activity, e *domain.Error) {
+	// FIXME: Check Permissions
+
+	d, e = s.activityRepository.List(context.Background(), q)
+	return d, e
 }

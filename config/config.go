@@ -39,6 +39,7 @@ type Config struct {
 
 	ScyllaHosts    []string
 	ScyllaKeyspace string
+	ScyllaPort     string
 
 	SecretKey                       string
 	SendgridKey                     string
@@ -104,8 +105,9 @@ func generateConfigFromViper(v *viper.Viper) Config {
 		DBSslMode: v.GetBool("DB_SSL_MODE"),
 		DBDsn:     v.GetString("DB_DSN"),
 
-		ScyllaHosts:    strings.Split(v.GetString("LOG_DB_HOSTS"), ","),
+		ScyllaHosts:    strings.Split(v.GetString("SCYLLA_HOSTS"), ","),
 		ScyllaKeyspace: v.GetString("SCYLLA_KEYSPACE"),
+		ScyllaPort:     v.GetString("SCYLLA_PORT"),
 
 		RedisUrl: v.GetString("REDIS_URL"),
 
