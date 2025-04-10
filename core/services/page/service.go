@@ -1067,11 +1067,3 @@ func (s Service) CreateUserActivity(input domain.ActivityInput, curUser *domain.
 	}
 	return nil
 }
-
-// FIXME: TODO
-func (s Service) ListPageActivitiesByPagePkID(q domain.ActivityListQuery, curUser *domain.User) (d []domain.Activity, e *domain.Error) {
-	// FIXME: Check Permissions
-
-	d, e = s.activityRepository.List(context.Background(), q)
-	return d, e
-}

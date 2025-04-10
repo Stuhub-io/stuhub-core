@@ -2,7 +2,6 @@ package pageutils
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/Stuhub-io/core/domain"
@@ -300,7 +299,6 @@ func GetPageStarByUserPkID(stars []model.PageStar, usrPkID *int64) *domain.PageS
 	if len(star) == 0 {
 		return nil
 	}
-	fmt.Println("star[0]", star[0])
 	return TransformPageStarResultToDomain(PageStarToDomainParams{
 		Model: &star[0],
 	})

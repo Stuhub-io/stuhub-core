@@ -210,3 +210,19 @@ func (r *UserRepository) Search(ctx context.Context, input domain.UserSearchQuer
 	// return domainUsers, nil
 	return resultUsers, nil
 }
+
+func (r *UserRepository) UnsafeListUsers(ctx context.Context, q domain.UserListQuery) ([]domain.User, *domain.Error) {
+
+	users := []model.User{}
+	query := r.store.DB().Model(&model.User{})
+	if err := query.Where("pkid in ?", q.UserPkIDs).Find(&users).Error; err != nil {
+		return nil, domain.NewErr(err.Error(), domain.ErrDatabaseQuery.Code)
+	}
+
+	resultUsers := make([]domain.User, 0, len(users))
+	for _, user := range users {
+		resultUsers = append(resultUsers, *userutils.TransformUserModelToDomain(&user))
+	}
+
+	return resultUsers, nil
+}

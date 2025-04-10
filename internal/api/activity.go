@@ -1,6 +1,8 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/services/activity"
 	"github.com/Stuhub-io/internal/api/decorators"
@@ -32,8 +34,9 @@ func UseActivityHandler(params NewActivityHandlerParams) {
 	authMiddleware := params.AuthMiddleware
 
 	router.Use(authMiddleware.Authenticated())
-	router.POST("/pages/:"+pageutils.PagePkIDParam+"/track-visit", decorators.CurrentUser(handler.TrackUserVisitPage))
-	router.POST("/orgs/:"+organizationutils.OrgPkIDParam+"/track-visit", decorators.CurrentUser(handler.TrackUserVisitOrg))
+	router.POST("/pages/:"+pageutils.PagePkIDParam+"/track-visit", decorators.RequiredAuth(decorators.CurrentUser(handler.TrackUserVisitPage)))
+	router.POST("/orgs/:"+organizationutils.OrgPkIDParam+"/track-visit", decorators.RequiredAuth(decorators.CurrentUser(handler.TrackUserVisitOrg)))
+	router.GET("/pages/:"+pageutils.PagePkIDParam+"/activities", decorators.RequiredAuth(decorators.CurrentUser(handler.ListActivities)))
 }
 
 func (h *ActivityHandler) TrackUserVisitPage(c *gin.Context, curUser *domain.User) {
@@ -63,4 +66,17 @@ func (h *ActivityHandler) TrackUserVisitOrg(c *gin.Context, curUser *domain.User
 		return
 	}
 	response.WithMessage(c, 200, "User visit org tracked successfully")
+}
+
+func (h *ActivityHandler) ListActivities(c *gin.Context, curUser *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+	activities, err := h.activityService.ListPageActivities(curUser, pagePkID)
+	if err != nil {
+		response.BindError(c, err.Message)
+	}
+	response.WithData(c, http.StatusOK, activities)
 }

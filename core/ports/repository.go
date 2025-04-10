@@ -38,6 +38,10 @@ type UserRepository interface {
 		pkID int64,
 		activatedAt time.Time,
 	) (*domain.User, *domain.Error)
+	UnsafeListUsers(
+		ctx context.Context,
+		query domain.UserListQuery,
+	) ([]domain.User, *domain.Error)
 }
 
 type OrganizationRepository interface {

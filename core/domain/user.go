@@ -27,3 +27,7 @@ type UserSearchQuery struct {
 	Emails           []string `json:"emails"`
 	OrganizationPkID *int64   `json:"organization_pkid"`
 }
+
+type UserListQuery struct {
+	UserPkIDs []int64
+}

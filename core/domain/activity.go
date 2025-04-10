@@ -50,3 +50,9 @@ type ActivityMetaParams struct {
 	Actor      *User
 	Page       *Page
 }
+
+// Query All child page activities
+type PageActivitiesListQuery struct {
+	ActionCodes []ActionCode `json:"action_codes"`
+	PagePkID    int64
+}
