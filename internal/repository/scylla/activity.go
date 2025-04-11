@@ -122,8 +122,6 @@ func buildActivityQuery(query domain.ActivityListQuery) (string, []interface{}) 
 			paramCount++
 			args = append(args, id)
 		}
-		fmt.Print("PlaceHolders: ", placeholders, len(placeholders))
-		fmt.Print("Args: ", args, len(args))
 		conditions = append(conditions, fmt.Sprintf("page_pkid IN (%s)", strings.Join(placeholders, ", ")))
 	}
 

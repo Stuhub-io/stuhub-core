@@ -56,8 +56,6 @@ func OpenScylla(hosts []string, port string, keyspace string, isDebug bool, logg
 func main() {
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
 
-	fmt.Print(cfg)
-
 	logger := logger.NewLogrusLogger()
 
 	db, err := Open(cfg.DBDsn, true, logger)

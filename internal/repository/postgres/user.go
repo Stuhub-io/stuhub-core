@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/Stuhub-io/config"
@@ -214,13 +213,10 @@ func (r *UserRepository) Search(ctx context.Context, input domain.UserSearchQuer
 
 func (r *UserRepository) UnsafeListUsers(ctx context.Context, q domain.UserListQuery) ([]domain.User, *domain.Error) {
 
-	fmt.Print("\n\n\n", "FETCHING USERS", "\n\n\n")
 	var users []model.User
 	if err := r.store.DB().Where("users.pkid IN (?)", q.UserPkIDs).Find(&users).Error; err != nil {
 		return nil, domain.NewErr(err.Error(), domain.ErrDatabaseQuery.Code)
 	}
-
-	fmt.Print("\n\n\n", "DONE FETCHING USERS", "\n\n\n")
 
 	resultUsers := make([]domain.User, 0, len(users))
 	for _, user := range users {

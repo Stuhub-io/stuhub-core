@@ -51,10 +51,6 @@ func (TempCache) Delete(key string) error {
 func main() {
 	cfg := config.LoadConfig(config.GetDefaultConfigLoaders())
 
-	fmt.Print("\n\n\n\n")
-	fmt.Print(cfg.ScyllaHosts)
-	fmt.Print("\n\n\n\n")
-
 	logger := logger.NewLogrusLogger()
 
 	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug, logger)
