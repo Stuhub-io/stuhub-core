@@ -102,7 +102,7 @@ func (r *PageRepository) GetPageRoleByEmail(
 		PagePkIDs: []int64{pagePkID},
 		Emails:    []string{email},
 	}).First(&pageRole).Error; err != nil {
-		return nil, domain.ErrDatabaseQuery
+		return nil, domain.NewErr(err.Error(), domain.ErrInternalServerError.Code)
 	}
 
 	// If role inherit, get the role from parent page

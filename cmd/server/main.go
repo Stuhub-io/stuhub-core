@@ -175,6 +175,7 @@ func main() {
 		Logger:                 logger,
 		OrganizationRepository: orgRepository,
 		ActivityRepository:     activityRepository,
+		UserRepository:         userRepository,
 	})
 
 	// handlers

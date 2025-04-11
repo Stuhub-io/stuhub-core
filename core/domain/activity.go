@@ -19,15 +19,17 @@ func ActionCodeFromString(s string) ActionCode {
 }
 
 type Activity struct {
-	ActorPkID  int64      `json:"actor_pkid"`
-	Actor      *User      `json:"actor"`
-	PagePkID   *int64     `json:"page_pkid"`
-	Page       *Page      `json:"page"`
-	ActionCode ActionCode `json:"action_code"`
-	Label      *string    `json:"label"`
-	CreatedAt  string     `json:"created_at"`
-	UpdatedAt  string     `json:"updated_at"`
-	MetaData   *string    `json:"meta_data"`
+	ActorPkID    int64         `json:"actor_pkid"`
+	Actor        *User         `json:"actor"`
+	PagePkID     *int64        `json:"page_pkid"`
+	Page         *Page         `json:"page"`
+	OrgPkID      *int64        `json:"org_pkid"`
+	Organization *Organization `json:"organization"`
+	ActionCode   ActionCode    `json:"action_code"`
+	Label        *string       `json:"label"`
+	CreatedAt    string        `json:"created_at"`
+	UpdatedAt    string        `json:"updated_at"`
+	MetaData     *string       `json:"meta_data"`
 }
 
 type ActivityListQuery struct {

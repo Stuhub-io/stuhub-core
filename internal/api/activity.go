@@ -77,6 +77,7 @@ func (h *ActivityHandler) ListActivities(c *gin.Context, curUser *domain.User) {
 	activities, err := h.activityService.ListPageActivities(curUser, pagePkID)
 	if err != nil {
 		response.BindError(c, err.Message)
+		return
 	}
 	response.WithData(c, http.StatusOK, activities)
 }

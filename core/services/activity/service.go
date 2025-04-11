@@ -2,6 +2,7 @@ package activity
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
@@ -25,6 +26,7 @@ type NewServiceParams struct {
 	ports.PageRepository
 	ports.ActivityRepository
 	ports.OrganizationRepository
+	ports.UserRepository
 }
 
 func NewService(params NewServiceParams) *Service {
@@ -34,6 +36,7 @@ func NewService(params NewServiceParams) *Service {
 		pageRepository:     params.PageRepository,
 		activityRepository: params.ActivityRepository,
 		orgRepository:      params.OrganizationRepository,
+		userRepository:     params.UserRepository,
 	}
 }
 
@@ -97,19 +100,21 @@ func (s Service) ListPageActivities(curUser *domain.User, pagePkID int64) ([]dom
 
 	page, err := s.pageRepository.GetByID(context.Background(), "", &pagePkID, domain.PageDetailOptions{}, &curUser.PkID)
 	if err != nil {
+		e := fmt.Errorf(err.Message)
+		s.logger.Error(e, "[Activity]: "+err.Message)
 		return nil, domain.ErrNotFound
 	}
 
-	pageRole, err := s.pageRepository.GetPageRoleByEmail(context.Background(), pagePkID, curUser.Email)
-
-	if err != nil {
-		return nil, domain.ErrPermissionDenied
+	var userRole *domain.PageRole = nil
+	pageRole, _ := s.pageRepository.GetPageRoleByEmail(context.Background(), pagePkID, curUser.Email)
+	if pageRole != nil {
+		userRole = &pageRole.Role
 	}
 
 	permisisons := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
 		Page:     *page,
 		User:     curUser,
-		PageRole: &pageRole.Role,
+		PageRole: userRole,
 	})
 
 	if !permisisons.CanView {
@@ -138,6 +143,12 @@ func (s Service) ListPageActivities(curUser *domain.User, pagePkID int64) ([]dom
 	activities, err := s.activityRepository.List(context.Background(), domain.ActivityListQuery{
 		PagePkIDs: pagePkIds,
 	})
+
+	if err != nil {
+		e := fmt.Errorf(err.Message)
+		s.logger.Errorf(e, "[Activity]: Get Activities From PagePkIDs Error")
+		return nil, domain.ErrDatabaseQuery
+	}
 
 	detail_activities, err := s.EnrichActivities(activities, curUser)
 
@@ -186,6 +197,12 @@ func (s Service) EnrichActivities(activities []domain.Activity, curUser *domain.
 	users, err := s.userRepository.UnsafeListUsers(context.Background(), domain.UserListQuery{
 		UserPkIDs: actorPkIDs,
 	})
+
+	if err != nil {
+		e := fmt.Errorf(err.Message)
+		s.logger.Error(e, "[Activity]: Unsafe List User error")
+		return nil, domain.ErrDatabaseQuery
+	}
 
 	usersMap := make(map[int64]domain.User)
 	for _, user := range users {

@@ -19,7 +19,6 @@ func NewCQLLogger(logger logger.Logger) *CQLLogger {
 
 // Trace method logs query execution details
 func (c *CQLLogger) Trace(traceId []byte) {
-
 }
 
 func Must(hosts []string, port string, keyspace string, isDebug bool, logger logger.Logger) *gocql.Session {

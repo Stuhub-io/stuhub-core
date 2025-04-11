@@ -37,9 +37,11 @@ func (r *ActivityRepository) List(ctx context.Context, q domain.ActivityListQuer
 
 	curActivity := domain.Activity{}
 	var createdTime time.Time
+
 	for iter.Scan(
 		&curActivity.ActorPkID,
 		&curActivity.PagePkID,
+		&curActivity.OrgPkID,
 		&curActivity.ActionCode,
 		&curActivity.Label,
 		&curActivity.MetaData,
@@ -60,7 +62,8 @@ func (r *ActivityRepository) Create(ctx context.Context, input domain.ActivityIn
 	// Get the current time for created_at
 	createdAt := time.Now().UTC()
 	if err := r.store.LogDB().Query(
-		`INSERT INTO activity (actor_pkid, page_pkid, action_code, label, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO activity (org_pkid, actor_pkid, page_pkid, action_code, label, metadata, created_at) VALUES (?,?, ?, ?, ?, ?, ?)`,
+		input.OrgPkID,
 		input.ActorPkID,
 		input.PagePkID,
 		input.ActionCode,
@@ -77,12 +80,13 @@ func (r *ActivityRepository) Create(ctx context.Context, input domain.ActivityIn
 		ActionCode: input.ActionCode,
 		Label:      input.Label,
 		MetaData:   input.MetaData,
+		OrgPkID:    input.OrgPkID,
 		CreatedAt:  createdAt.Format(time.RFC3339),
 	}, nil
 }
 
 func buildActivityQuery(query domain.ActivityListQuery) (string, []interface{}) {
-	baseQuery := `SELECT pkid, actor_pkid, page_pkid, action_code, label, metadata, created_at FROM activity`
+	baseQuery := `SELECT actor_pkid, page_pkid, org_pkid, action_code, label, metadata, created_at FROM activity`
 
 	var conditions []string
 	var args []interface{}
@@ -114,10 +118,12 @@ func buildActivityQuery(query domain.ActivityListQuery) (string, []interface{}) 
 	if len(query.PagePkIDs) > 0 {
 		placeholders := make([]string, len(query.PagePkIDs))
 		for i, id := range query.PagePkIDs {
-			placeholders[i] = fmt.Sprintf("$%d", paramCount)
+			placeholders[i] = fmt.Sprintf("?")
 			paramCount++
 			args = append(args, id)
 		}
+		fmt.Print("PlaceHolders: ", placeholders, len(placeholders))
+		fmt.Print("Args: ", args, len(args))
 		conditions = append(conditions, fmt.Sprintf("page_pkid IN (%s)", strings.Join(placeholders, ", ")))
 	}
 
@@ -128,7 +134,7 @@ func buildActivityQuery(query domain.ActivityListQuery) (string, []interface{}) 
 	}
 
 	// Add semicolon at the end of the query
-	finalQuery += ";"
+	finalQuery += " ALLOW FILTERING;"
 
 	return finalQuery, args
 }
