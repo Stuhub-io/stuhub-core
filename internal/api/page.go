@@ -17,9 +17,10 @@ type PageHandler struct {
 }
 
 type NewPageHandlerParams struct {
-	Router         *gin.RouterGroup
-	AuthMiddleware *middleware.AuthMiddleware
-	PageService    *page.Service
+	Router                *gin.RouterGroup
+	AuthMiddleware        *middleware.AuthMiddleware
+	PageService           *page.Service
+	ServiceAuthMiddleware *middleware.ServiceAuthMiddleware
 }
 
 func UsePageHandle(params NewPageHandlerParams) {
@@ -105,6 +106,32 @@ func UsePageHandle(params NewPageHandlerParams) {
 		("/pages/:" + pageutils.PagePkIDParam + "/unstar"),
 		decorators.RequiredAuth(decorators.CurrentUser(handler.RemovePageFromStarred)),
 	)
+
+	// internal services
+	router.Use(params.ServiceAuthMiddleware.RequiredServiceKey())
+	router.GET("pages/unsafe/pkid/:"+pageutils.PagePkIDParam, handler.GetPageUnsafe)
+}
+
+func (h *PageHandler) GetPageUnsafe(c *gin.Context) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	var query request.GetPageUnsafeQuery
+
+	if verr := request.Validate(c, &query); verr != nil {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	page, err := h.pageService.GetPageUnsafe(pagePkID, query.UserPkID)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+	response.WithData(c, 200, page)
 }
 
 func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {

@@ -64,10 +64,26 @@ func (r *PageRepository) List(
 	// Find missing page general role for inherit general roles
 	missingGeneralPagePkIDs := make([]int64, 0, len(results))
 
+	// Fill up PageRole Lookup Maps
 	for _, result := range results {
 		if result.GeneralRole != domain.PageInherit.String() {
 			generalPageRoleLookupMap[result.Pkid] = domain.PageRoleFromString(result.GeneralRole)
-		} else {
+		}
+
+		if curUser != nil {
+			curUserRole := sliceutils.Find(result.PageRoles, func(role model.PageRole) bool {
+				return role.Email == curUser.Email
+			})
+
+			if curUserRole != nil && curUserRole.Role != domain.PageInherit.String() {
+				userPageRoleLookupMap[result.Pkid] = *curUserRole
+			}
+		}
+	}
+
+	// Find missing Lookup Maps
+	for _, result := range results {
+		if result.GeneralRole == domain.PageInherit.String() {
 			parentPkIDs := pageutils.PagePathToPkIDs(result.Path)
 			for _, pkID := range parentPkIDs {
 				if _, ok := generalPageRoleLookupMap[pkID]; !ok {
@@ -83,10 +99,6 @@ func (r *PageRepository) List(
 				return role.Email == curUser.Email
 			})
 
-			if curUserRole != nil && curUserRole.Role != domain.PageInherit.String() {
-				userPageRoleLookupMap[result.Pkid] = *curUserRole
-			}
-
 			if curUserRole != nil && curUserRole.Role == domain.PageInherit.String() {
 				parentPkIDs := pageutils.PagePathToPkIDs(result.Path)
 				for _, pkID := range parentPkIDs {
@@ -99,7 +111,7 @@ func (r *PageRepository) List(
 		}
 	}
 
-	// Fill missing general roles
+	// Get missing page general role lookup
 	generalBasePages := []model.Page{}
 
 	if buildPageQuery(r.store.DB(), domain.PageListQuery{
@@ -114,6 +126,7 @@ func (r *PageRepository) List(
 	for _, page := range generalBasePages {
 		generalPageRoleLookupMap[page.Pkid] = domain.PageRoleFromString(page.GeneralRole)
 	}
+
 	// Fill missing direct roles
 	if curUser != nil {
 		// Find actual roles from missing direct role page pkids
@@ -165,22 +178,24 @@ func (r *PageRepository) List(
 
 		var directUserRole *domain.PageRole
 
-		curPageRole := sliceutils.Find(result.PageRoles, func(role model.PageRole) bool {
-			return role.Email == curUser.Email
-		})
+		if curUser != nil {
+			curPageRole := sliceutils.Find(result.PageRoles, func(role model.PageRole) bool {
+				return role.Email == curUser.Email
+			})
 
-		// If direct role is inherit, find the base role
-		if curPageRole != nil && curPageRole.Role == domain.PageInherit.String() {
-			baseRole := findCurPageRole(pageutils.PagePathToPkIDs(result.Path))
-			if baseRole != nil {
-				directUserRole = baseRole
+			// If direct role is inherit, find the base role
+			if curPageRole != nil && curPageRole.Role == domain.PageInherit.String() {
+				baseRole := findCurPageRole(pageutils.PagePathToPkIDs(result.Path))
+				if baseRole != nil {
+					directUserRole = baseRole
+				}
 			}
-		}
 
-		// If direct role is not inherit, set to direct role
-		if curPageRole != nil && curPageRole.Role != domain.PageInherit.String() {
-			role := domain.PageRoleFromString(curPageRole.Role)
-			directUserRole = &role
+			// If direct role is not inherit, set to direct role
+			if curPageRole != nil && curPageRole.Role != domain.PageInherit.String() {
+				role := domain.PageRoleFromString(curPageRole.Role)
+				directUserRole = &role
+			}
 		}
 
 		var curUserPKID *int64 = nil

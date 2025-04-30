@@ -123,6 +123,9 @@ func main() {
 		TokenMaker:     tokenMaker,
 		UserRepository: userRepository,
 	})
+
+	serviceAuthMiddleware := middleware.NewServiceAuthMiddleware(cfg.InternalServiceApiKeys)
+
 	oauthService := oauth.NewOauthService(logger)
 	userService := user.NewService(user.NewServiceParams{
 		Config:         cfg,
@@ -192,9 +195,10 @@ func main() {
 			OrgService:     orgService,
 		})
 		api.UsePageHandle((api.NewPageHandlerParams{
-			Router:         v1,
-			AuthMiddleware: authMiddleware,
-			PageService:    pageService,
+			Router:                v1,
+			AuthMiddleware:        authMiddleware,
+			PageService:           pageService,
+			ServiceAuthMiddleware: serviceAuthMiddleware,
 		}))
 		api.UseUploadHandler(api.NewUploadHandlerParams{
 			Router:         v1,

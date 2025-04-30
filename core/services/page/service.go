@@ -237,6 +237,20 @@ func (s *Service) GetPageDetailByID(
 	return d, e
 }
 
+func (s *Service) GetPageUnsafe(
+	pagePkID int64,
+	userPkID *int64,
+) (d *domain.Page, e *domain.Error) {
+	// Ignore Permission Check
+	d, e = s.pageRepository.GetByID(context.Background(), "", &pagePkID, domain.PageDetailOptions{
+		Document: true,
+		Asset:    true,
+		Author:   true,
+	}, userPkID)
+
+	return d, e
+}
+
 func (s *Service) ArchivedPageByPkID(
 	pagePkID int64,
 	curUser *domain.User,
