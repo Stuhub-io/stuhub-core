@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 type ActionCode string
 
 const (
@@ -33,9 +35,15 @@ type Activity struct {
 }
 
 type ActivityListQuery struct {
-	ActionCodes []ActionCode `json:"action_codes"`
-	ActorPkIDs  []int64      `json:"actor_pkids"`
-	PagePkIDs   []int64      `json:"page_pkids"`
+	ActionCodes   []ActionCode `json:"action_codes"`
+	ActorPkIDs    []int64      `json:"actor_pkids"`
+	PagePkIDs     []int64      `json:"page_pkids"`
+	PageSize      int          `json:"page_size"`
+	PageToken     string       `json:"page_token,omitempty"`     // Token for continuation from previous page
+	SortDirection string       `json:"sort_direction,omitempty"` // "asc" or "desc", default is "desc" for most recent first
+	StartTime     *time.Time   `json:"start_time"`
+	EndTime       *time.Time   `json:"end_time"`
+	Limit         int          `json:"limit"`
 }
 
 type ActivityInput struct {
