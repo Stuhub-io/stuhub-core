@@ -31,7 +31,7 @@ func NewActivityRepository(params ActivityRepositoryParams) *ActivityRepository 
 func (r *ActivityRepository) List(ctx context.Context, q domain.ActivityListQuery) ([]domain.Activity, *domain.Error) {
 
 	queryStr, args := buildActivityQuery(q)
-	iter := r.store.LogDB().Query(queryStr, args...).Iter()
+	iter := r.store.LogDB().Query(queryStr, args...).PageSize(q.Limit).Iter()
 
 	activities := make([]domain.Activity, 0, iter.NumRows())
 
@@ -90,14 +90,12 @@ func buildActivityQuery(query domain.ActivityListQuery) (string, []interface{}) 
 
 	var conditions []string
 	var args []interface{}
-	paramCount := 1
 
 	// Filter By `ACTION_CODE`
 	if len(query.ActionCodes) > 0 {
 		placeholders := make([]string, len(query.ActionCodes))
 		for i, code := range query.ActionCodes {
-			placeholders[i] = fmt.Sprintf("$%d", paramCount)
-			paramCount++
+			placeholders[i] = fmt.Sprintf("?")
 			args = append(args, string(code))
 		}
 		conditions = append(conditions, fmt.Sprintf("action_code IN (%s)", strings.Join(placeholders, ", ")))
@@ -107,8 +105,7 @@ func buildActivityQuery(query domain.ActivityListQuery) (string, []interface{}) 
 	if len(query.ActorPkIDs) > 0 {
 		placeholders := make([]string, len(query.ActorPkIDs))
 		for i, id := range query.ActorPkIDs {
-			placeholders[i] = fmt.Sprintf("$%d", paramCount)
-			paramCount++
+			placeholders[i] = fmt.Sprintf("?")
 			args = append(args, id)
 		}
 		conditions = append(conditions, fmt.Sprintf("actor_pkid IN (%s)", strings.Join(placeholders, ", ")))
@@ -119,10 +116,19 @@ func buildActivityQuery(query domain.ActivityListQuery) (string, []interface{}) 
 		placeholders := make([]string, len(query.PagePkIDs))
 		for i, id := range query.PagePkIDs {
 			placeholders[i] = fmt.Sprintf("?")
-			paramCount++
 			args = append(args, id)
 		}
 		conditions = append(conditions, fmt.Sprintf("page_pkid IN (%s)", strings.Join(placeholders, ", ")))
+	}
+
+	if query.EndTime != nil {
+		conditions = append(conditions, fmt.Sprintf("created_at < ?"))
+		args = append(args, *query.EndTime)
+	}
+
+	if query.StartTime != nil {
+		conditions = append(conditions, fmt.Sprintf("created_at > ?"))
+		args = append(args, *query.StartTime)
 	}
 
 	// Construct the final query

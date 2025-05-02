@@ -87,3 +87,7 @@ type RejectRequestPageAccess struct {
 type ToggleStarPageBody struct {
 	PagePkID int64 `binding:"required" json:"page_pkid"`
 }
+
+type GetPageUnsafeQuery struct {
+	UserPkID *int64 `form:"user_pkid,omitempty" json:"user_pkid,omitempty"`
+}

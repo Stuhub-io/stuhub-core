@@ -136,6 +136,14 @@ func buildPageQuery(
 		query = query.Where("pages.path LIKE ?", q.PathBeginWith+"%")
 	}
 
+	if len(q.ExcludeGeneralRole) > 0 {
+		excludeGeneralRole := make([]string, len(q.ExcludeGeneralRole))
+		for i, role := range q.ExcludeGeneralRole {
+			excludeGeneralRole[i] = role.String()
+		}
+		query = query.Where("pages.general_role NOT IN ?", excludeGeneralRole)
+	}
+
 	query = query.Order("pages.updated_at desc").Offset(q.Offset)
 	if q.Limit > 0 {
 		query = query.Limit(q.Limit)

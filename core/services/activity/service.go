@@ -3,6 +3,7 @@ package activity
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
@@ -91,7 +92,7 @@ func (s Service) TrackUserVisitOrganization(curUser *domain.User, orgPkID int64)
 	return nil
 }
 
-func (s Service) ListPageActivities(curUser *domain.User, pagePkID int64) ([]domain.Activity, *domain.Error) {
+func (s Service) ListPageActivities(curUser *domain.User, pagePkID int64, pagination domain.CursorPagination[time.Time]) ([]domain.Activity, *domain.Error) {
 
 	// CHECK PERMISSION
 	if curUser == nil {
@@ -134,14 +135,16 @@ func (s Service) ListPageActivities(curUser *domain.User, pagePkID int64) ([]dom
 		return nil, domain.ErrBadRequest
 	}
 
-	childPagePkIds := sliceutils.Map(pages, func(page domain.Page) int64 {
+	AllPagePkIDs := sliceutils.Map(pages, func(page domain.Page) int64 {
 		return page.PkID
 	})
 
-	pagePkIds := append([]int64{page.PkID}, childPagePkIds...)
+	pagePkIds := append([]int64{page.PkID}, AllPagePkIDs...)
 
 	activities, err := s.activityRepository.List(context.Background(), domain.ActivityListQuery{
 		PagePkIDs: pagePkIds,
+		Limit:     pagination.Limit,
+		EndTime:   &pagination.Cursor,
 	})
 
 	if err != nil {
@@ -220,3 +223,51 @@ func (s Service) EnrichActivities(activities []domain.Activity, curUser *domain.
 
 	return activities, nil
 }
+
+// Helper function to group activities by time period
+// func groupActivitiesByTimePeriod(activities []domain.Activity, groupBy string) map[string][]domain.Activity {
+// 	result := make(map[string][]domain.Activity)
+// 	now := time.Now()
+
+// 	for _, activity := range activities {
+// 		createdAt, err := time.Parse(time.RFC3339, activity.CreatedAt)
+// 		if err != nil {
+// 			continue
+// 		}
+
+// 		var period string
+// 		switch strings.ToLower(groupBy) {
+// 		case "day":
+// 			if timeutils.IsToday(createdAt, now) {
+// 				period = "Today"
+// 			} else if timeutils.IsYesterday(createdAt, now) {
+// 				period = "Yesterday"
+// 			} else {
+// 				period = createdAt.Format("Jan 2, 2006") // Format as "Month Day, Year"
+// 			}
+// 		case "week":
+// 			if timeutils.IsSameWeek(createdAt, now) {
+// 				period = "This Week"
+// 			} else if timeutils.IsLastWeek(createdAt, now) {
+// 				period = "Last Week"
+// 			} else {
+// 				year, week := createdAt.ISOWeek()
+// 				period = fmt.Sprintf("Week %d, %d", week, year)
+// 			}
+// 		case "month":
+// 			if timeutils.IsSameMonth(createdAt, now) {
+// 				period = "This Month"
+// 			} else if timeutils.IsLastMonth(createdAt, now) {
+// 				period = "Last Month"
+// 			} else {
+// 				period = createdAt.Format("January 2006") // Format as "Month Year"
+// 			}
+// 		default:
+// 			period = createdAt.Format("Jan 2, 2006") // Default to daily grouping
+// 		}
+
+// 		result[period] = append(result[period], activity)
+// 	}
+
+// 	return result
+// }
