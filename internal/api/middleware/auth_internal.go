@@ -3,8 +3,8 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"slices"
 
-	"github.com/Stuhub-io/utils/authutils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,22 +20,11 @@ func NewServiceAuthMiddleware(serviceKeys []string) *ServiceAuthMiddleware {
 
 func (m *ServiceAuthMiddleware) RequiredServiceKey() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token, err := authutils.ExtractBearerToken(c.GetHeader("Authorization"))
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "service authentication required"})
-			return
-		}
+		token := c.GetHeader("Authorization")
 
-		fmt.Print("Service key: ", token, "\n")
+		fmt.Print("\n\nService key: ", token, "\n\n")
 
-		var authenticated bool
-
-		for _, apiKey := range m.ServiceKeys {
-			if token == apiKey {
-				authenticated = true
-				break
-			}
-		}
+		authenticated := slices.Contains(m.ServiceKeys, token)
 
 		if !authenticated {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "invalid service credentials"})
