@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -83,11 +84,7 @@ func (h *ActivityHandler) ListActivities(c *gin.Context, curUser *domain.User) {
 		return
 	}
 
-	if verr := request.Validate(c, &query); verr != nil {
-		response.BindError(c, verr.Error())
-		return
-	}
-
+	// pagination based on activities endtime
 	cursor := time.Now()
 	if query.EndTime != "" {
 		time, err := time.Parse(time.RFC3339, query.EndTime)
@@ -97,6 +94,8 @@ func (h *ActivityHandler) ListActivities(c *gin.Context, curUser *domain.User) {
 		}
 		cursor = time
 	}
+
+	fmt.Print("\n\nCursor: ", cursor, "\n\n")
 
 	activities, err := h.activityService.ListPageActivities(curUser, pagePkID, domain.CursorPagination[time.Time]{
 		Limit:  query.Limit,

@@ -38,6 +38,8 @@ func (r *ActivityRepository) List(ctx context.Context, q domain.ActivityListQuer
 	curActivity := domain.Activity{}
 	var createdTime time.Time
 
+	count := 0
+
 	for iter.Scan(
 		&curActivity.ActorPkID,
 		&curActivity.PagePkID,
@@ -48,6 +50,10 @@ func (r *ActivityRepository) List(ctx context.Context, q domain.ActivityListQuer
 		&createdTime,
 	) {
 		curActivity.CreatedAt = createdTime.Format(time.RFC3339)
+		count++
+		if q.Limit > 0 && count > q.Limit {
+			break
+		}
 		activities = append(activities, curActivity)
 	}
 

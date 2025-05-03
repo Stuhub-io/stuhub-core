@@ -38,7 +38,6 @@ type ActivityListQuery struct {
 	ActionCodes   []ActionCode `json:"action_codes"`
 	ActorPkIDs    []int64      `json:"actor_pkids"`
 	PagePkIDs     []int64      `json:"page_pkids"`
-	PageSize      int          `json:"page_size"`
 	PageToken     string       `json:"page_token,omitempty"`     // Token for continuation from previous page
 	SortDirection string       `json:"sort_direction,omitempty"` // "asc" or "desc", default is "desc" for most recent first
 	StartTime     *time.Time   `json:"start_time"`

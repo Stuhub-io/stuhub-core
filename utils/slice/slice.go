@@ -157,3 +157,14 @@ func UniqueByField[T any](items []T, field string) []T {
 
 	return result
 }
+
+// GetLastN returns the last n elements of a slice (generic version)
+func GetLastN[T any](slice []T, n int) []T {
+	if n >= len(slice) {
+		return slice
+	}
+	if n <= 0 {
+		return []T{}
+	}
+	return slice[len(slice)-n:]
+}

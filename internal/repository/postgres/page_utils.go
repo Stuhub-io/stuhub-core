@@ -144,7 +144,7 @@ func buildPageQuery(
 		query = query.Where("pages.general_role NOT IN ?", excludeGeneralRole)
 	}
 
-	query = query.Order("pages.updated_at desc").Offset(q.Offset)
+	query = query.Order("pages.created_at desc").Offset(q.Offset)
 	if q.Limit > 0 {
 		query = query.Limit(q.Limit)
 	}
