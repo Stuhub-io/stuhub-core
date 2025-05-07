@@ -34,6 +34,7 @@ func UsePageHandle(params NewPageHandlerParams) {
 	router.Use(authMiddleware.Authenticated())
 	router.GET("/pages", decorators.CurrentUser(handler.GetPages))
 	router.POST("/pages", decorators.CurrentUser(handler.CreateDocument))
+	router.GET("/pages/:"+pageutils.PagePkIDParam, decorators.CurrentUser(handler.GetPageByPkID))
 	router.GET("/pages/id/:"+pageutils.PageIDParam, decorators.CurrentUser(handler.GetPage))
 	router.PUT(("/pages/:" + pageutils.PagePkIDParam), decorators.CurrentUser(handler.UpdatePage))
 
@@ -134,6 +135,22 @@ func (h *PageHandler) GetPageUnsafe(c *gin.Context) {
 	response.WithData(c, 200, page)
 }
 
+func (h *PageHandler) GetPageByPkID(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	page, err := h.pageService.GetPageDetailByIdOrPkID("", "", &pagePkID, user)
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 200, page)
+}
+
 func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
 	pageID, ok := pageutils.GetPageIDParam(c)
 
@@ -142,7 +159,7 @@ func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
 		return
 	}
 
-	page, err := h.pageService.GetPageDetailByID(pageID, "", user)
+	page, err := h.pageService.GetPageDetailByIdOrPkID(pageID, "", nil, user)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -409,7 +426,7 @@ func (h *PageHandler) GetPageByToken(c *gin.Context) {
 		return
 	}
 
-	page, err := h.pageService.GetPageDetailByID("", tokenID, nil)
+	page, err := h.pageService.GetPageDetailByIdOrPkID("", tokenID, nil, nil)
 
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)

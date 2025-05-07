@@ -149,16 +149,17 @@ func (s *Service) UpdatePageByPkID(
 	return d, e
 }
 
-func (s *Service) GetPageDetailByID(
+func (s *Service) GetPageDetailByIdOrPkID(
 	pageID string,
 	publicTokenID string,
+	PkID *int64,
 	curUser *domain.User,
 ) (d *domain.Page, e *domain.Error) {
 
 	var pagePkID *int64
 
 	// FIXME: remove public token features
-	if pageID == "" {
+	if publicTokenID != "" {
 		token, err := s.pageRepository.GetPublicTokenByID(context.Background(), publicTokenID)
 		if token.ArchivedAt != "" {
 			return nil, domain.NewErr("Public page is expired", domain.ResourceInvalidOrExpiredCode)
@@ -167,6 +168,10 @@ func (s *Service) GetPageDetailByID(
 			return nil, domain.ErrDatabaseQuery
 		}
 		pagePkID = &token.PagePkID
+	}
+
+	if PkID != nil {
+		pagePkID = PkID
 	}
 
 	var userPkID *int64 = nil
