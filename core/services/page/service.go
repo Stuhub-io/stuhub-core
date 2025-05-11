@@ -21,6 +21,7 @@ type Service struct {
 	pageAccessLogRepository ports.PageAccessLogRepository
 	orgRepository           ports.OrganizationRepository
 	activityRepository      ports.ActivityRepository
+	activityV2Repository    ports.ActivityV2Repository
 	mailer                  ports.Mailer
 }
 
@@ -31,6 +32,7 @@ type NewServiceParams struct {
 	ports.PageAccessLogRepository
 	ports.OrganizationRepository
 	ports.ActivityRepository
+	ports.ActivityV2Repository
 	ports.Mailer
 }
 
@@ -43,6 +45,7 @@ func NewService(params NewServiceParams) *Service {
 		mailer:                  params.Mailer,
 		orgRepository:           params.OrganizationRepository,
 		activityRepository:      params.ActivityRepository,
+		activityV2Repository:    params.ActivityV2Repository,
 	}
 }
 
@@ -120,31 +123,6 @@ func (s *Service) UpdatePageByPkID(
 	}
 
 	d, e = s.pageRepository.Update(context.Background(), pagePkID, updateInput)
-
-	// Log Activity
-	// FIXME: Move rename to separate API
-	// go func() {
-	// 	commonutils.RetryFunc(3, func() error {
-	// 		metadata := commonutils.ToJsonStr(activityutils.UserUpdatePageInfoMeta{
-	// 			OldPageName:  page.Name,
-	// 			OldPageCover: page.CoverImage,
-	// 			OldViewType:  page.ViewType.String(),
-	// 		})
-
-	// 		_, err := s.activityRepository.Create(context.Background(), domain.ActivityInput{
-	// 			ActionCode: domain.ActionUserUpdatePageInfo,
-	// 			PagePkID:   &page.PkID,
-	// 			ActorPkID:  user.PkID,
-	// 			MetaData:   &metadata,
-	// 		})
-	// 		if err != nil {
-	// 			e := fmt.Errorf(err.Message)
-	// 			s.logger.Error(e, "[Activity]: Failed to log activity for update page info")
-	// 			return e
-	// 		}
-	// 		return nil
-	// 	})
-	// }()
 
 	return d, e
 }
@@ -295,31 +273,9 @@ func (s *Service) ArchivedPageByPkID(
 	}
 
 	go func() {
-		commonutils.RetryFunc(3, func() error {
-			pPName := ""
-			if pP != nil {
-				pPName = pP.Name
-			}
-			metadata := commonutils.ToJsonStr(activityutils.UserRemovePageMeta{
-				OldParentPagePkID: page.ParentPagePkID,
-				OldParentPageName: &pPName,
-			})
+		// Archive Activity
 
-			_, err := s.activityRepository.Create(context.Background(), domain.ActivityInput{
-				ActionCode: domain.ActionUserRemovePage,
-				PagePkID:   &page.PkID,
-				OrgPkID:    &page.OrganizationPkID,
-				ActorPkID:  curUser.PkID,
-				MetaData:   &metadata,
-			})
-
-			if err != nil {
-				e := fmt.Errorf(err.Message)
-				s.logger.Error(e, "[Activity]: Failed to log activity for remove page")
-				return e
-			}
-			return nil
-		})
+		fmt.Print(pP)
 	}()
 
 	return d, e
@@ -362,35 +318,7 @@ func (s *Service) MovePageByPkID(
 	}
 	// Log Activity
 	go func() {
-		commonutils.RetryFunc(3, func() error {
-			var pName *string = nil
-			if parentPage != nil {
-				pName = &parentPage.Name
-			}
-			var oldPName *string = nil
-			oldPName = &p.Name
-
-			metadata := commonutils.ToJsonStr(activityutils.UserMovePageMeta{
-				OldParentPagePkID: p.ParentPagePkID,
-				NewParentPagePkID: d.ParentPagePkID,
-				OldParentPageName: oldPName,
-				NewParentPageName: pName,
-			})
-			_, err := s.activityRepository.Create(context.Background(), domain.ActivityInput{
-				ActionCode: domain.ActionUserMovePage,
-				PagePkID:   &d.PkID,
-				OrgPkID:    &d.OrganizationPkID,
-				ActorPkID:  curUser.PkID,
-				MetaData:   &metadata,
-			})
-
-			if err != nil {
-				e := fmt.Errorf(err.Message)
-				s.logger.Error(e, "[Activity]: Failed to log activity for move page")
-				return e
-			}
-			return nil
-		})
+		fmt.Print(parentPage)
 	}()
 
 	return d, e
@@ -509,29 +437,46 @@ func (s *Service) CreateDocumentPage(
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation
 	}
+
 	// Log Activity
 	go func() {
 		commonutils.RetryFunc(3, func() error {
-			var pName *string = nil
+			relatedPagePkIDs := []int64{page.PkID}
 			if parentPage != nil {
-				pName = &parentPage.Name
+				relatedPagePkIDs = append(relatedPagePkIDs, parentPage.PkID)
 			}
 
-			metadata := commonutils.ToJsonStr(activityutils.UserCreatePageMeta{
-				ParentPagePkID: pageInput.ParentPagePkID,
-				ParentPageName: pName,
-				NewPageName:    page.Name,
-				NewPagePkID:    page.PkID,
-				NewPageID:      page.ID,
+			var err *domain.Error
+			var snapshot string
+			var activityCode domain.ActionCode
+
+			if pageInput.ViewType == domain.PageViewTypeFolder {
+				snapshot = commonutils.ToJsonStr(activityutils.UserCreateDocumentMeta{
+					ParentPage: parentPage,
+					ChildPage:  page,
+				})
+				activityCode = domain.ActionUserCreateFolder
+			} else {
+				activityCode = domain.ActionUserCreateDocument
+				pageRoles, pErr := s.pageRepository.GetPageRoles(context.Background(), page.PkID)
+				if pErr != nil {
+					e := fmt.Errorf(pErr.Message)
+					s.logger.Error(e, "[CreateDocumentPage] - Log Activity - pageRepository.GetPageRoles error")
+					return e
+				}
+				snapshot = commonutils.ToJsonStr(activityutils.UserCreateFolderMeta{
+					ParentPage: parentPage,
+					ChildPage:  *page,
+					PageRoles:  pageRoles,
+				})
+			}
+			_, err = s.activityV2Repository.Create(context.Background(), domain.ActivityV2Input{
+				ActionCode:       activityCode,
+				UserPkID:         curUser.PkID,
+				Snapshot:         snapshot,
+				RelatedPagePkIDs: relatedPagePkIDs,
 			})
 
-			_, err := s.activityRepository.Create(context.Background(), domain.ActivityInput{
-				ActionCode: domain.ActionUserCreatePage,
-				PagePkID:   &page.PkID,
-				OrgPkID:    &page.OrganizationPkID,
-				ActorPkID:  curUser.PkID,
-				MetaData:   &metadata,
-			})
 			if err != nil {
 				e := fmt.Errorf(err.Message)
 				s.logger.Error(e, "Failed to log activity")
@@ -584,31 +529,7 @@ func (s *Service) UpdateDocumentContentByPkID(
 
 	// Activity Log
 	d, e = s.pageRepository.UpdateContent(context.Background(), pagePkID, content)
-	go func() {
-		commonutils.RetryFunc(3, func() error {
-			metadata := commonutils.ToJsonStr(activityutils.UserVisitePageMeta{})
 
-			_, err := s.activityRepository.Create(context.Background(), domain.ActivityInput{
-				ActionCode: domain.ActionUserCreatePage,
-				PagePkID:   &page.PkID,
-				ActorPkID:  curUser.PkID,
-				MetaData:   &metadata,
-			})
-			if err != nil {
-				e := fmt.Errorf(err.Message)
-				s.logger.Error(e, "Failed to log activity")
-				return e
-			}
-			return nil
-		})
-	}()
-
-	return d, e
-}
-
-// Generate Public Token.
-func (s *Service) GenerateDocumentPublicToken(pagePkID int64) (d string, e *domain.Error) {
-	// d, e = s.pageRepository.GeneratePublicToken(context.Background(), pagePkID)
 	return d, e
 }
 
@@ -670,29 +591,24 @@ func (s *Service) CreateAssetPage(
 	// Log Activity
 	go func() {
 		commonutils.RetryFunc(3, func() error {
-			var pName *string = nil
+			dataSnapshot := commonutils.ToJsonStr(activityutils.UserUploadedAssetsMeta{
+				ParentPage: parentPage,
+				Assets:     []domain.Page{*page},
+			})
+			relatedPagePkIDs := []int64{page.PkID}
 			if parentPage != nil {
-				pName = &parentPage.Name
+				relatedPagePkIDs = append(relatedPagePkIDs, parentPage.PkID)
 			}
 
-			metadata := commonutils.ToJsonStr(activityutils.UserCreatePageMeta{
-				ParentPagePkID: assetInput.ParentPagePkID,
-				ParentPageName: pName,
-				NewPageName:    page.Name,
-				NewPagePkID:    page.PkID,
-				NewPageID:      page.ID,
-			})
-
-			_, err := s.activityRepository.Create(context.Background(), domain.ActivityInput{
-				ActionCode: domain.ActionUserCreatePage,
-				PagePkID:   &page.PkID,
-				OrgPkID:    &page.OrganizationPkID,
-				ActorPkID:  curUser.PkID,
-				MetaData:   &metadata,
+			_, err := s.activityV2Repository.Create(context.Background(), domain.ActivityV2Input{
+				ActionCode:       domain.ActionUserUploadedAssets,
+				UserPkID:         curUser.PkID,
+				Snapshot:         dataSnapshot,
+				RelatedPagePkIDs: relatedPagePkIDs,
 			})
 			if err != nil {
 				e := fmt.Errorf(err.Message)
-				s.logger.Error(e, "Failed to log activity")
+				s.logger.Error(e, "[CreateAssetPage] - activityV2Repository.Create error")
 				return e
 			}
 			return nil

@@ -225,3 +225,8 @@ type ActivityRepository interface {
 		input domain.ActivityInput,
 	) (*domain.Activity, *domain.Error)
 }
+
+type ActivityV2Repository interface {
+	List(ctx context.Context, query domain.ActivityV2ListQuery) ([]domain.ActivityV2, *domain.Error)
+	Create(ctx context.Context, input domain.ActivityV2Input) (*domain.ActivityV2, *domain.Error)
+}

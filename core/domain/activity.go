@@ -54,12 +54,6 @@ type ActivityInput struct {
 	MetaData   *string    `json:"meta_data"`
 }
 
-type ActivityMetaParams struct {
-	ActionCode ActionCode
-	Actor      *User
-	Page       *Page
-}
-
 // Query All child page activities
 type PageActivitiesListQuery struct {
 	ActionCodes []ActionCode `json:"action_codes"`

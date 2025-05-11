@@ -12,6 +12,7 @@ import (
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/services/activity"
+	"github.com/Stuhub-io/core/services/activity_v2"
 	"github.com/Stuhub-io/core/services/auth"
 	"github.com/Stuhub-io/core/services/organization"
 	"github.com/Stuhub-io/core/services/page"
@@ -30,7 +31,6 @@ import (
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/postgres"
 	"github.com/Stuhub-io/internal/repository/scylla"
-	"github.com/Stuhub-io/internal/search/elasticsearch"
 	"github.com/Stuhub-io/internal/token"
 	"github.com/Stuhub-io/internal/uploader"
 	"github.com/Stuhub-io/logger"
@@ -57,9 +57,10 @@ func main() {
 
 	scyllaDB := scylla.Must(cfg.ScyllaHosts, cfg.ScyllaPort, cfg.ScyllaKeyspace, cfg.Debug, logger)
 
-	redisCache := redis.Must(cfg.RedisUrl, logger)
+	// redisCache := redis.Must(cfg.RedisUrl, logger)
+	redisCache := redis.Mock()
 
-	elasticSearch := elasticsearch.Must(cfg.ElasticSearchURL, logger)
+	// elasticSearch := elasticsearch.Must(cfg.ElasticSearchURL, logger)
 
 	tokenMaker := token.Must(cfg.SecretKey)
 
@@ -108,14 +109,23 @@ func main() {
 			Store: dbStore,
 		},
 	)
+
+	activityV2Repository := postgres.NewActivityV2Repository(
+		postgres.ActivityV2RepositoryParams{
+			Cfg:   cfg,
+			Store: dbStore,
+		},
+	)
+
 	activityRepository := scylla.NewActivityRepository(scylla.ActivityRepositoryParams{
 		Cfg:   cfg,
 		Store: dbStore,
 	})
 
 	// indexers
-	pageIndexer := elasticsearch.NewPageIndexer(elasticSearch)
-	pageIndexer.Index(context.Background())
+	// pageIndexer := elasticsearch.NewPageIndexer(elasticSearch)
+	// pageIndexer := elasticsearch.NewPageIndexer(nil)
+	// pageIndexer.Index(context.Background())
 
 	// services
 	cloudinaryUploader := uploader.NewCloudinaryUploader(cfg)
@@ -158,6 +168,7 @@ func main() {
 		PageAccessLogRepository: pageAccessLogsRepository,
 		Mailer:                  mailer,
 		ActivityRepository:      activityRepository,
+		ActivityV2Repository:    activityV2Repository,
 	})
 	uploadService := upload.NewUploadService(upload.NewUploadServiceParams{
 		Config:   cfg,
@@ -174,6 +185,15 @@ func main() {
 		Logger:                 logger,
 		OrganizationRepository: orgRepository,
 		ActivityRepository:     activityRepository,
+		UserRepository:         userRepository,
+	})
+
+	activityV2Service := activity_v2.NewService(activity_v2.NewServiceParams{
+		Config:                 cfg,
+		Logger:                 logger,
+		PageRepository:         pageRepository,
+		OrganizationRepository: orgRepository,
+		ActivityV2Repository:   activityV2Repository,
 		UserRepository:         userRepository,
 	})
 
@@ -214,6 +234,15 @@ func main() {
 			Router:          v1,
 			AuthMiddleware:  authMiddleware,
 			ActivityService: activityService,
+		})
+	}
+
+	v2 := r.Group("/v2")
+	{
+		api.UseActivityV2Handler(api.NewActivityV2HandlerParams{
+			Router:            v2,
+			AuthMiddleware:    authMiddleware,
+			ActivityV2Service: activityV2Service,
 		})
 	}
 
