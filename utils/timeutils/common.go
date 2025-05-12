@@ -41,3 +41,11 @@ func IsLastMonth(t time.Time, now time.Time) bool {
 func FormatCQLTimeStamp(t time.Time) string {
 	return t.Format("2025-04-11 03:55:15.058+0000")
 }
+
+func ParseTime(timeStr string) *time.Time {
+	time, err := time.Parse(time.RFC3339, timeStr)
+	if err != nil {
+		return nil
+	}
+	return &time
+}

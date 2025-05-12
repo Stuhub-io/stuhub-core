@@ -3,12 +3,14 @@ package activity_v2
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
 	"github.com/Stuhub-io/logger"
+	"github.com/Stuhub-io/utils/pageutils"
 	sliceutils "github.com/Stuhub-io/utils/slice"
 )
 
@@ -76,8 +78,8 @@ func (s Service) ListPageActivities(curUser *domain.User, pagePkID int64, pagina
 	pages, err := s.pageRepository.List(
 		context.Background(),
 		domain.PageListQuery{
-			IsAll:          true,
-			ParentPagePkID: &page.PkID,
+			IsAll:         true,
+			PathBeginWith: pageutils.AppendPath(page.Path, strconv.FormatInt(pagePkID, 10)),
 		},
 		curUser,
 	)

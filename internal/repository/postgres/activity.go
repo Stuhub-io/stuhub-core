@@ -9,7 +9,10 @@ import (
 	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/activityutils"
+	sliceutils "github.com/Stuhub-io/utils/slice"
+	"github.com/Stuhub-io/utils/userutils"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ActivityV2Repository struct {
@@ -27,6 +30,11 @@ func NewActivityV2Repository(params ActivityV2RepositoryParams) *ActivityV2Repos
 		cfg:   params.Cfg,
 		store: params.Store,
 	}
+}
+
+type ActivityResult struct {
+	model.Activity
+	User *model.User `gorm:"foreignKey:user_pkid"`
 }
 
 func (r *ActivityV2Repository) Create(ctx context.Context, input domain.ActivityV2Input) (*domain.ActivityV2, *domain.Error) {
@@ -60,30 +68,85 @@ func (r *ActivityV2Repository) Create(ctx context.Context, input domain.Activity
 }
 
 func (r *ActivityV2Repository) List(ctx context.Context, q domain.ActivityV2ListQuery) ([]domain.ActivityV2, *domain.Error) {
-	activities := []model.Activity{}
-	if err := buildActivityV2Query(r.store.DB(), q).Find(&activities).Error; err != nil {
+	activities := []ActivityResult{}
+	if err := buildActivityV2Query(r.store.DB(), q).Preload("User").Find(&activities).Error; err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
 
 	domainActivities := make([]domain.ActivityV2, len(activities))
+
+	// FIXME: Query related page Pkids
 	for i, activity := range activities {
 		domainActivities[i] = *activityutils.TransformActivityV2ModelToDomain(activityutils.ActivityV2ModelToDomainParams{
-			ActivityModel:    &activity,
+			ActivityModel:    &activity.Activity,
 			RelatedPagePkIDs: nil,
+			User:             userutils.TransformUserModelToDomain(activity.User),
 		})
 	}
 
 	return domainActivities, nil
 }
 
+func (r *ActivityV2Repository) One(ctx context.Context, q domain.ActivityV2ListQuery) (*domain.ActivityV2, *domain.Error) {
+	activity := &model.Activity{}
+	if err := buildActivityV2Query(r.store.DB(), q).First(activity).Error; err != nil {
+		return nil, domain.ErrDatabaseQuery
+	}
+
+	// FIXME: Query related page Pkids
+	return activityutils.TransformActivityV2ModelToDomain(activityutils.ActivityV2ModelToDomainParams{
+		ActivityModel:    activity,
+		RelatedPagePkIDs: nil,
+	}), nil
+}
+
+// NOTE: Cannot remove related related Activity
+func (r *ActivityV2Repository) Update(ctx context.Context, activityPkID int64, input domain.ActivityV2Input) (*domain.ActivityV2, *domain.Error) {
+	tx, doneFn := r.store.NewTransaction()
+	activity := &model.Activity{
+		Pkid:       activityPkID,
+		UserPkid:   input.UserPkID,
+		ActionCode: input.ActionCode.String(),
+		Snapshot:   input.Snapshot,
+	}
+
+	if err := tx.DB().Updates(activity).Error; err != nil {
+		return nil, doneFn(err)
+	}
+
+	// Add related page activity
+	RelatedPageActivityList := make([]model.RelatePageActivity, 0, len((input.RelatedPagePkIDs)))
+	for _, pagePkID := range input.RelatedPagePkIDs {
+		RelatedPageActivityList = append(RelatedPageActivityList, model.RelatePageActivity{
+			PagePkid:     pagePkID,
+			ActivityPkid: activity.Pkid,
+		})
+	}
+
+	if err := tx.DB().Clauses(clause.OnConflict{
+		DoNothing: true,
+	}).Create(&RelatedPageActivityList).Error; err != nil {
+		return nil, doneFn(err)
+	}
+
+	return activityutils.TransformActivityV2ModelToDomain(activityutils.ActivityV2ModelToDomainParams{
+		ActivityModel:    activity,
+		RelatedPagePkIDs: input.RelatedPagePkIDs,
+	}), doneFn(nil)
+}
+
 func buildActivityV2Query(tx *gorm.DB, q domain.ActivityV2ListQuery) *gorm.DB {
 	query := tx.Distinct("activity.pkid", "activity.*")
 
-	if q.ActionCodes != nil {
-		if len(q.ActionCodes) > 1 {
-			query = query.Where("action_code IN ?", q.ActionCodes)
+	ActionCodeStrs := sliceutils.Map(q.ActionCodes, func(code domain.ActionCode) string {
+		return code.String()
+	})
+
+	if ActionCodeStrs != nil {
+		if len(ActionCodeStrs) > 1 {
+			query = query.Where("action_code IN ?", ActionCodeStrs)
 		} else {
-			query = query.Where("action_code = ?", q.ActionCodes[0])
+			query = query.Where("action_code = ?", ActionCodeStrs[0])
 		}
 	}
 
@@ -112,5 +175,5 @@ func buildActivityV2Query(tx *gorm.DB, q domain.ActivityV2ListQuery) *gorm.DB {
 		query = query.Limit(*q.Limit)
 	}
 
-	return query
+	return query.Order("created_at DESC")
 }

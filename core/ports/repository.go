@@ -229,4 +229,6 @@ type ActivityRepository interface {
 type ActivityV2Repository interface {
 	List(ctx context.Context, query domain.ActivityV2ListQuery) ([]domain.ActivityV2, *domain.Error)
 	Create(ctx context.Context, input domain.ActivityV2Input) (*domain.ActivityV2, *domain.Error)
+	Update(ctx context.Context, activityPkID int64, input domain.ActivityV2Input) (*domain.ActivityV2, *domain.Error)
+	One(ctx context.Context, query domain.ActivityV2ListQuery) (*domain.ActivityV2, *domain.Error)
 }

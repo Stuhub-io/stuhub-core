@@ -64,10 +64,12 @@ type UserCreateDocumentMeta struct {
 type ActivityV2ModelToDomainParams struct {
 	ActivityModel    *model.Activity
 	RelatedPagePkIDs []int64
+	User             *domain.User
 }
 
 func TransformActivityV2ModelToDomain(params ActivityV2ModelToDomainParams) *domain.ActivityV2 {
 	m := params.ActivityModel
+	user := params.User
 	if m == nil {
 		return nil
 	}
@@ -79,5 +81,6 @@ func TransformActivityV2ModelToDomain(params ActivityV2ModelToDomainParams) *dom
 		CreatedAt:        m.CreatedAt.Format(time.RFC3339),
 		Snapshot:         m.Snapshot,
 		RelatedPagePkIDs: params.RelatedPagePkIDs,
+		User:             user,
 	}
 }

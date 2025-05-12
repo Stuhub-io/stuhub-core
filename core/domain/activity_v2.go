@@ -19,11 +19,11 @@ type ActivityV2 struct {
 }
 
 type ActivityV2ListQuery struct {
-	ActionCodes      []string   `json:"action_codes"`
-	UserPkIDs        []int64    `json:"user_pkids"`
-	RelatedPagePkIDs []int64    `json:"related_page_pkids"`
-	Limit            *int       `json:"limit"`
-	EndTime          *time.Time `json:"end_time"`
+	ActionCodes      []ActionCode `json:"action_codes"`
+	UserPkIDs        []int64      `json:"user_pkids"`
+	RelatedPagePkIDs []int64      `json:"related_page_pkids"`
+	Limit            *int         `json:"limit"`
+	EndTime          *time.Time   `json:"end_time"`
 }
 
 type ActivityV2Input struct {

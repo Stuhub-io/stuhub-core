@@ -2,7 +2,9 @@ package page
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
@@ -11,6 +13,7 @@ import (
 	commonutils "github.com/Stuhub-io/utils"
 	"github.com/Stuhub-io/utils/activityutils"
 	"github.com/Stuhub-io/utils/pageutils"
+	"github.com/Stuhub-io/utils/timeutils"
 	"github.com/Stuhub-io/utils/userutils"
 )
 
@@ -441,7 +444,13 @@ func (s *Service) CreateDocumentPage(
 	// Log Activity
 	go func() {
 		commonutils.RetryFunc(3, func() error {
-			relatedPagePkIDs := []int64{page.PkID}
+			createdPage, e := s.pageRepository.GetByID(context.Background(), "", &page.PkID, domain.PageDetailOptions{
+				Author: true,
+			}, nil)
+			if e != nil {
+				return fmt.Errorf(e.Message)
+			}
+			relatedPagePkIDs := []int64{createdPage.PkID}
 			if parentPage != nil {
 				relatedPagePkIDs = append(relatedPagePkIDs, parentPage.PkID)
 			}
@@ -450,15 +459,15 @@ func (s *Service) CreateDocumentPage(
 			var snapshot string
 			var activityCode domain.ActionCode
 
-			if pageInput.ViewType == domain.PageViewTypeFolder {
+			if pageInput.ViewType == domain.PageViewTypeDoc {
 				snapshot = commonutils.ToJsonStr(activityutils.UserCreateDocumentMeta{
 					ParentPage: parentPage,
-					ChildPage:  page,
+					ChildPage:  createdPage,
 				})
-				activityCode = domain.ActionUserCreateFolder
-			} else {
 				activityCode = domain.ActionUserCreateDocument
-				pageRoles, pErr := s.pageRepository.GetPageRoles(context.Background(), page.PkID)
+			} else {
+				activityCode = domain.ActionUserCreateFolder
+				pageRoles, pErr := s.pageRepository.GetPageRoles(context.Background(), createdPage.PkID)
 				if pErr != nil {
 					e := fmt.Errorf(pErr.Message)
 					s.logger.Error(e, "[CreateDocumentPage] - Log Activity - pageRepository.GetPageRoles error")
@@ -466,7 +475,7 @@ func (s *Service) CreateDocumentPage(
 				}
 				snapshot = commonutils.ToJsonStr(activityutils.UserCreateFolderMeta{
 					ParentPage: parentPage,
-					ChildPage:  *page,
+					ChildPage:  *createdPage,
 					PageRoles:  pageRoles,
 				})
 			}
@@ -590,29 +599,72 @@ func (s *Service) CreateAssetPage(
 	}
 	// Log Activity
 	go func() {
-		commonutils.RetryFunc(3, func() error {
-			dataSnapshot := commonutils.ToJsonStr(activityutils.UserUploadedAssetsMeta{
-				ParentPage: parentPage,
-				Assets:     []domain.Page{*page},
-			})
-			relatedPagePkIDs := []int64{page.PkID}
-			if parentPage != nil {
-				relatedPagePkIDs = append(relatedPagePkIDs, parentPage.PkID)
-			}
-
-			_, err := s.activityV2Repository.Create(context.Background(), domain.ActivityV2Input{
-				ActionCode:       domain.ActionUserUploadedAssets,
-				UserPkID:         curUser.PkID,
-				Snapshot:         dataSnapshot,
-				RelatedPagePkIDs: relatedPagePkIDs,
-			})
-			if err != nil {
-				e := fmt.Errorf(err.Message)
-				s.logger.Error(e, "[CreateAssetPage] - activityV2Repository.Create error")
-				return e
-			}
-			return nil
+		// Join upload activity if latest upload activity is less than 5 minutes
+		RelatedPagePkIDs := []int64{}
+		if parentPage != nil {
+			RelatedPagePkIDs = append(RelatedPagePkIDs, parentPage.PkID)
+		}
+		recentActivity, err := s.activityV2Repository.One(context.Background(), domain.ActivityV2ListQuery{
+			ActionCodes:      []domain.ActionCode{domain.ActionUserUploadedAssets},
+			UserPkIDs:        []int64{curUser.PkID},
+			RelatedPagePkIDs: RelatedPagePkIDs,
 		})
+
+		if recentActivity != nil && err == nil {
+			assetMeta := activityutils.UserUploadedAssetsMeta{}
+			if err := json.Unmarshal([]byte(recentActivity.Snapshot), &assetMeta); err == nil {
+				now := time.Now()
+
+				recentActivityCreatedAt := timeutils.ParseTime(recentActivity.CreatedAt)
+
+				if ((assetMeta.ParentPage == nil && parentPagePkID == nil) ||
+					(assetMeta.ParentPage != nil && parentPagePkID != nil &&
+						assetMeta.ParentPage.PkID == *parentPagePkID)) &&
+					now.Sub(*recentActivityCreatedAt) < time.Minute*5 {
+					// Join assets to existed activity
+					assetMeta.Assets = append(assetMeta.Assets, *page)
+					// Update activity
+
+					fmt.Print("\n\n UPDATE ASSETS:", assetMeta, "\n\n")
+
+					_, e := s.activityV2Repository.Update(context.Background(), recentActivity.PkID, domain.ActivityV2Input{
+						ActionCode:       domain.ActionUserUploadedAssets,
+						UserPkID:         curUser.PkID,
+						Snapshot:         commonutils.ToJsonStr(assetMeta),
+						RelatedPagePkIDs: []int64{page.PkID}, // Add new related page
+					})
+					if e != nil {
+						e := fmt.Errorf(e.Message)
+						s.logger.Error(e, "[CreateAssetPage] - activityV2Repository.Update error")
+						return
+					}
+
+					return
+				}
+			}
+		}
+
+		dataSnapshot := commonutils.ToJsonStr(activityutils.UserUploadedAssetsMeta{
+			ParentPage: parentPage,
+			Assets:     []domain.Page{*page},
+		})
+
+		relatedPagePkIDs := []int64{page.PkID}
+		if parentPage != nil {
+			relatedPagePkIDs = append(relatedPagePkIDs, parentPage.PkID)
+		}
+
+		_, err = s.activityV2Repository.Create(context.Background(), domain.ActivityV2Input{
+			ActionCode:       domain.ActionUserUploadedAssets,
+			UserPkID:         curUser.PkID,
+			Snapshot:         dataSnapshot,
+			RelatedPagePkIDs: relatedPagePkIDs,
+		})
+		if err != nil {
+			e := fmt.Errorf(err.Message)
+			s.logger.Error(e, "[CreateAssetPage] - activityV2Repository.Create error")
+			return
+		}
 	}()
 
 	go s.pageAccessLogRepository.Upsert(
