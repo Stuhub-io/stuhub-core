@@ -44,7 +44,9 @@ type UserRemovePageMeta struct {
 	OldParentPageName *string `json:"parent_page_name"`
 }
 
-// Meta for ActivityV2
+// ---------------------------------------------------------
+// --------------- Activity V2 Snapshot Schema -------------
+// ---------------------------------------------------------
 type UserCreateFolderMeta struct {
 	ParentPage *domain.Page          `json:"parent_page"`
 	ChildPage  domain.Page           `json:"child_page"`
@@ -60,6 +62,24 @@ type UserCreateDocumentMeta struct {
 	ParentPage *domain.Page `json:"parent_page"`
 	ChildPage  *domain.Page `json:"child_page"`
 }
+
+type UserRenamePageMetaV2 struct {
+	Page    *domain.Page `json:"page"`
+	NewName string       `json:"new_name"`
+}
+
+type UserMovePageMetaV2 struct {
+	Page          *domain.Page `json:"page"`
+	DesParentPage *domain.Page `json:"destinated_parent_page"`
+}
+
+type UserArchivePageMetaV2 struct {
+	Page       *domain.Page `json:"page"`
+	ParentPage *domain.Page `json:"parent_page"`
+}
+
+// ----------------------------------------------------------
+// ----------------------------------------------------------
 
 type ActivityV2ModelToDomainParams struct {
 	ActivityModel    *model.Activity

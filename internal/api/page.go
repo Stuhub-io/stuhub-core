@@ -36,7 +36,7 @@ func UsePageHandle(params NewPageHandlerParams) {
 	router.POST("/pages", decorators.CurrentUser(handler.CreateDocument))
 	router.GET("/pages/:"+pageutils.PagePkIDParam, decorators.CurrentUser(handler.GetPageByPkID))
 	router.GET("/pages/id/:"+pageutils.PageIDParam, decorators.CurrentUser(handler.GetPage))
-	router.PUT(("/pages/:" + pageutils.PagePkIDParam), decorators.CurrentUser(handler.UpdatePage))
+	router.PUT("pages/:"+pageutils.PagePkIDParam, decorators.CurrentUser(handler.UpdatePage))
 
 	router.PUT(
 		"/pages/:"+pageutils.PagePkIDParam+"/content",
@@ -54,8 +54,6 @@ func UsePageHandle(params NewPageHandlerParams) {
 		"pages/id/:"+pageutils.PageIDParam+"/public-token",
 		decorators.CurrentUser(handler.ArchiveAllPagePublicToken),
 	)
-	router.GET("pages/public-token/:"+pageutils.PublicTokenIDParam, handler.GetPageByToken)
-
 	// asssets
 	router.POST("pages/assets", decorators.CurrentUser(handler.CreateAsset))
 
@@ -142,7 +140,7 @@ func (h *PageHandler) GetPageByPkID(c *gin.Context, user *domain.User) {
 		return
 	}
 
-	page, err := h.pageService.GetPageDetailByIdOrPkID("", "", &pagePkID, user)
+	page, err := h.pageService.GetPageDetailByIdOrPkID("", &pagePkID, user)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -159,7 +157,7 @@ func (h *PageHandler) GetPage(c *gin.Context, user *domain.User) {
 		return
 	}
 
-	page, err := h.pageService.GetPageDetailByIdOrPkID(pageID, "", nil, user)
+	page, err := h.pageService.GetPageDetailByIdOrPkID(pageID, nil, user)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -228,6 +226,30 @@ func (h *PageHandler) CreateDocument(c *gin.Context, user *domain.User) {
 		Document: domain.DocumentInput(body.Document),
 	}, user)
 
+	if err != nil {
+		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
+		return
+	}
+
+	response.WithData(c, 200, page)
+}
+
+func (h *PageHandler) RenamePage(c *gin.Context, user *domain.User) {
+	pagePkID, ok := pageutils.GetPagePkIDParam(c)
+	if !ok {
+		response.BindError(c, "pagePkID is missing or invalid")
+		return
+	}
+
+	var body request.RenamePageBody
+	if verr := request.Validate(c, &body); verr != nil {
+		response.BindError(c, verr.Error())
+		return
+	}
+
+	page, err := h.pageService.RenamePageByPkID(pagePkID, domain.RenamePageInput{
+		Name: body.Name,
+	}, user)
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
 		return
@@ -410,23 +432,6 @@ func (h *PageHandler) UpdatePageGeneralAccess(c *gin.Context, user *domain.User)
 		AuthorPkID:  user.PkID,
 		GeneralRole: body.GeneralRole,
 	}, user)
-
-	if err != nil {
-		response.WithErrorMessage(c, err.Code, err.Error, err.Message)
-		return
-	}
-
-	response.WithData(c, 200, page)
-}
-
-func (h *PageHandler) GetPageByToken(c *gin.Context) {
-	tokenID, ok := pageutils.GetPublicTokenIDParam(c)
-	if !ok {
-		response.BindError(c, "token is missing or invalid")
-		return
-	}
-
-	page, err := h.pageService.GetPageDetailByIdOrPkID("", tokenID, nil, nil)
 
 	if err != nil {
 		response.WithErrorMessage(c, err.Code, err.Error, err.Message)

@@ -98,7 +98,6 @@ func (s *Service) MakeValidateEmailAuth(token string) string {
 	return baseUrl + "?token=" + token
 }
 
-// FIXME: return token.
 func (s *Service) ValidateEmailAuth(token string) (*ValidateEmailTokenResp, *domain.Error) {
 	payload, err := s.tokenMaker.DecodeToken(token)
 	if err != nil {

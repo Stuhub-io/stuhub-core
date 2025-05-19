@@ -6,6 +6,8 @@ const (
 	ActionUserCreateFolder   ActionCode = "user.create.folder"
 	ActionUserUploadedAssets ActionCode = "user.upload.assets"
 	ActionUserCreateDocument ActionCode = "user.create.document"
+	ActionUserRenamePage     ActionCode = "user.rename.page"
+	ActionUserArchivePage    ActionCode = "user.archive.page"
 )
 
 type ActivityV2 struct {

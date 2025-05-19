@@ -52,6 +52,10 @@ type PageInput struct {
 	OrganizationPkID int64        `json:"organization_pkid"`
 }
 
+type RenamePageInput struct {
+	Name string `json:"name"`
+}
+
 type PageUpdateInput struct {
 	Name       *string       `json:"name"`
 	ViewType   *PageViewType `json:"view_type"`

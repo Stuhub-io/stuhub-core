@@ -130,30 +130,54 @@ func (s *Service) UpdatePageByPkID(
 	return d, e
 }
 
+func (s *Service) RenamePageByPkID(pagePkID int64, input domain.RenamePageInput, user *domain.User) (d *domain.Page, e *domain.Error) {
+	page, err := s.pageRepository.GetByID(context.Background(), "", nil, domain.PageDetailOptions{}, nil)
+	if err != nil {
+		return nil, err
+	}
+	pageRole := s.GetPageRolesByUser(context.Background(), pagePkID, user)
+	permissions := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
+		Page:     *page,
+		User:     user,
+		PageRole: pageRole,
+	})
+
+	if !permissions.CanEdit {
+		return nil, domain.ErrPermissionDenied
+	}
+
+	d, e = s.pageRepository.Update(context.Background(), pagePkID, domain.PageUpdateInput{
+		Name: &input.Name,
+	})
+
+	go func() {
+		relatedPagePkIDs := []int64{pagePkID}
+		snapshot := commonutils.ToJsonStr(activityutils.UserRenamePageMetaV2{
+			Page:    page,
+			NewName: input.Name,
+		})
+		_, err := s.activityV2Repository.Create(context.Background(), domain.ActivityV2Input{
+			ActionCode:       domain.ActionUserRenamePage,
+			UserPkID:         user.PkID,
+			Snapshot:         snapshot,
+			RelatedPagePkIDs: relatedPagePkIDs,
+		})
+
+		if err != nil {
+			e := fmt.Errorf(err.Message)
+			s.logger.Error(e, "[RenamePageByPkID] - activityV2Repository.Create error")
+			return
+		}
+	}()
+
+	return d, e
+}
+
 func (s *Service) GetPageDetailByIdOrPkID(
 	pageID string,
-	publicTokenID string,
 	PkID *int64,
 	curUser *domain.User,
 ) (d *domain.Page, e *domain.Error) {
-
-	var pagePkID *int64
-
-	// FIXME: remove public token features
-	if publicTokenID != "" {
-		token, err := s.pageRepository.GetPublicTokenByID(context.Background(), publicTokenID)
-		if token.ArchivedAt != "" {
-			return nil, domain.NewErr("Public page is expired", domain.ResourceInvalidOrExpiredCode)
-		}
-		if err != nil {
-			return nil, domain.ErrDatabaseQuery
-		}
-		pagePkID = &token.PagePkID
-	}
-
-	if PkID != nil {
-		pagePkID = PkID
-	}
 
 	var userPkID *int64 = nil
 	if curUser != nil {
@@ -163,7 +187,7 @@ func (s *Service) GetPageDetailByIdOrPkID(
 	d, e = s.pageRepository.GetByID(
 		context.Background(),
 		pageID,
-		pagePkID,
+		PkID,
 		domain.PageDetailOptions{
 			Asset:    true,
 			Document: true,
@@ -241,12 +265,14 @@ func (s *Service) ArchivedPageByPkID(
 	pagePkID int64,
 	curUser *domain.User,
 ) (d *domain.Page, e *domain.Error) {
-	// Recursive archive all children
+
 	page, err := s.pageRepository.GetByID(
 		context.Background(),
 		"",
 		&pagePkID,
-		domain.PageDetailOptions{},
+		domain.PageDetailOptions{
+			Asset: true, // Need for display file type UI in activity
+		},
 		nil,
 	)
 	if err != nil {
@@ -266,20 +292,43 @@ func (s *Service) ArchivedPageByPkID(
 
 	d, e = s.pageRepository.Archive(context.Background(), pagePkID)
 
-	var pP *domain.Page = nil
-	if page.ParentPagePkID != nil {
-		p, pErr := s.pageRepository.GetByID(context.Background(), "", page.ParentPagePkID, domain.PageDetailOptions{}, nil)
-		if pErr != nil {
-			return d, e
-		}
-		pP = p
+	if e == nil {
+		go func() {
+			// Archive Activity
+			var originalParentPage *domain.Page = nil
+			if page.ParentPagePkID != nil {
+				p, pErr := s.pageRepository.GetByID(context.Background(), "", page.ParentPagePkID, domain.PageDetailOptions{}, nil)
+				if pErr != nil {
+					e := fmt.Errorf(pErr.Message)
+					s.logger.Error(e, "[ArchivedPageByPkID] - pageRepository.GetByID error")
+					return
+				}
+				originalParentPage = p
+			}
+
+			relatedPagePkIDs := []int64{pagePkID}
+			if originalParentPage != nil {
+				relatedPagePkIDs = append(relatedPagePkIDs, originalParentPage.PkID)
+			}
+
+			snapshot := commonutils.ToJsonStr(activityutils.UserArchivePageMetaV2{
+				Page:       page,
+				ParentPage: originalParentPage,
+			})
+
+			_, er := s.activityV2Repository.Create(context.Background(), domain.ActivityV2Input{
+				ActionCode:       domain.ActionUserArchivePage,
+				UserPkID:         curUser.PkID,
+				RelatedPagePkIDs: relatedPagePkIDs,
+				Snapshot:         snapshot,
+			})
+
+			if er != nil {
+				e := fmt.Errorf(er.Message)
+				s.logger.Error(e, "[ArchivedPageByPkID] - activityV2Repository.Create error")
+			}
+		}()
 	}
-
-	go func() {
-		// Archive Activity
-
-		fmt.Print(pP)
-	}()
 
 	return d, e
 }
@@ -315,13 +364,40 @@ func (s *Service) MovePageByPkID(
 
 	d, e = s.pageRepository.Move(context.Background(), pagePkID, moveInput.ParentPagePkID)
 
-	parentPage, err := s.pageRepository.GetByID(context.Background(), "", moveInput.ParentPagePkID, domain.PageDetailOptions{}, nil)
-	if err != nil {
+	if e != nil {
 		return d, e
 	}
+
 	// Log Activity
 	go func() {
-		fmt.Print(parentPage)
+		// Include related page
+		relatedPagePkIDs := []int64{pagePkID}
+
+		srcParentPagePkID := p.ParentPagePkID
+		if srcParentPagePkID != nil {
+			relatedPagePkIDs = append(relatedPagePkIDs, *srcParentPagePkID)
+		}
+
+		parentPage, err := s.pageRepository.GetByID(context.Background(), "", moveInput.ParentPagePkID, domain.PageDetailOptions{}, nil)
+		if err == nil && parentPage != nil {
+			relatedPagePkIDs = append(relatedPagePkIDs, parentPage.PkID)
+		}
+
+		snapshot := commonutils.ToJsonStr(activityutils.UserMovePageMetaV2{
+			Page:          p,
+			DesParentPage: parentPage,
+		})
+
+		_, aErr := s.activityV2Repository.Create(context.Background(), domain.ActivityV2Input{
+			ActionCode:       domain.ActionUserMovePage,
+			UserPkID:         curUser.PkID,
+			RelatedPagePkIDs: relatedPagePkIDs,
+			Snapshot:         snapshot,
+		})
+		if aErr != nil {
+			e := fmt.Errorf(aErr.Message)
+			s.logger.Error(e, "[MovePageByPkID] - activityV2Repository.Create error")
+		}
 	}()
 
 	return d, e
@@ -470,7 +546,7 @@ func (s *Service) CreateDocumentPage(
 				pageRoles, pErr := s.pageRepository.GetPageRoles(context.Background(), createdPage.PkID)
 				if pErr != nil {
 					e := fmt.Errorf(pErr.Message)
-					s.logger.Error(e, "[CreateDocumentPage] - Log Activity - pageRepository.GetPageRoles error")
+					s.logger.Error(e, "[CreateDocumentPage] - pageRepository.GetPageRoles error")
 					return e
 				}
 				snapshot = commonutils.ToJsonStr(activityutils.UserCreateFolderMeta{
@@ -488,7 +564,7 @@ func (s *Service) CreateDocumentPage(
 
 			if err != nil {
 				e := fmt.Errorf(err.Message)
-				s.logger.Error(e, "Failed to log activity")
+				s.logger.Error(e, "[CreateDocumentPage] - activityV2Repository.Create error")
 				return e
 			}
 			return nil
@@ -604,6 +680,7 @@ func (s *Service) CreateAssetPage(
 		if parentPage != nil {
 			RelatedPagePkIDs = append(RelatedPagePkIDs, parentPage.PkID)
 		}
+
 		recentActivity, err := s.activityV2Repository.One(context.Background(), domain.ActivityV2ListQuery{
 			ActionCodes:      []domain.ActionCode{domain.ActionUserUploadedAssets},
 			UserPkIDs:        []int64{curUser.PkID},
@@ -624,8 +701,6 @@ func (s *Service) CreateAssetPage(
 					// Join assets to existed activity
 					assetMeta.Assets = append(assetMeta.Assets, *page)
 					// Update activity
-
-					fmt.Print("\n\n UPDATE ASSETS:", assetMeta, "\n\n")
 
 					_, e := s.activityV2Repository.Update(context.Background(), recentActivity.PkID, domain.ActivityV2Input{
 						ActionCode:       domain.ActionUserUploadedAssets,
@@ -1039,16 +1114,6 @@ func (s Service) RemovePageFromStarred(input domain.StarPageInput, curUser *doma
 		return domain.ErrPermissionDenied
 	}
 	err := s.pageRepository.UnstarPage(context.Background(), input)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s Service) CreateUserActivity(input domain.ActivityInput, curUser *domain.User) *domain.Error {
-	// FIXME: Check Permissions
-
-	_, err := s.activityRepository.Create(context.Background(), input)
 	if err != nil {
 		return err
 	}

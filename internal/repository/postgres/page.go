@@ -244,21 +244,25 @@ func (r *PageRepository) Update(
 	if dbErr := r.store.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
 		return nil, domain.NewErr("Page not found", domain.BadRequestCode)
 	}
+	toUpdate := []string{}
 	if updateInput.Name != nil && updateInput.Name != &page.Name {
 		page.Name = *updateInput.Name
+		toUpdate = append(toUpdate, "Name")
 	}
 
 	if updateInput.ViewType != nil && updateInput.ViewType.String() != page.ViewType {
 		page.ViewType = updateInput.ViewType.String()
+		toUpdate = append(toUpdate, "ViewType")
 	}
 
 	if updateInput.CoverImage != nil && *updateInput.CoverImage != page.CoverImage {
 		page.CoverImage = *updateInput.CoverImage
+		toUpdate = append(toUpdate, "CoverImage")
 	}
 
 	dbErr := r.store.DB().
 		Clauses(clause.Returning{}).
-		Select("Name", "ViewType", "CoverImage").
+		Select(toUpdate).
 		Save(&page).
 		Error
 	if dbErr != nil {
@@ -357,7 +361,7 @@ func (r *PageRepository) Archive(
 
 	descendantPath := pageutils.AppendPath(page.Path, strconv.FormatInt(page.Pkid, 10))
 
-	// Archive current page, Move page to root
+	// Archive page -> set parent to root
 	if dbErr := tx.DB().Clauses(clause.Locking{
 		Strength: clause.LockingStrengthShare, // FIXME: Need Locking ?
 	}, clause.Returning{}).Select("ArchivedAt", "ParentPagePkid").Save(&page).Error; dbErr != nil {

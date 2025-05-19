@@ -6,8 +6,8 @@ services:
       dockerfile: build/local/api/Dockerfile
     container_name: api
     depends_on:
-      pgsql:
-        condition: service_healthy
+      # pgsql:
+      #   condition: service_healthy
       redis:
         condition: service_healthy
     env_file:
@@ -20,26 +20,26 @@ services:
     networks:
       - stuhub-api
 
-  pgsql:
-    hostname: postgres
-    build:
-      context: .
-      dockerfile: build/local/postgres/Dockerfile
-    container_name: postgres-db
-    env_file:
-      - build/local/postgres/.env
-    ports:
-      - 5432:5432
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - local_postgres_data:/var/lib/postgresql/data # This is the default path to postgres data storage
-      - local_postgres_data_backups:/backups
-    networks:
-      - stuhub-api
+  # pgsql:
+  #   hostname: postgres
+  #   build:
+  #     context: .
+  #     dockerfile: build/local/postgres/Dockerfile
+  #   container_name: postgres-db
+  #   env_file:
+  #     - build/local/postgres/.env
+  #   ports:
+  #     - 5432:5432
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   volumes:
+  #     - local_postgres_data:/var/lib/postgresql/data # This is the default path to postgres data storage
+  #     - local_postgres_data_backups:/backups
+  #   networks:
+  #     - stuhub-api
 
   redis:
     build:
@@ -81,73 +81,73 @@ services:
     networks:
       - stuhub-api
 
-  kibana:
-    image: kibana:8.17.1
-    container_name: kibana
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    networks:
-      - stuhub-api
-    depends_on:
-      - elasticsearch
-    healthcheck:
-      test: ["CMD", "curl", "-fsSL", "http://localhost:5601/api/status"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    ports:
-      - 5601:5601
+  # kibana:
+  #   image: kibana:8.17.1
+  #   container_name: kibana
+  #   environment:
+  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+  #   networks:
+  #     - stuhub-api
+  #   depends_on:
+  #     - elasticsearch
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-fsSL", "http://localhost:5601/api/status"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   ports:
+  #     - 5601:5601
     
-  # Service for running sync back remote staging to local
-  db-sync:
-    build:
-      context: .
-      dockerfile: build/local/db-sync/Dockerfile
-    container_name: db-sync
-    depends_on:
-      pgsql:
-        condition: service_healthy
-    env_file:
-      - build/local/db-sync/.env
-    volumes:
-      - local_postgres_data_backups:/backups # Share backup storage with pgsql
-    networks:
-      - stuhub-api
+  # # Service for running sync back remote staging to local
+  # db-sync:
+  #   build:
+  #     context: .
+  #     dockerfile: build/local/db-sync/Dockerfile
+  #   container_name: db-sync
+  #   depends_on:
+  #     pgsql:
+  #       condition: service_healthy
+  #   env_file:
+  #     - build/local/db-sync/.env
+  #   volumes:
+  #     - local_postgres_data_backups:/backups # Share backup storage with pgsql
+  #   networks:
+  #     - stuhub-api
 
   # CASSANDRA
-  scylla:
-    image: scylladb/scylla
-    container_name: scylla
-    hostname: scylla
-    volumes:
-      - local_scylla_data:/var/lib/scylla
-    ports:
-      - "9042:9042"
-    networks:
-      - stuhub-api
-    # command:
-    # command: --broadcast-address 0.0.0.0 --broadcast-rpc-address 0.0.0.0 --rpc-address 0.0.0.0 
+  # scylla:
+  #   image: scylladb/scylla
+  #   container_name: scylla
+  #   hostname: scylla
+  #   volumes:
+  #     - local_scylla_data:/var/lib/scylla
+  #   ports:
+  #     - "9042:9042"
+  #   networks:
+  #     - stuhub-api
+  #   # command:
+  #   # command: --broadcast-address 0.0.0.0 --broadcast-rpc-address 0.0.0.0 --rpc-address 0.0.0.0 
   
-  init-scylla:
-    build:
-      context: .
-      dockerfile: build/local/init-scylla/Dockerfile
-    container_name: init-scylla
-    command: /start.sh
-    env_file:
-      - build/local/init-scylla/.env
-    depends_on:
-      - scylla
-    networks:
-      - stuhub-api
+  # init-scylla:
+  #   build:
+  #     context: .
+  #     dockerfile: build/local/init-scylla/Dockerfile
+  #   container_name: init-scylla
+  #   command: /start.sh
+  #   env_file:
+  #     - build/local/init-scylla/.env
+  #   depends_on:
+  #     - scylla
+  #   networks:
+  #     - stuhub-api
   
 networks:
   stuhub-api:
     driver: bridge
 
 volumes:
-  local_postgres_data: {}
-  local_postgres_data_backups: {}
+  # local_postgres_data: {}
+  # local_postgres_data_backups: {}
   local_redis_data: {}
   local_es_data: {}
-  local_scylla_data: {}
+  # local_scylla_data: {}

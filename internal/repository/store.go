@@ -7,8 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type TxEndFunc func(error) *domain.Error
-
 type DBStore struct {
 	Database    *gorm.DB         // Primary DB
 	LogDatabase *gocql.Session   // Secondary DB
@@ -31,7 +29,7 @@ func (d *DBStore) Cache() ports.CacheStore {
 	return d.CacheStore
 }
 
-func (d *DBStore) NewTransaction() (*DBStore, TxEndFunc) {
+func (d *DBStore) NewTransaction() (ports.DBStore, ports.TxEndFunc) {
 	newDB := d.Database.Begin()
 
 	finallyFn := func(err error) *domain.Error {

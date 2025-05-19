@@ -55,7 +55,7 @@ func main() {
 
 	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug, logger)
 
-	scyllaDB := scylla.Must(cfg.ScyllaHosts, cfg.ScyllaPort, cfg.ScyllaKeyspace, cfg.Debug, logger)
+	// scyllaDB := scylla.Must(cfg.ScyllaHosts, cfg.ScyllaPort, cfg.ScyllaKeyspace, cfg.Debug, logger)
 
 	// redisCache := redis.Must(cfg.RedisUrl, logger)
 	redisCache := redis.Mock()
@@ -65,7 +65,7 @@ func main() {
 	tokenMaker := token.Must(cfg.SecretKey)
 
 	cacheStore := cache.NewCacheStore(redisCache)
-	dbStore := store.NewDBStore(postgresDB, cacheStore, scyllaDB)
+	dbStore := store.NewDBStore(postgresDB, cacheStore, nil)
 
 	hasher := hasher.NewScrypt([]byte(cfg.HashPwSecretKey))
 

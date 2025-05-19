@@ -91,3 +91,7 @@ type ToggleStarPageBody struct {
 type GetPageUnsafeQuery struct {
 	UserPkID *int64 `form:"user_pkid,omitempty" json:"user_pkid,omitempty"`
 }
+
+type RenamePageBody struct {
+	Name string `binding:"required" json:"name"`
+}
