@@ -2,14 +2,26 @@ package ports
 
 import (
 	"github.com/Stuhub-io/core/domain"
-	"gorm.io/gorm"
 )
 
-type TxEndFunc func(error) *domain.Error
-
 type DBStore interface {
-	DB() *gorm.DB
 	Cache() CacheStore
-	NewTransaction() (DBStore, TxEndFunc)
-	SetNewDB(db *gorm.DB)
+	NewTransaction() (*Repository, IFinallyFunc)
+	Shutdown() *domain.Error
+}
+
+type IFinallyFunc interface {
+	Commit() *domain.Error
+	Rollback(*domain.Error) *domain.Error
+}
+
+type Repository struct {
+	Store              DBStore
+	User               UserRepository
+	Organization       OrganizationRepository
+	Page               PageRepository
+	OrganizationInvite OrganizationInviteRepository
+	PageAccessLog      PageAccessLogRepository
+	Activity           ActivityRepository
+	ActivityV2         ActivityV2Repository
 }

@@ -5,9 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
-	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/organizationutils"
 	"github.com/Stuhub-io/utils/pageutils"
@@ -19,19 +17,16 @@ import (
 )
 
 type PageRepository struct {
-	store *store.DBStore
-	cfg   config.Config
+	DB *DB
 }
 
 type NewPageRepositoryParams struct {
-	Cfg   config.Config
-	Store *store.DBStore
+	DB *DB
 }
 
-func NewPageRepository(params NewPageRepositoryParams) *PageRepository {
+func NewPageRepository(DB *DB) *PageRepository {
 	return &PageRepository{
-		store: params.Store,
-		cfg:   params.Cfg,
+		DB: DB,
 	}
 }
 
@@ -43,7 +38,7 @@ func (r *PageRepository) List(
 
 	// QUERY PAGES
 	var results []PageResult
-	query := buildPageQuery(preloadPageResult(r.store.DB(), PreloadPageResultParams{
+	query := buildPageQuery(preloadPageResult(r.DB.DB(), PreloadPageResultParams{
 		Asset:     true,
 		Doc:       true,
 		Author:    true,
@@ -114,7 +109,7 @@ func (r *PageRepository) List(
 	// Get missing page general role lookup
 	generalBasePages := []model.Page{}
 
-	if buildPageQuery(r.store.DB(), domain.PageListQuery{
+	if buildPageQuery(r.DB.DB(), domain.PageListQuery{
 		OrgPkID:            q.OrgPkID,
 		ExcludeGeneralRole: []domain.PageRole{domain.PageInherit},
 		PagePkIDs:          missingGeneralPagePkIDs,
@@ -130,7 +125,7 @@ func (r *PageRepository) List(
 	// Fill missing direct roles
 	if curUser != nil {
 		// Find actual roles from missing direct role page pkids
-		curUserIndirectRoles, err := queryPageRoles(r.store.DB(), queryPageRolesParams{
+		curUserIndirectRoles, err := queryPageRoles(r.DB.DB(), queryPageRolesParams{
 			Emails:       []string{curUser.Email},
 			PagePkIDs:    missingPagePkIDs,
 			ExcludeRoles: []domain.PageRole{domain.PageInherit},
@@ -241,7 +236,7 @@ func (r *PageRepository) Update(
 	updateInput domain.PageUpdateInput,
 ) (*domain.Page, *domain.Error) {
 	var page = model.Page{}
-	if dbErr := r.store.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
+	if dbErr := r.DB.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
 		return nil, domain.NewErr("Page not found", domain.BadRequestCode)
 	}
 	toUpdate := []string{}
@@ -260,7 +255,7 @@ func (r *PageRepository) Update(
 		toUpdate = append(toUpdate, "CoverImage")
 	}
 
-	dbErr := r.store.DB().
+	dbErr := r.DB.DB().
 		Clauses(clause.Returning{}).
 		Select(toUpdate).
 		Save(&page).
@@ -286,7 +281,7 @@ func (r *PageRepository) GetByID(
 
 	var page PageResult
 
-	query := preloadPageResult(r.store.DB().Model(&page), PreloadPageResultParams{
+	query := preloadPageResult(r.DB.DB().Model(&page), PreloadPageResultParams{
 		Asset:        detailOption.Asset,
 		Doc:          detailOption.Document,
 		Author:       detailOption.Author,
@@ -313,7 +308,7 @@ func (r *PageRepository) GetByID(
 	// Get Actual General Role
 	var inheritPage *model.Page
 	if page.GeneralRole == domain.PageInherit.String() {
-		query := buildPageQuery(r.store.DB(), domain.PageListQuery{
+		query := buildPageQuery(r.DB.DB(), domain.PageListQuery{
 			OrgPkID:            page.OrgPkid,
 			ExcludeGeneralRole: []domain.PageRole{domain.PageInherit},
 			PagePkIDs:          parentPagePkIDs,
@@ -349,7 +344,7 @@ func (r *PageRepository) Archive(
 	pagePkID int64,
 ) (*domain.Page, *domain.Error) {
 	var page = model.Page{}
-	if dbErr := r.store.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
+	if dbErr := r.DB.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
 		return nil, domain.NewErr(dbErr.Error(), domain.BadRequestCode)
 	}
 
@@ -357,7 +352,7 @@ func (r *PageRepository) Archive(
 	page.ArchivedAt = &now
 	page.ParentPagePkid = nil
 
-	tx, done := r.store.NewTransaction()
+	tx, done := r.DB.NewTransaction()
 
 	descendantPath := pageutils.AppendPath(page.Path, strconv.FormatInt(page.Pkid, 10))
 
@@ -398,14 +393,14 @@ func (r *PageRepository) Move(
 
 	var page model.Page
 
-	if dbErr := r.store.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
+	if dbErr := r.DB.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
 		return nil, domain.NewErr("Page not found", domain.BadRequestCode)
 	}
 
 	oldPath := page.Path
 
 	// Begin Tx
-	tx, doneTx := r.store.NewTransaction()
+	tx, doneTx := r.DB.NewTransaction()
 
 	// get new path
 	newPath := ""
@@ -462,7 +457,7 @@ func (r *PageRepository) UpdateGeneralAccess(
 		GeneralRole: updateInput.GeneralRole.String(),
 	}
 
-	if dbErr := r.store.DB().Clauses(clause.Returning{}).Select("GeneralRole").Save(&page).Error; dbErr != nil {
+	if dbErr := r.DB.DB().Clauses(clause.Returning{}).Select("GeneralRole").Save(&page).Error; dbErr != nil {
 		return nil, domain.ErrUpdatePageGeneralAccess
 	}
 

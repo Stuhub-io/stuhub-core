@@ -28,9 +28,7 @@ import (
 	"github.com/Stuhub-io/internal/mailer"
 	"github.com/Stuhub-io/internal/oauth"
 	"github.com/Stuhub-io/internal/remote"
-	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/postgres"
-	"github.com/Stuhub-io/internal/repository/scylla"
 	"github.com/Stuhub-io/internal/token"
 	"github.com/Stuhub-io/internal/uploader"
 	"github.com/Stuhub-io/logger"
@@ -55,8 +53,6 @@ func main() {
 
 	postgresDB := postgres.Must(cfg.DBDsn, cfg.Debug, logger)
 
-	// scyllaDB := scylla.Must(cfg.ScyllaHosts, cfg.ScyllaPort, cfg.ScyllaKeyspace, cfg.Debug, logger)
-
 	// redisCache := redis.Must(cfg.RedisUrl, logger)
 	redisCache := redis.Mock()
 
@@ -65,7 +61,8 @@ func main() {
 	tokenMaker := token.Must(cfg.SecretKey)
 
 	cacheStore := cache.NewCacheStore(redisCache)
-	dbStore := store.NewDBStore(postgresDB, cacheStore, nil)
+
+	repo := postgres.NewRepo(postgresDB, cacheStore, nil)
 
 	hasher := hasher.NewScrypt([]byte(cfg.HashPwSecretKey))
 
@@ -82,46 +79,6 @@ func main() {
 	r.Use(middleware.JSON(&cfg))
 
 	remoteRoute := remote.NewRemoteRoute()
-
-	// repositories
-	userRepository := postgres.NewUserRepository(postgres.NewUserRepositoryParams{
-		Store: dbStore,
-		Cfg:   cfg,
-	})
-	orgRepository := postgres.NewOrganizationRepository(postgres.NewOrganizationRepositoryParams{
-		Store:          dbStore,
-		Cfg:            cfg,
-		UserRepository: userRepository,
-	})
-	pageRepository := postgres.NewPageRepository(postgres.NewPageRepositoryParams{
-		Cfg:   cfg,
-		Store: dbStore,
-	})
-	organizationInviteRepository := postgres.NewOrganizationInvitesRepository(
-		postgres.NewOrganizationInvitesRepositoryParams{
-			Cfg:   cfg,
-			Store: dbStore,
-		},
-	)
-	pageAccessLogsRepository := postgres.NewPageAccessLogRepository(
-		postgres.NewPageAccessLogRepositoryParams{
-			Cfg:   cfg,
-			Store: dbStore,
-		},
-	)
-
-	activityV2Repository := postgres.NewActivityV2Repository(
-		postgres.ActivityV2RepositoryParams{
-			Cfg:   cfg,
-			Store: dbStore,
-		},
-	)
-
-	activityRepository := scylla.NewActivityRepository(scylla.ActivityRepositoryParams{
-		Cfg:   cfg,
-		Store: dbStore,
-	})
-
 	// indexers
 	// pageIndexer := elasticsearch.NewPageIndexer(elasticSearch)
 	// pageIndexer := elasticsearch.NewPageIndexer(nil)
@@ -130,71 +87,58 @@ func main() {
 	// services
 	cloudinaryUploader := uploader.NewCloudinaryUploader(cfg)
 	authMiddleware := middleware.NewAuthMiddleware(middleware.NewAuthMiddlewareParams{
-		TokenMaker:     tokenMaker,
-		UserRepository: userRepository,
+		TokenMaker: tokenMaker,
+		Repository: repo,
 	})
 
 	serviceAuthMiddleware := middleware.NewServiceAuthMiddleware(cfg.InternalServiceApiKeys)
 
 	oauthService := oauth.NewOauthService(logger)
 	userService := user.NewService(user.NewServiceParams{
-		Config:         cfg,
-		UserRepository: userRepository,
+		Config:     cfg,
+		Repository: repo,
 	})
 	authService := auth.NewService(auth.NewServiceParams{
-		Config:         cfg,
-		UserRepository: userRepository,
-		PageRepository: pageRepository,
-		OauthService:   oauthService,
-		TokenMaker:     tokenMaker,
-		Mailer:         mailer,
-		RemoteRoute:    remoteRoute,
-		Hasher:         hasher,
+		Config:       cfg,
+		Repository:   repo,
+		OauthService: oauthService,
+		TokenMaker:   tokenMaker,
+		Mailer:       mailer,
+		RemoteRoute:  remoteRoute,
+		Hasher:       hasher,
 	})
 	orgService := organization.NewService(organization.NewServiceParams{
-		Config:                       cfg,
-		OrganizationRepository:       orgRepository,
-		UserRepository:               userRepository,
-		TokenMaker:                   tokenMaker,
-		Hasher:                       hasher,
-		Mailer:                       mailer,
-		RemoteRoute:                  remoteRoute,
-		OrganizationInviteRepository: organizationInviteRepository,
+		Config:      cfg,
+		TokenMaker:  tokenMaker,
+		Hasher:      hasher,
+		Mailer:      mailer,
+		RemoteRoute: remoteRoute,
+		Repository:  repo,
 	})
 	pageService := page.NewService(page.NewServiceParams{
-		Config:                  cfg,
-		Logger:                  logger,
-		PageRepository:          pageRepository,
-		PageAccessLogRepository: pageAccessLogsRepository,
-		Mailer:                  mailer,
-		ActivityRepository:      activityRepository,
-		ActivityV2Repository:    activityV2Repository,
+		Config:     cfg,
+		Logger:     logger,
+		Mailer:     mailer,
+		Repository: repo,
 	})
 	uploadService := upload.NewUploadService(upload.NewUploadServiceParams{
 		Config:   cfg,
 		Uploader: cloudinaryUploader,
 	})
 	pageAccessLogService := pageAccessLog.NewService(pageAccessLog.NewServiceParams{
-		PageRepository:          pageRepository,
-		PageAccessLogRepository: pageAccessLogsRepository,
+		Repository: repo,
 	})
 
 	activityService := activity.NewService(activity.NewServiceParams{
-		PageRepository:         pageRepository,
-		Config:                 cfg,
-		Logger:                 logger,
-		OrganizationRepository: orgRepository,
-		ActivityRepository:     activityRepository,
-		UserRepository:         userRepository,
+		Config:     cfg,
+		Logger:     logger,
+		Repository: repo,
 	})
 
 	activityV2Service := activity_v2.NewService(activity_v2.NewServiceParams{
-		Config:                 cfg,
-		Logger:                 logger,
-		PageRepository:         pageRepository,
-		OrganizationRepository: orgRepository,
-		ActivityV2Repository:   activityV2Repository,
-		UserRepository:         userRepository,
+		Config:     cfg,
+		Logger:     logger,
+		Repository: repo,
 	})
 
 	// handlers

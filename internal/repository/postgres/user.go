@@ -5,10 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
 	"github.com/Stuhub-io/core/ports"
-	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/userutils"
 	"gorm.io/gorm"
@@ -16,25 +14,22 @@ import (
 )
 
 type UserRepository struct {
-	store *store.DBStore
-	cfg   config.Config
+	DB *DB
 }
 
 type NewUserRepositoryParams struct {
-	Store *store.DBStore
-	Cfg   config.Config
+	DB *DB
 }
 
-func NewUserRepository(params NewUserRepositoryParams) ports.UserRepository {
+func NewUserRepository(DB *DB) ports.UserRepository {
 	return &UserRepository{
-		store: params.Store,
-		cfg:   params.Cfg,
+		DB: DB,
 	}
 }
 
 func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, *domain.Error) {
 	var user model.User
-	err := r.store.DB().Where("id = ?", id).First(&user).Error
+	err := r.DB.DB().Where("id = ?", id).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrUserNotFoundById(id)
@@ -47,13 +42,13 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 }
 
 func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain.User, *domain.Error) {
-	cachedUser := r.store.Cache().GetUser(pkId)
-	if cachedUser != nil {
-		return cachedUser, nil
-	}
+	// cachedUser := r.DB.Cache().GetUser(pkId)
+	// if cachedUser != nil {
+	// 	return cachedUser, nil
+	// }
 
 	var userModel model.User
-	err := r.store.DB().Where("pkid = ?", pkId).First(&userModel).Error
+	err := r.DB.DB().Where("pkid = ?", pkId).First(&userModel).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrUserNotFound
@@ -65,7 +60,7 @@ func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain
 	user := userutils.TransformUserModelToDomain(&userModel)
 
 	// go func() {
-	// 	r.store.Cache().SetUser(user, time.Hour)
+	// 	r.DB.Cache().SetUser(user, time.Hour)
 	// }()
 
 	return user, nil
@@ -73,7 +68,7 @@ func (r *UserRepository) GetUserByPkID(ctx context.Context, pkId int64) (*domain
 
 func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*domain.User, *domain.Error) {
 	var user model.User
-	err := r.store.DB().Where("email = ?", email).First(&user).Error
+	err := r.DB.DB().Where("email = ?", email).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrUserNotFoundByEmail(email)
@@ -87,7 +82,7 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 
 func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email string, salt string) (*domain.User, *domain.Error, bool) {
 	var user model.User
-	err := r.store.DB().Where("email = ?", email).First(&user).Error
+	err := r.DB.DB().Where("email = ?", email).First(&user).Error
 	created := false
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -99,7 +94,7 @@ func (r *UserRepository) GetOrCreateUserByEmail(ctx context.Context, email strin
 			Salt:  salt,
 		}
 
-		err = r.store.DB().Create(&user).Error
+		err = r.DB.DB().Create(&user).Error
 		created = true
 		if err != nil {
 			return nil, domain.ErrDatabaseQuery, false
@@ -119,7 +114,7 @@ func (r *UserRepository) CreateUserWithGoogleInfo(ctx context.Context, email, sa
 		OauthGmail: email,
 	}
 
-	err := r.store.DB().Create(&user).Error
+	err := r.DB.DB().Create(&user).Error
 	if err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
@@ -129,7 +124,7 @@ func (r *UserRepository) CreateUserWithGoogleInfo(ctx context.Context, email, sa
 
 func (r *UserRepository) SetUserPassword(ctx context.Context, pkID int64, hashedPassword string) *domain.Error {
 	// FIXME: Add password hashing
-	err := r.store.DB().Model(&model.User{}).Where("pkid = ?", pkID).Update("password", hashedPassword).Error
+	err := r.DB.DB().Model(&model.User{}).Where("pkid = ?", pkID).Update("password", hashedPassword).Error
 	if err != nil {
 		return domain.ErrDatabaseMutation
 	}
@@ -139,7 +134,7 @@ func (r *UserRepository) SetUserPassword(ctx context.Context, pkID int64, hashed
 
 func (r *UserRepository) CheckPassword(ctx context.Context, email, rawPassword string, hasher ports.Hasher) (bool, *domain.Error) {
 	var user model.User
-	err := r.store.DB().Where("email = ?", email).First(&user).Error
+	err := r.DB.DB().Where("email = ?", email).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, domain.ErrUserNotFoundByEmail(email)
@@ -159,7 +154,7 @@ func (r *UserRepository) UpdateUserInfo(ctx context.Context, PkID int64, firstNa
 		LastName:  lastName,
 		Avatar:    avatar,
 	}
-	err := r.store.DB().Model(&model.User{}).Where("pkid = ?", PkID).Updates(&user).Error
+	err := r.DB.DB().Model(&model.User{}).Where("pkid = ?", PkID).Updates(&user).Error
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation
 	}
@@ -170,7 +165,7 @@ func (r *UserRepository) UpdateUserInfo(ctx context.Context, PkID int64, firstNa
 func (r *UserRepository) SetUserActivatedAt(ctx context.Context, pkID int64, activatedAt time.Time) (*domain.User, *domain.Error) {
 	var user model.User
 
-	err := r.store.DB().Model(&user).Clauses(clause.Returning{}).Where("pkid = ?", pkID).Update("activated_at", activatedAt).Error
+	err := r.DB.DB().Model(&user).Clauses(clause.Returning{}).Where("pkid = ?", pkID).Update("activated_at", activatedAt).Error
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation
 	}
@@ -181,7 +176,7 @@ func (r *UserRepository) SetUserActivatedAt(ctx context.Context, pkID int64, act
 func (r *UserRepository) Search(ctx context.Context, input domain.UserSearchQuery, currentUser *domain.User) ([]domain.User, *domain.Error) {
 	var users []model.User
 
-	query := r.store.DB().Model(&model.User{})
+	query := r.DB.DB().Model(&model.User{})
 	if input.Search != "" {
 		query = query.Where("unaccent(CONCAT(first_name, ' ', last_name)) ILIKE unaccent(?) OR unaccent(email) ILIKE unaccent(?)", "%"+input.Search+"%", "%"+input.Search+"%")
 	}
@@ -214,7 +209,7 @@ func (r *UserRepository) Search(ctx context.Context, input domain.UserSearchQuer
 func (r *UserRepository) UnsafeListUsers(ctx context.Context, q domain.UserListQuery) ([]domain.User, *domain.Error) {
 
 	var users []model.User
-	if err := r.store.DB().Where("users.pkid IN (?)", q.UserPkIDs).Find(&users).Error; err != nil {
+	if err := r.DB.DB().Where("users.pkid IN (?)", q.UserPkIDs).Find(&users).Error; err != nil {
 		return nil, domain.NewErr(err.Error(), domain.ErrDatabaseQuery.Code)
 	}
 

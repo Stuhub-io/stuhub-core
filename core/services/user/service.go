@@ -9,25 +9,24 @@ import (
 )
 
 type Service struct {
-	userRepository ports.UserRepository
-	cfg            config.Config
+	repo *ports.Repository
+	cfg  config.Config
 }
 
 type NewServiceParams struct {
-	ports.UserRepository
-	ports.PageRepository
+	*ports.Repository
 	config.Config
 }
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
-		userRepository: params.UserRepository,
-		cfg:            params.Config,
+		repo: params.Repository,
+		cfg:  params.Config,
 	}
 }
 
 func (s *Service) GetUserById(id string) (*GetUserByIdResponse, *domain.Error) {
-	user, err := s.userRepository.GetByID(context.Background(), id)
+	user, err := s.repo.User.GetByID(context.Background(), id)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +37,7 @@ func (s *Service) GetUserById(id string) (*GetUserByIdResponse, *domain.Error) {
 }
 
 func (s *Service) GetUserByEmail(email string) (*GetUserByEmailResponse, *domain.Error) {
-	user, err := s.userRepository.GetUserByEmail(context.Background(), email)
+	user, err := s.repo.User.GetUserByEmail(context.Background(), email)
 	if err != nil && err.Error != domain.NotFoundErr {
 		return nil, err
 	}
@@ -49,7 +48,7 @@ func (s *Service) GetUserByEmail(email string) (*GetUserByEmailResponse, *domain
 }
 
 func (s *Service) UpdateUserInfo(pkID int64, firstName, lastName, avatar string) (*UpdateUserInfoResponse, *domain.Error) {
-	user, err := s.userRepository.UpdateUserInfo(context.Background(), pkID, firstName, lastName, avatar)
+	user, err := s.repo.User.UpdateUserInfo(context.Background(), pkID, firstName, lastName, avatar)
 
 	if err != nil {
 		return nil, err
@@ -61,7 +60,7 @@ func (s *Service) UpdateUserInfo(pkID int64, firstName, lastName, avatar string)
 }
 
 func (s *Service) SearchUsers(input domain.UserSearchQuery, currentUser *domain.User) ([]domain.User, *domain.Error) {
-	users, err := s.userRepository.Search(context.Background(), input, currentUser)
+	users, err := s.repo.User.Search(context.Background(), input, currentUser)
 	if err != nil {
 		return nil, err
 	}

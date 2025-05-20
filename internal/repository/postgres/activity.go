@@ -4,9 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
-	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/activityutils"
 	sliceutils "github.com/Stuhub-io/utils/slice"
@@ -16,19 +14,12 @@ import (
 )
 
 type ActivityV2Repository struct {
-	cfg   config.Config
-	store *store.DBStore
+	DB *DB
 }
 
-type ActivityV2RepositoryParams struct {
-	Cfg   config.Config
-	Store *store.DBStore
-}
-
-func NewActivityV2Repository(params ActivityV2RepositoryParams) *ActivityV2Repository {
+func NewActivityV2Repository(DB *DB) *ActivityV2Repository {
 	return &ActivityV2Repository{
-		cfg:   params.Cfg,
-		store: params.Store,
+		DB: DB,
 	}
 }
 
@@ -38,14 +29,14 @@ type ActivityResult struct {
 }
 
 func (r *ActivityV2Repository) Create(ctx context.Context, input domain.ActivityV2Input) (*domain.ActivityV2, *domain.Error) {
-	tx, doneFn := r.store.NewTransaction()
+	tx, doneFn := r.DB.NewTransaction()
 	activity := &model.Activity{
 		UserPkid:   input.UserPkID,
 		ActionCode: input.ActionCode.String(),
 		Snapshot:   input.Snapshot,
 	}
 
-	if err := tx.DB().Create(activity).Error; err != nil {
+	if err := r.DB.DB().Create(activity).Error; err != nil {
 		return nil, doneFn(err)
 	}
 
@@ -69,7 +60,7 @@ func (r *ActivityV2Repository) Create(ctx context.Context, input domain.Activity
 
 func (r *ActivityV2Repository) List(ctx context.Context, q domain.ActivityV2ListQuery) ([]domain.ActivityV2, *domain.Error) {
 	activities := []ActivityResult{}
-	if err := buildActivityV2Query(r.store.DB(), q).Preload("User").Find(&activities).Error; err != nil {
+	if err := buildActivityV2Query(r.DB.DB(), q).Preload("User").Find(&activities).Error; err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
 
@@ -89,7 +80,7 @@ func (r *ActivityV2Repository) List(ctx context.Context, q domain.ActivityV2List
 
 func (r *ActivityV2Repository) One(ctx context.Context, q domain.ActivityV2ListQuery) (*domain.ActivityV2, *domain.Error) {
 	activity := &model.Activity{}
-	if err := buildActivityV2Query(r.store.DB(), q).First(activity).Error; err != nil {
+	if err := buildActivityV2Query(r.DB.DB(), q).First(activity).Error; err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
 
@@ -102,7 +93,7 @@ func (r *ActivityV2Repository) One(ctx context.Context, q domain.ActivityV2ListQ
 
 // NOTE: Cannot remove related related Activity
 func (r *ActivityV2Repository) Update(ctx context.Context, activityPkID int64, input domain.ActivityV2Input) (*domain.ActivityV2, *domain.Error) {
-	tx, doneFn := r.store.NewTransaction()
+	tx, doneFn := r.DB.NewTransaction()
 	activity := &model.Activity{
 		Pkid:       activityPkID,
 		UserPkid:   input.UserPkID,

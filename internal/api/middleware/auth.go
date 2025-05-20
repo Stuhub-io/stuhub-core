@@ -9,19 +9,19 @@ import (
 )
 
 type AuthMiddleware struct {
-	tokenMaker     ports.TokenMaker
-	userRepository ports.UserRepository
+	tokenMaker ports.TokenMaker
+	repo       *ports.Repository
 }
 
 type NewAuthMiddlewareParams struct {
 	ports.TokenMaker
-	ports.UserRepository
+	*ports.Repository
 }
 
 func NewAuthMiddleware(params NewAuthMiddlewareParams) *AuthMiddleware {
 	return &AuthMiddleware{
-		tokenMaker:     params.TokenMaker,
-		userRepository: params.UserRepository,
+		tokenMaker: params.TokenMaker,
+		repo:       params.Repository,
 	}
 }
 
@@ -39,7 +39,7 @@ func (a *AuthMiddleware) Authenticated() gin.HandlerFunc {
 			return
 		}
 
-		user, dbErr := a.userRepository.GetUserByPkID(context.Background(), payload.UserPkID)
+		user, dbErr := a.repo.User.GetUserByPkID(context.Background(), payload.UserPkID)
 
 		if dbErr != nil {
 			c.Next()

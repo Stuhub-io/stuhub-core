@@ -14,42 +14,36 @@ import (
 )
 
 type Service struct {
-	cfg                          config.Config
-	orgRepository                ports.OrganizationRepository
-	userRepository               ports.UserRepository
-	tokenMaker                   ports.TokenMaker
-	hasher                       ports.Hasher
-	mailer                       ports.Mailer
-	remoteRoute                  ports.RemoteRoute
-	organizationInviteRepository ports.OrganizationInviteRepository
+	cfg         config.Config
+	repo        *ports.Repository
+	tokenMaker  ports.TokenMaker
+	hasher      ports.Hasher
+	mailer      ports.Mailer
+	remoteRoute ports.RemoteRoute
 }
 
 type NewServiceParams struct {
 	config.Config
-	ports.OrganizationRepository
-	ports.UserRepository
+	*ports.Repository
 	ports.TokenMaker
 	ports.Hasher
 	ports.Mailer
 	ports.RemoteRoute
-	ports.OrganizationInviteRepository
 }
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
-		cfg:                          params.Config,
-		orgRepository:                params.OrganizationRepository,
-		userRepository:               params.UserRepository,
-		tokenMaker:                   params.TokenMaker,
-		hasher:                       params.Hasher,
-		mailer:                       params.Mailer,
-		remoteRoute:                  params.RemoteRoute,
-		organizationInviteRepository: params.OrganizationInviteRepository,
+		cfg:         params.Config,
+		tokenMaker:  params.TokenMaker,
+		hasher:      params.Hasher,
+		mailer:      params.Mailer,
+		remoteRoute: params.RemoteRoute,
+		repo:        params.Repository,
 	}
 }
 
 func (s *Service) CreateOrganization(dto CreateOrganizationDto) (*CreateOrganizationResponse, *domain.Error) {
-	existingOrg, err := s.orgRepository.GetOwnerOrgByName(context.Background(), dto.OwnerPkID, dto.Name)
+	existingOrg, err := s.repo.Organization.GetOwnerOrgByName(context.Background(), dto.OwnerPkID, dto.Name)
 	if err != nil && err.Error != domain.NotFoundErr {
 		return nil, err
 	}
@@ -58,7 +52,7 @@ func (s *Service) CreateOrganization(dto CreateOrganizationDto) (*CreateOrganiza
 		return nil, domain.ErrExistOwnerOrg(dto.Name)
 	}
 
-	org, err := s.orgRepository.CreateOrg(context.Background(), dto.OwnerPkID, dto.Name, dto.Description, dto.Avatar)
+	org, err := s.repo.Organization.CreateOrg(context.Background(), dto.OwnerPkID, dto.Name, dto.Description, dto.Avatar)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +63,7 @@ func (s *Service) CreateOrganization(dto CreateOrganizationDto) (*CreateOrganiza
 }
 
 func (s *Service) GetOrganizationDetailBySlug(slug string, curUser *domain.User) (*domain.Organization, *domain.Error) {
-	org, err := s.orgRepository.GetOrgBySlug(context.Background(), slug)
+	org, err := s.repo.Organization.GetOrgBySlug(context.Background(), slug)
 
 	if err != nil {
 		return nil, err
@@ -79,7 +73,7 @@ func (s *Service) GetOrganizationDetailBySlug(slug string, curUser *domain.User)
 }
 
 func (s *Service) GetJoinedOrgs(userPkID int64) ([]*domain.Organization, *domain.Error) {
-	orgs, err := s.orgRepository.GetOrgsByUserPkID(context.Background(), userPkID)
+	orgs, err := s.repo.Organization.GetOrgsByUserPkID(context.Background(), userPkID)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +81,7 @@ func (s *Service) GetJoinedOrgs(userPkID int64) ([]*domain.Organization, *domain
 }
 
 func (s *Service) GetInviteDetails(inviteID string) (*domain.OrganizationInvite, *domain.Error) {
-	invite, err := s.organizationInviteRepository.GetInviteByID(context.Background(), inviteID)
+	invite, err := s.repo.OrganizationInvite.GetInviteByID(context.Background(), inviteID)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +89,7 @@ func (s *Service) GetInviteDetails(inviteID string) (*domain.OrganizationInvite,
 }
 
 func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemberByEmailsResponse, *domain.Error) {
-	org, err := s.orgRepository.GetOwnerOrgByPkID(context.Background(), dto.Owner.PkID, dto.OrgInfo.PkID)
+	org, err := s.repo.Organization.GetOwnerOrgByPkID(context.Background(), dto.Owner.PkID, dto.OrgInfo.PkID)
 	if err != nil {
 		return nil, err
 	}
@@ -116,16 +110,16 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 		go func(info EmailInviteInfo) {
 			defer wg.Done()
 
-			existingMember, _ := s.orgRepository.GetOrgMemberByEmail(context.Background(), dto.OrgInfo.PkID, info.Email)
+			existingMember, _ := s.repo.Organization.GetOrgMemberByEmail(context.Background(), dto.OrgInfo.PkID, info.Email)
 			if existingMember != nil && existingMember.ActivatedAt != "" {
 				return
 			}
 
 			var memberUserPkID int64
-			memberUser, err := s.userRepository.GetUserByEmail(context.Background(), info.Email)
+			memberUser, err := s.repo.User.GetUserByEmail(context.Background(), info.Email)
 			if err != nil && err.Error == domain.NotFoundErr {
 				salt := s.hasher.GenerateSalt()
-				newUser, err, _ := s.userRepository.GetOrCreateUserByEmail(context.Background(), info.Email, salt)
+				newUser, err, _ := s.repo.User.GetOrCreateUserByEmail(context.Background(), info.Email, salt)
 				if err != nil {
 					fmt.Printf("Failed to create new user: %s", info.Email)
 					return
@@ -138,13 +132,13 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 				memberUserPkID = memberUser.PkID
 			}
 
-			_, err = s.orgRepository.AddMemberToOrg(context.Background(), dto.OrgInfo.PkID, &memberUserPkID, info.Role)
+			_, err = s.repo.Organization.AddMemberToOrg(context.Background(), dto.OrgInfo.PkID, &memberUserPkID, info.Role)
 			if err != nil {
 				fmt.Printf("Err add member to org: %s", info.Email)
 				return
 			}
 
-			invite, err := s.organizationInviteRepository.CreateInvite(context.Background(), dto.OrgInfo.PkID, memberUserPkID)
+			invite, err := s.repo.OrganizationInvite.CreateInvite(context.Background(), dto.OrgInfo.PkID, memberUserPkID)
 			if err != nil {
 				fmt.Printf("Err to create org invite: %s", info.Email)
 				return
@@ -182,7 +176,7 @@ func (s *Service) InviteMemberByEmails(dto InviteMemberByEmailsDto) (*InviteMemb
 }
 
 func (s *Service) ValidateOrgInviteToken(dto ValidateOrgInviteTokenDto) (*domain.OrganizationMember, *domain.Error) {
-	invite, err := s.organizationInviteRepository.GetInviteByID(context.Background(), dto.Token)
+	invite, err := s.repo.OrganizationInvite.GetInviteByID(context.Background(), dto.Token)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +188,7 @@ func (s *Service) ValidateOrgInviteToken(dto ValidateOrgInviteTokenDto) (*domain
 		return nil, domain.ErrUnauthorized
 	}
 
-	_, err = s.organizationInviteRepository.UpdateInvite(context.Background(), model.OrganizationInvite{
+	_, err = s.repo.OrganizationInvite.UpdateInvite(context.Background(), model.OrganizationInvite{
 		ID:     invite.ID,
 		IsUsed: true,
 	})
@@ -214,7 +208,7 @@ func (s *Service) ValidateOrgInviteToken(dto ValidateOrgInviteTokenDto) (*domain
 }
 
 func (s *Service) ActivateMember(dto ActivateMemberDto) (*domain.OrganizationMember, *domain.Error) {
-	member, err := s.orgRepository.GetOrgMemberByUserPkID(context.Background(), dto.OrgPkID, dto.MemberPkID)
+	member, err := s.repo.Organization.GetOrgMemberByUserPkID(context.Background(), dto.OrgPkID, dto.MemberPkID)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +217,7 @@ func (s *Service) ActivateMember(dto ActivateMemberDto) (*domain.OrganizationMem
 		return member, nil
 	}
 
-	updatedMember, err := s.orgRepository.SetOrgMemberActivatedAt(context.Background(), dto.MemberPkID, time.Now())
+	updatedMember, err := s.repo.Organization.SetOrgMemberActivatedAt(context.Background(), dto.MemberPkID, time.Now())
 	if err != nil {
 		return nil, err
 	}

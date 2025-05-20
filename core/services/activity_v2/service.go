@@ -15,31 +15,22 @@ import (
 )
 
 type Service struct {
-	cfg                  config.Config
-	logger               logger.Logger
-	pageRepository       ports.PageRepository
-	activityV2Repository ports.ActivityV2Repository
-	userRepository       ports.UserRepository
-	orgRepository        ports.OrganizationRepository
+	cfg    config.Config
+	logger logger.Logger
+	repo   *ports.Repository
 }
 
 type NewServiceParams struct {
 	config.Config
 	logger.Logger
-	ports.PageRepository
-	ports.ActivityV2Repository
-	ports.OrganizationRepository
-	ports.UserRepository
+	*ports.Repository
 }
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
-		cfg:                  params.Config,
-		logger:               params.Logger,
-		pageRepository:       params.PageRepository,
-		activityV2Repository: params.ActivityV2Repository,
-		orgRepository:        params.OrganizationRepository,
-		userRepository:       params.UserRepository,
+		cfg:    params.Config,
+		logger: params.Logger,
+		repo:   params.Repository,
 	}
 }
 
@@ -50,7 +41,7 @@ func (s Service) ListPageActivities(curUser *domain.User, pagePkID int64, pagina
 		return nil, domain.ErrUnauthorized
 	}
 
-	page, err := s.pageRepository.GetByID(context.Background(), "", &pagePkID, domain.PageDetailOptions{}, &curUser.PkID)
+	page, err := s.repo.Page.GetByID(context.Background(), "", &pagePkID, domain.PageDetailOptions{}, &curUser.PkID)
 	if err != nil {
 		e := fmt.Errorf(err.Message)
 		s.logger.Error(e, "[Activity]: "+err.Message)
@@ -58,12 +49,12 @@ func (s Service) ListPageActivities(curUser *domain.User, pagePkID int64, pagina
 	}
 
 	var userRole *domain.PageRole = nil
-	pageRole, _ := s.pageRepository.GetPageRoleByEmail(context.Background(), pagePkID, curUser.Email)
+	pageRole, _ := s.repo.Page.GetPageRoleByEmail(context.Background(), pagePkID, curUser.Email)
 	if pageRole != nil {
 		userRole = &pageRole.Role
 	}
 
-	permisisons := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
+	permisisons := s.repo.Page.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
 		Page:     *page,
 		User:     curUser,
 		PageRole: userRole,
@@ -75,7 +66,7 @@ func (s Service) ListPageActivities(curUser *domain.User, pagePkID int64, pagina
 
 	// QUERY ACTIVITIES FROM LOG DB
 	// List all viewable pages
-	pages, err := s.pageRepository.List(
+	pages, err := s.repo.Page.List(
 		context.Background(),
 		domain.PageListQuery{
 			IsAll:         true,
@@ -93,7 +84,7 @@ func (s Service) ListPageActivities(curUser *domain.User, pagePkID int64, pagina
 
 	pagePkIds := append([]int64{page.PkID}, AllChildrenPagePkIDs...)
 
-	activities, err := s.activityV2Repository.List(context.Background(), domain.ActivityV2ListQuery{
+	activities, err := s.repo.ActivityV2.List(context.Background(), domain.ActivityV2ListQuery{
 		RelatedPagePkIDs: pagePkIds,
 		Limit:            &pagination.Limit,
 		EndTime:          &pagination.Cursor,

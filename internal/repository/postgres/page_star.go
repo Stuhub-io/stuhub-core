@@ -15,7 +15,7 @@ func (r *PageRepository) StarPage(ctx context.Context, input domain.StarPageInpu
 		PagePkid: input.PagePkID,
 		Order:    commonutils.CurTimestampAsFloat64(), // Order is used to sort the starred pages
 	}
-	if err := r.store.DB().Clauses(clause.Returning{}).Create(&starPage).Error; err != nil {
+	if err := r.DB.DB().Clauses(clause.Returning{}).Create(&starPage).Error; err != nil {
 		return nil, domain.ErrDatabaseMutation
 	}
 
@@ -23,7 +23,7 @@ func (r *PageRepository) StarPage(ctx context.Context, input domain.StarPageInpu
 }
 
 func (r *PageRepository) UnstarPage(ctx context.Context, input domain.StarPageInput) *domain.Error {
-	q := r.store.DB().Where("user_pkid = ? AND page_pkid = ?", input.ActorUserPkID, input.PagePkID)
+	q := r.DB.DB().Where("user_pkid = ? AND page_pkid = ?", input.ActorUserPkID, input.PagePkID)
 	if err := q.Delete(&model.PageStar{}).Error; err != nil {
 		return domain.ErrDatabaseMutation
 	}

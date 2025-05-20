@@ -13,19 +13,16 @@ import (
 )
 
 type Service struct {
-	pageRepository          ports.PageRepository
-	pageAccessLogRepository ports.PageAccessLogRepository
+	repo *ports.Repository
 }
 
 type NewServiceParams struct {
-	ports.PageRepository
-	ports.PageAccessLogRepository
+	*ports.Repository
 }
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
-		pageRepository:          params.PageRepository,
-		pageAccessLogRepository: params.PageAccessLogRepository,
+		repo: params.Repository,
 	}
 }
 
@@ -33,7 +30,7 @@ func (s *Service) GetLogsByUser(
 	query domain.CursorPagination[time.Time],
 	user *domain.User,
 ) ([]domain.PageAccessLog, *time.Time, *domain.Error) {
-	logs, err := s.pageAccessLogRepository.GetByUserPKID(context.Background(), query, user.PkID)
+	logs, err := s.repo.PageAccessLog.GetByUserPKID(context.Background(), query, user.PkID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -45,7 +42,7 @@ func (s *Service) GetLogsByUser(
 	})
 	flatPages = sliceutils.UniqueByField(flatPages, "PkID")
 
-	permissionInputs, _ := s.pageRepository.GetPagesRole(
+	permissionInputs, _ := s.repo.Page.GetPagesRole(
 		context.Background(),
 		domain.PageRolePermissionBatchCheckInput{
 			User:  user,
@@ -75,7 +72,7 @@ func (s *Service) GetLogsByUser(
 			continue
 		}
 
-		permissions := s.pageRepository.CheckPermission(
+		permissions := s.repo.Page.CheckPermission(
 			context.Background(),
 			domain.PageRolePermissionCheckInput{
 				User:     user,
