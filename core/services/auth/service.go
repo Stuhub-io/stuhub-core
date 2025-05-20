@@ -221,6 +221,10 @@ func (s *Service) GetUserByToken(token string) (*domain.User, *domain.Error) {
 		return nil, domain.ErrTokenExpired
 	}
 
+	cachedUser := s.repo.Store.Cache().GetUser(payload.UserPkID)
+	if cachedUser != nil {
+		return cachedUser, nil
+	}
 	user, uErr := s.repo.User.GetUserByPkID(context.Background(), payload.UserPkID)
 	if uErr != nil {
 		return nil, domain.ErrBadRequest

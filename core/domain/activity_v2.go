@@ -26,6 +26,7 @@ type ActivityV2ListQuery struct {
 	RelatedPagePkIDs []int64      `json:"related_page_pkids"`
 	Limit            *int         `json:"limit"`
 	EndTime          *time.Time   `json:"end_time"`
+	ForUpdate        bool         `json:"for_update"`
 }
 
 type ActivityV2Input struct {

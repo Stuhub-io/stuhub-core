@@ -39,11 +39,14 @@ func (a *AuthMiddleware) Authenticated() gin.HandlerFunc {
 			return
 		}
 
-		user, dbErr := a.repo.User.GetUserByPkID(context.Background(), payload.UserPkID)
-
-		if dbErr != nil {
-			c.Next()
-			return
+		user := a.repo.Store.Cache().GetUser(payload.UserPkID)
+		if user == nil {
+			dbUser, dbErr := a.repo.User.GetUserByPkID(context.Background(), payload.UserPkID)
+			if dbErr != nil {
+				c.Next()
+				return
+			}
+			user = dbUser
 		}
 
 		c.Set(string(authutils.UserPayloadKey), user)

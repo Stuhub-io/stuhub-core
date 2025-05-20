@@ -663,16 +663,18 @@ func (s *Service) CreateAssetPage(
 	}
 	// Log Activity
 	go func() {
+		txRepo, doneFn := s.repo.Store.NewTransaction()
 		// Join upload activity if latest upload activity is less than 5 minutes
 		RelatedPagePkIDs := []int64{}
 		if parentPage != nil {
 			RelatedPagePkIDs = append(RelatedPagePkIDs, parentPage.PkID)
 		}
 
-		recentActivity, err := s.repo.ActivityV2.One(context.Background(), domain.ActivityV2ListQuery{
+		recentActivity, err := txRepo.ActivityV2.One(context.Background(), domain.ActivityV2ListQuery{
 			ActionCodes:      []domain.ActionCode{domain.ActionUserUploadedAssets},
 			UserPkIDs:        []int64{curUser.PkID},
 			RelatedPagePkIDs: RelatedPagePkIDs,
+			ForUpdate:        true,
 		})
 
 		if recentActivity != nil && err == nil {
@@ -690,18 +692,20 @@ func (s *Service) CreateAssetPage(
 					assetMeta.Assets = append(assetMeta.Assets, *page)
 					// Update activity
 
-					_, e := s.repo.ActivityV2.Update(context.Background(), recentActivity.PkID, domain.ActivityV2Input{
+					_, e := txRepo.ActivityV2.Update(context.Background(), recentActivity.PkID, domain.ActivityV2Input{
 						ActionCode:       domain.ActionUserUploadedAssets,
 						UserPkID:         curUser.PkID,
 						Snapshot:         commonutils.ToJsonStr(assetMeta),
 						RelatedPagePkIDs: []int64{page.PkID}, // Add new related page
 					})
 					if e != nil {
-						e := fmt.Errorf(e.Message)
-						s.logger.Error(e, "[CreateAssetPage] - activityV2Repository.Update error")
+						fmtEr := fmt.Errorf(e.Message)
+						s.logger.Error(fmtEr, "[CreateAssetPage] - activityV2Repository.Update error")
+						doneFn.Rollback(e)
 						return
 					}
 
+					doneFn.Commit()
 					return
 				}
 			}
@@ -726,8 +730,10 @@ func (s *Service) CreateAssetPage(
 		if err != nil {
 			e := fmt.Errorf(err.Message)
 			s.logger.Error(e, "[CreateAssetPage] - activityV2Repository.Create error")
+			doneFn.Rollback(err)
 			return
 		}
+		doneFn.Commit()
 	}()
 
 	go s.repo.PageAccessLog.Upsert(

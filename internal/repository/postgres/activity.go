@@ -93,7 +93,6 @@ func (r *ActivityV2Repository) One(ctx context.Context, q domain.ActivityV2ListQ
 
 // NOTE: Cannot remove related related Activity
 func (r *ActivityV2Repository) Update(ctx context.Context, activityPkID int64, input domain.ActivityV2Input) (*domain.ActivityV2, *domain.Error) {
-	tx, doneFn := r.DB.NewTransaction()
 	activity := &model.Activity{
 		Pkid:       activityPkID,
 		UserPkid:   input.UserPkID,
@@ -101,8 +100,8 @@ func (r *ActivityV2Repository) Update(ctx context.Context, activityPkID int64, i
 		Snapshot:   input.Snapshot,
 	}
 
-	if err := tx.DB().Updates(activity).Error; err != nil {
-		return nil, doneFn(err)
+	if err := r.DB.DB().Updates(activity).Error; err != nil {
+		return nil, domain.NewErr(err.Error(), domain.InternalServerErrCode)
 	}
 
 	// Add related page activity
@@ -114,20 +113,20 @@ func (r *ActivityV2Repository) Update(ctx context.Context, activityPkID int64, i
 		})
 	}
 
-	if err := tx.DB().Clauses(clause.OnConflict{
+	if err := r.DB.DB().Clauses(clause.OnConflict{
 		DoNothing: true,
 	}).Create(&RelatedPageActivityList).Error; err != nil {
-		return nil, doneFn(err)
+		return nil, domain.NewErr(err.Error(), domain.InternalServerErrCode)
 	}
 
 	return activityutils.TransformActivityV2ModelToDomain(activityutils.ActivityV2ModelToDomainParams{
 		ActivityModel:    activity,
 		RelatedPagePkIDs: input.RelatedPagePkIDs,
-	}), doneFn(nil)
+	}), nil
 }
 
 func buildActivityV2Query(tx *gorm.DB, q domain.ActivityV2ListQuery) *gorm.DB {
-	query := tx.Distinct("activity.pkid", "activity.*")
+	query := tx
 
 	ActionCodeStrs := sliceutils.Map(q.ActionCodes, func(code domain.ActionCode) string {
 		return code.String()
@@ -164,6 +163,12 @@ func buildActivityV2Query(tx *gorm.DB, q domain.ActivityV2ListQuery) *gorm.DB {
 
 	if q.Limit != nil {
 		query = query.Limit(*q.Limit)
+	}
+
+	if q.ForUpdate {
+		query = query.Clauses(clause.Locking{Strength: "UPDATE"})
+	} else {
+		query = query.Distinct("activity.pkid", "activity.*")
 	}
 
 	return query.Order("created_at DESC")
