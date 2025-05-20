@@ -15,31 +15,22 @@ import (
 )
 
 type Service struct {
-	cfg                config.Config
-	logger             logger.Logger
-	pageRepository     ports.PageRepository
-	activityRepository ports.ActivityRepository
-	userRepository     ports.UserRepository
-	orgRepository      ports.OrganizationRepository
+	cfg    config.Config
+	logger logger.Logger
+	repo   *ports.Repository
 }
 
 type NewServiceParams struct {
 	config.Config
 	logger.Logger
-	ports.PageRepository
-	ports.ActivityRepository
-	ports.OrganizationRepository
-	ports.UserRepository
+	*ports.Repository
 }
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
-		cfg:                params.Config,
-		logger:             params.Logger,
-		pageRepository:     params.PageRepository,
-		activityRepository: params.ActivityRepository,
-		orgRepository:      params.OrganizationRepository,
-		userRepository:     params.UserRepository,
+		cfg:    params.Config,
+		logger: params.Logger,
+		repo:   params.Repository,
 	}
 }
 
@@ -48,14 +39,14 @@ func (s Service) TrackUserVisitPage(curUser *domain.User, pagePkID int64) *domai
 		return domain.ErrUnauthorized
 	}
 
-	p, e := s.pageRepository.GetByID(context.Background(), "", &pagePkID, domain.PageDetailOptions{}, nil)
+	p, e := s.repo.Page.GetByID(context.Background(), "", &pagePkID, domain.PageDetailOptions{}, nil)
 
 	if e != nil {
 		return e
 	}
 
 	label := "User Visited Page"
-	_, er := s.activityRepository.Create(context.Background(), domain.ActivityInput{
+	_, er := s.repo.Activity.Create(context.Background(), domain.ActivityInput{
 		ActionCode: domain.ActionUserVisitPage,
 		ActorPkID:  curUser.PkID,
 		PagePkID:   &p.PkID,
@@ -72,7 +63,7 @@ func (s Service) TrackUserVisitOrganization(curUser *domain.User, orgPkID int64)
 	if curUser == nil {
 		return domain.ErrUnauthorized
 	}
-	org, e := s.orgRepository.GetOrgByPkID(context.Background(), orgPkID)
+	org, e := s.repo.Organization.GetOrgByPkID(context.Background(), orgPkID)
 
 	if e != nil {
 		return e
@@ -80,7 +71,7 @@ func (s Service) TrackUserVisitOrganization(curUser *domain.User, orgPkID int64)
 
 	label := "User Visited Page"
 
-	_, er := s.activityRepository.Create(context.Background(), domain.ActivityInput{
+	_, er := s.repo.Activity.Create(context.Background(), domain.ActivityInput{
 		ActionCode: domain.ActionUserVisitPage,
 		ActorPkID:  curUser.PkID,
 		PagePkID:   nil,
@@ -101,7 +92,7 @@ func (s Service) ListPageActivities(curUser *domain.User, pagePkID int64, pagina
 		return nil, domain.ErrUnauthorized
 	}
 
-	page, err := s.pageRepository.GetByID(context.Background(), "", &pagePkID, domain.PageDetailOptions{}, &curUser.PkID)
+	page, err := s.repo.Page.GetByID(context.Background(), "", &pagePkID, domain.PageDetailOptions{}, &curUser.PkID)
 	if err != nil {
 		e := fmt.Errorf(err.Message)
 		s.logger.Error(e, "[Activity]: "+err.Message)
@@ -109,12 +100,12 @@ func (s Service) ListPageActivities(curUser *domain.User, pagePkID int64, pagina
 	}
 
 	var userRole *domain.PageRole = nil
-	pageRole, _ := s.pageRepository.GetPageRoleByEmail(context.Background(), pagePkID, curUser.Email)
+	pageRole, _ := s.repo.Page.GetPageRoleByEmail(context.Background(), pagePkID, curUser.Email)
 	if pageRole != nil {
 		userRole = &pageRole.Role
 	}
 
-	permisisons := s.pageRepository.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
+	permisisons := s.repo.Page.CheckPermission(context.Background(), domain.PageRolePermissionCheckInput{
 		Page:     *page,
 		User:     curUser,
 		PageRole: userRole,
@@ -125,7 +116,7 @@ func (s Service) ListPageActivities(curUser *domain.User, pagePkID int64, pagina
 	}
 
 	// QUERY ACTIVITIES FROM LOG DB
-	pages, err := s.pageRepository.List(
+	pages, err := s.repo.Page.List(
 		context.Background(),
 		domain.PageListQuery{
 			IsAll:         true,
@@ -143,7 +134,7 @@ func (s Service) ListPageActivities(curUser *domain.User, pagePkID int64, pagina
 
 	pagePkIds := append([]int64{page.PkID}, AllPagePkIDs...)
 
-	activities, err := s.activityRepository.List(context.Background(), domain.ActivityListQuery{
+	activities, err := s.repo.Activity.List(context.Background(), domain.ActivityListQuery{
 		PagePkIDs: pagePkIds,
 		Limit:     pagination.Limit,
 		EndTime:   &pagination.Cursor,
@@ -185,7 +176,7 @@ func (s Service) EnrichActivities(activities []domain.Activity, curUser *domain.
 		}
 	}
 
-	pages, err := s.pageRepository.List(context.Background(), domain.PageListQuery{
+	pages, err := s.repo.Page.List(context.Background(), domain.PageListQuery{
 		PagePkIDs: pagePkIDs,
 		IsAll:     true,
 	}, curUser)
@@ -199,7 +190,7 @@ func (s Service) EnrichActivities(activities []domain.Activity, curUser *domain.
 		pagesMap[page.PkID] = page
 	}
 
-	users, err := s.userRepository.UnsafeListUsers(context.Background(), domain.UserListQuery{
+	users, err := s.repo.User.UnsafeListUsers(context.Background(), domain.UserListQuery{
 		UserPkIDs: actorPkIDs,
 	})
 

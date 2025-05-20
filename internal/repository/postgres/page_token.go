@@ -12,14 +12,14 @@ import (
 
 func (r *PageRepository) CreatePublicToken(ctx context.Context, pagePkID int64) (*domain.PagePublicToken, *domain.Error) {
 	var page model.Page
-	if dbErr := r.store.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
+	if dbErr := r.DB.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
 		return nil, domain.NewErr(dbErr.Error(), domain.BadRequestCode)
 	}
 
 	newToken := model.PublicToken{
 		PagePkid: page.Pkid,
 	}
-	err := r.store.DB().Create(&newToken).Error
+	err := r.DB.DB().Create(&newToken).Error
 	if err != nil {
 		return nil, domain.NewErr(err.Error(), domain.BadRequestCode)
 	}
@@ -31,7 +31,7 @@ func (r *PageRepository) ArchiveAllPublicToken(ctx context.Context, pagePkID int
 
 	now := time.Now()
 
-	if dbErr := r.store.DB().Clauses(clause.Returning{}).
+	if dbErr := r.DB.DB().Clauses(clause.Returning{}).
 		Model(&model.PublicToken{}).
 		Where("page_pkid = ?", pagePkID).
 		Select("ArchivedAt").
@@ -46,7 +46,7 @@ func (r *PageRepository) ArchiveAllPublicToken(ctx context.Context, pagePkID int
 
 func (p *PageRepository) GetPublicTokenByID(ctx context.Context, publicTokenID string) (*domain.PagePublicToken, *domain.Error) {
 	var token model.PublicToken
-	if dbErr := p.store.DB().Where("id = ?", publicTokenID).First(&token).Error; dbErr != nil {
+	if dbErr := p.DB.DB().Where("id = ?", publicTokenID).First(&token).Error; dbErr != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
 

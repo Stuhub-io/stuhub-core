@@ -11,19 +11,17 @@ import (
 )
 
 type Service struct {
-	userRepository ports.UserRepository
-	pageRepository ports.PageRepository
-	oauthService   ports.OauthService
-	mailer         ports.Mailer
-	tokenMaker     ports.TokenMaker
-	remoteRoute    ports.RemoteRoute
-	hasher         ports.Hasher
-	config         config.Config
+	repo         *ports.Repository
+	oauthService ports.OauthService
+	mailer       ports.Mailer
+	tokenMaker   ports.TokenMaker
+	remoteRoute  ports.RemoteRoute
+	hasher       ports.Hasher
+	config       config.Config
 }
 
 type NewServiceParams struct {
-	ports.UserRepository
-	ports.PageRepository
+	*ports.Repository
 	ports.OauthService
 	ports.Mailer
 	ports.TokenMaker
@@ -34,28 +32,27 @@ type NewServiceParams struct {
 
 func NewService(params NewServiceParams) *Service {
 	return &Service{
-		userRepository: params.UserRepository,
-		oauthService:   params.OauthService,
-		mailer:         params.Mailer,
-		tokenMaker:     params.TokenMaker,
-		config:         params.Config,
-		remoteRoute:    params.RemoteRoute,
-		hasher:         params.Hasher,
-		pageRepository: params.PageRepository,
+		repo:         params.Repository,
+		oauthService: params.OauthService,
+		mailer:       params.Mailer,
+		tokenMaker:   params.TokenMaker,
+		config:       params.Config,
+		remoteRoute:  params.RemoteRoute,
+		hasher:       params.Hasher,
 	}
 }
 
 // Send Magic Link if User not set password.
 func (s *Service) AuthenByEmailStepOne(dto AuthenByEmailStepOneDto) (*AuthenByEmailStepOneResp, *domain.Error) {
 	email := dto.Email
-	user, err, created := s.userRepository.GetOrCreateUserByEmail(context.Background(), email, s.hasher.GenerateSalt())
+	user, err, created := s.repo.User.GetOrCreateUserByEmail(context.Background(), email, s.hasher.GenerateSalt())
 
 	if err != nil {
 		return nil, err
 	}
 
 	if created {
-		go s.pageRepository.SyncPageRoleWithNewUser(context.Background(), *user)
+		go s.repo.Page.SyncPageRoleWithNewUser(context.Background(), *user)
 	}
 
 	// User can auth with Password
@@ -104,7 +101,7 @@ func (s *Service) ValidateEmailAuth(token string) (*ValidateEmailTokenResp, *dom
 		return nil, domain.ErrTokenExpired
 	}
 
-	user, uErr := s.userRepository.GetUserByPkID(context.Background(), payload.UserPkID)
+	user, uErr := s.repo.User.GetUserByPkID(context.Background(), payload.UserPkID)
 	if uErr != nil {
 		return nil, domain.ErrBadRequest
 	}
@@ -127,7 +124,7 @@ func (s *Service) ValidateEmailAuth(token string) (*ValidateEmailTokenResp, *dom
 }
 
 func (s *Service) SetPasswordAndAuthUser(dto AuthenByEmailAfterSetPasswordDto) (*AuthenByEmailStepTwoResp, *domain.Error) {
-	user, err := s.userRepository.GetUserByEmail(context.Background(), dto.Email)
+	user, err := s.repo.User.GetUserByEmail(context.Background(), dto.Email)
 	if err != nil {
 		return nil, domain.ErrUserNotFoundByEmail(dto.Email)
 	}
@@ -137,12 +134,12 @@ func (s *Service) SetPasswordAndAuthUser(dto AuthenByEmailAfterSetPasswordDto) (
 		return nil, domain.ErrInternalServerError
 	}
 
-	err = s.userRepository.SetUserPassword(context.Background(), user.PkID, hashedPassword)
+	err = s.repo.User.SetUserPassword(context.Background(), user.PkID, hashedPassword)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = s.userRepository.SetUserActivatedAt(context.Background(), user.PkID, time.Now())
+	_, err = s.repo.User.SetUserActivatedAt(context.Background(), user.PkID, time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +163,7 @@ func (s *Service) SetPasswordAndAuthUser(dto AuthenByEmailAfterSetPasswordDto) (
 }
 
 func (s *Service) ActivateUser(dto ActivateUserDto) (*domain.User, *domain.Error) {
-	user, err := s.userRepository.GetUserByPkID(context.Background(), dto.UserPkID)
+	user, err := s.repo.User.GetUserByPkID(context.Background(), dto.UserPkID)
 	if err != nil {
 		return nil, domain.ErrUserNotFound
 	}
@@ -175,7 +172,7 @@ func (s *Service) ActivateUser(dto ActivateUserDto) (*domain.User, *domain.Error
 		return user, nil
 	}
 
-	updatedUser, err := s.userRepository.SetUserActivatedAt(context.Background(), dto.UserPkID, time.Now())
+	updatedUser, err := s.repo.User.SetUserActivatedAt(context.Background(), dto.UserPkID, time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +181,7 @@ func (s *Service) ActivateUser(dto ActivateUserDto) (*domain.User, *domain.Error
 }
 
 func (s *Service) AuthenUserByEmailPassword(dto AuthenByEmailPasswordDto) (*domain.AuthToken, *domain.User, *domain.Error) {
-	user, derr := s.userRepository.GetUserByEmail(context.Background(), dto.Email)
+	user, derr := s.repo.User.GetUserByEmail(context.Background(), dto.Email)
 	if derr != nil {
 		return nil, nil, domain.ErrUserNotFoundByEmail(dto.Email)
 	}
@@ -193,7 +190,7 @@ func (s *Service) AuthenUserByEmailPassword(dto AuthenByEmailPasswordDto) (*doma
 		return nil, nil, domain.ErrBadParamInput
 	}
 
-	valid, derr := s.userRepository.CheckPassword(context.Background(), user.Email, dto.RawPassword, s.hasher)
+	valid, derr := s.repo.User.CheckPassword(context.Background(), user.Email, dto.RawPassword, s.hasher)
 	if derr != nil {
 		return nil, nil, domain.ErrInternalServerError
 	}
@@ -224,7 +221,7 @@ func (s *Service) GetUserByToken(token string) (*domain.User, *domain.Error) {
 		return nil, domain.ErrTokenExpired
 	}
 
-	user, uErr := s.userRepository.GetUserByPkID(context.Background(), payload.UserPkID)
+	user, uErr := s.repo.User.GetUserByPkID(context.Background(), payload.UserPkID)
 	if uErr != nil {
 		return nil, domain.ErrBadRequest
 	}
@@ -238,16 +235,16 @@ func (s *Service) AuthenUserByGoogle(dto AuthenByGoogleDto) (*AuthenByGoogleResp
 		return nil, domain.ErrGetGoogleInfo
 	}
 
-	user, err := s.userRepository.GetUserByEmail(context.Background(), userInfo.Email)
+	user, err := s.repo.User.GetUserByEmail(context.Background(), userInfo.Email)
 	if err != nil && err.Error == domain.NotFoundErr {
 		salt := s.hasher.GenerateSalt()
-		newUser, err := s.userRepository.CreateUserWithGoogleInfo(context.Background(), userInfo.Email, salt, userInfo.FirstName, userInfo.LastName, userInfo.Avatar)
+		newUser, err := s.repo.User.CreateUserWithGoogleInfo(context.Background(), userInfo.Email, salt, userInfo.FirstName, userInfo.LastName, userInfo.Avatar)
 
 		if err != nil {
 			return nil, err
 		}
 
-		go s.pageRepository.SyncPageRoleWithNewUser(context.Background(), *newUser)
+		go s.repo.Page.SyncPageRoleWithNewUser(context.Background(), *newUser)
 
 		user = newUser
 	} else if err != nil {
@@ -265,7 +262,7 @@ func (s *Service) AuthenUserByGoogle(dto AuthenByGoogleDto) (*AuthenByGoogleResp
 	}
 
 	if user.ActivatedAt == "" {
-		s.userRepository.SetUserActivatedAt(context.Background(), user.PkID, time.Now())
+		s.repo.User.SetUserActivatedAt(context.Background(), user.PkID, time.Now())
 	}
 
 	return &AuthenByGoogleResponse{

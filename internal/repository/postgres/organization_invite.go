@@ -5,28 +5,23 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
-	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
 	organization_inviteutils "github.com/Stuhub-io/utils/organization_inviteutils"
 	"gorm.io/gorm"
 )
 
 type OrganizationInvitesRepository struct {
-	store *store.DBStore
-	cfg   config.Config
+	DB *DB
 }
 
 type NewOrganizationInvitesRepositoryParams struct {
-	Cfg   config.Config
-	Store *store.DBStore
+	DB *DB
 }
 
-func NewOrganizationInvitesRepository(params NewOrganizationInvitesRepositoryParams) *OrganizationInvitesRepository {
+func NewOrganizationInvitesRepository(DB *DB) *OrganizationInvitesRepository {
 	return &OrganizationInvitesRepository{
-		store: params.Store,
-		cfg:   params.Cfg,
+		DB: DB,
 	}
 }
 
@@ -37,7 +32,7 @@ func (r *OrganizationInvitesRepository) CreateInvite(ctx context.Context, organi
 		ExpiredAt:        time.Now().Add(domain.OrgInvitationExpiredTime),
 	}
 
-	err := r.store.DB().Create(&newInvite).Error
+	err := r.DB.DB().Create(&newInvite).Error
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation
 	}
@@ -48,7 +43,7 @@ func (r *OrganizationInvitesRepository) CreateInvite(ctx context.Context, organi
 func (r *OrganizationInvitesRepository) UpdateInvite(ctx context.Context, invite model.OrganizationInvite) (*domain.OrganizationInvite, *domain.Error) {
 	var updatedInvite model.OrganizationInvite
 
-	err := r.store.DB().Model(&updatedInvite).Where("id = ?", invite.ID).Update("is_used", true).Error
+	err := r.DB.DB().Model(&updatedInvite).Where("id = ?", invite.ID).Update("is_used", true).Error
 
 	if err != nil {
 		return nil, domain.ErrDatabaseMutation
@@ -60,7 +55,7 @@ func (r *OrganizationInvitesRepository) UpdateInvite(ctx context.Context, invite
 func (r *OrganizationInvitesRepository) GetInviteByID(ctx context.Context, inviteID string) (*domain.OrganizationInvite, *domain.Error) {
 	var invite organization_inviteutils.InviteWithOrganization
 
-	err := r.store.DB().Preload("Organization.Members").Preload("Organization.Owner").Where("id = ?", inviteID).First(&invite).Error
+	err := r.DB.DB().Preload("Organization.Members").Preload("Organization.Owner").Where("id = ?", inviteID).First(&invite).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrOrgNotFound

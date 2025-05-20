@@ -4,28 +4,23 @@ import (
 	"context"
 	"time"
 
-	"github.com/Stuhub-io/config"
 	"github.com/Stuhub-io/core/domain"
-	store "github.com/Stuhub-io/internal/repository"
 	"github.com/Stuhub-io/internal/repository/model"
 	"github.com/Stuhub-io/utils/pageutils"
 	"gorm.io/gorm/clause"
 )
 
 type PageAccessLogRepository struct {
-	store *store.DBStore
-	cfg   config.Config
+	DB *DB
 }
 
 type NewPageAccessLogRepositoryParams struct {
-	Cfg   config.Config
-	Store *store.DBStore
+	DB *DB
 }
 
-func NewPageAccessLogRepository(params NewPageAccessLogRepositoryParams) *PageAccessLogRepository {
+func NewPageAccessLogRepository(DB *DB) *PageAccessLogRepository {
 	return &PageAccessLogRepository{
-		store: params.Store,
-		cfg:   params.Cfg,
+		DB: DB,
 	}
 }
 
@@ -36,7 +31,7 @@ func (r *PageAccessLogRepository) GetByUserPKID(
 ) ([]domain.PageAccessLog, *domain.Error) {
 	var result []pageutils.PageAccessLogsResult
 
-	err := r.store.DB().Raw(`
+	err := r.DB.DB().Raw(`
 		SELECT 
 			pl.pkid, 
 			p.pkid AS page_pkid,
@@ -121,7 +116,7 @@ func (r *PageAccessLogRepository) Upsert(
 		UserPkid: &userPkID,
 		Action:   action.String(),
 	}
-	if err := r.store.DB().Clauses(clause.OnConflict{
+	if err := r.DB.DB().Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "page_pkid"}, {Name: "user_pkid"}},
 		DoUpdates: clause.AssignmentColumns([]string{"action", "last_accessed"}),
 	}).Create(&logModel).Error; err != nil {

@@ -11,7 +11,7 @@ import (
 // Asset Page.
 func (r *PageRepository) CreateAsset(ctx context.Context, assetInput domain.AssetPageInput) (*domain.Page, *domain.Error) {
 
-	initPageResult, iErr := r.initPageModel(preloadPageResult(r.store.DB(), PreloadPageResultParams{
+	initPageResult, iErr := r.initPageModel(preloadPageResult(r.DB.DB(), PreloadPageResultParams{
 		Author: true, // Init Page with Parent Page Preload
 	}), assetInput.PageInput)
 
@@ -22,13 +22,13 @@ func (r *PageRepository) CreateAsset(ctx context.Context, assetInput domain.Asse
 	newPage := initPageResult.Page
 
 	author := &model.User{}
-	if err := r.store.DB().Where("pkid = ?", newPage.AuthorPkid).First(author).Error; err != nil {
+	if err := r.DB.DB().Where("pkid = ?", newPage.AuthorPkid).First(author).Error; err != nil {
 		return nil, domain.ErrBadRequest
 	}
 
-	tx, doneTx := r.store.NewTransaction()
+	tx, doneTx := r.DB.NewTransaction()
 
-	err := preloadPageResult(r.store.DB(), PreloadPageResultParams{
+	err := preloadPageResult(r.DB.DB(), PreloadPageResultParams{
 		Author: true,
 	}).Create(&newPage).Error
 

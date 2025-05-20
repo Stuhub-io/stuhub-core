@@ -19,7 +19,7 @@ func (r *PageRepository) CreatePageRole(
 	ctx context.Context,
 	createInput domain.PageRoleCreateInput,
 ) (*domain.PageRoleUser, *domain.Error) {
-	tx, done := r.store.NewTransaction()
+	tx, done := r.DB.NewTransaction()
 	defer done(nil)
 
 	Email := strings.ToLower(createInput.Email)
@@ -52,7 +52,7 @@ func (r *PageRepository) CreatePageRole(
 	childPath := pageutils.AppendPath(page.Path, strconv.FormatInt(page.Pkid, 10))
 	childPages := []PageResult{}
 
-	if err := buildPageQuery(preloadPageResult(r.store.DB(), PreloadPageResultParams{
+	if err := buildPageQuery(preloadPageResult(r.DB.DB(), PreloadPageResultParams{
 		Author: true,
 	}), domain.PageListQuery{
 		PathBeginWith: childPath,
@@ -98,7 +98,7 @@ func (r *PageRepository) GetPageRoleByEmail(
 ) (*domain.PageRoleUser, *domain.Error) {
 	var pageRole model.PageRole
 
-	if err := buildQueryPageRoles(r.store.DB(), queryPageRolesParams{
+	if err := buildQueryPageRoles(r.DB.DB(), queryPageRolesParams{
 		PagePkIDs: []int64{pagePkID},
 		Emails:    []string{email},
 	}).First(&pageRole).Error; err != nil {
@@ -108,7 +108,7 @@ func (r *PageRepository) GetPageRoleByEmail(
 	// If role inherit, get the role from parent page
 	if pageRole.Role == domain.PageInherit.String() {
 		var page model.Page
-		if err := r.store.DB().Where("pkid = ?", pagePkID).First(&page).Error; err != nil {
+		if err := r.DB.DB().Where("pkid = ?", pagePkID).First(&page).Error; err != nil {
 			return nil, domain.ErrDatabaseQuery
 		}
 
@@ -116,7 +116,7 @@ func (r *PageRepository) GetPageRoleByEmail(
 		slices.Reverse(parentPkIDs)
 
 		var basePageRole model.PageRole
-		query := buildQueryPageRoles(r.store.DB(), queryPageRolesParams{
+		query := buildQueryPageRoles(r.DB.DB(), queryPageRolesParams{
 			Emails:       []string{email},
 			ExcludeRoles: []domain.PageRole{domain.PageInherit},
 			PagePkIDs:    parentPkIDs,
@@ -142,11 +142,11 @@ func (r *PageRepository) GetPageRoles(
 ) ([]domain.PageRoleUser, *domain.Error) {
 
 	page := &model.Page{}
-	if err := r.store.DB().Where("pkid = ?", pagePkID).First(page).Error; err != nil {
+	if err := r.DB.DB().Where("pkid = ?", pagePkID).First(page).Error; err != nil {
 		return nil, domain.ErrDatabaseQuery
 	}
 
-	pageRoles, err := queryPageRoles(r.store.DB(), queryPageRolesParams{
+	pageRoles, err := queryPageRoles(r.DB.DB(), queryPageRolesParams{
 		PagePkIDs: []int64{pagePkID},
 		Preload: queryPageRolesPreloadOption{
 			User: true,
@@ -167,7 +167,7 @@ func (r *PageRepository) GetPageRoles(
 	parentPkIDs := pageutils.PagePathToPkIDs(page.Path)
 	slices.Reverse(parentPkIDs)
 
-	parentBasePageRoles, err := queryPageRoles(r.store.DB(), queryPageRolesParams{
+	parentBasePageRoles, err := queryPageRoles(r.DB.DB(), queryPageRolesParams{
 		Emails:       inheritRoleEmails,
 		ExcludeRoles: []domain.PageRole{domain.PageInherit},
 		PagePkIDs:    parentPkIDs,
@@ -218,7 +218,7 @@ func (r *PageRepository) UpdatePageRole(
 	ctx context.Context,
 	updateInput domain.PageRoleUpdateInput,
 ) *domain.Error {
-	query := buildQueryPageRoles(r.store.DB(), queryPageRolesParams{
+	query := buildQueryPageRoles(r.DB.DB(), queryPageRolesParams{
 		PagePkIDs: []int64{updateInput.PagePkID},
 		Emails:    []string{updateInput.Email},
 	})
@@ -233,7 +233,7 @@ func (r *PageRepository) DeletePageRole(
 	ctx context.Context,
 	updateInput domain.PageRoleDeleteInput,
 ) *domain.Error {
-	tx, done := r.store.NewTransaction()
+	tx, done := r.DB.NewTransaction()
 	defer done(nil)
 
 	var page model.Page
@@ -278,7 +278,7 @@ func (r *PageRepository) GetPagesRole(
 	user := input.User
 	pages := input.Pages
 
-	pageRoles, err := queryPageRoles(r.store.DB(), queryPageRolesParams{
+	pageRoles, err := queryPageRoles(r.DB.DB(), queryPageRolesParams{
 		PagePkIDs: sliceutils.Map(pages, func(page domain.Page) int64 {
 			return page.PkID
 		}),
@@ -315,7 +315,7 @@ func (r *PageRepository) SyncPageRoleWithNewUser(
 	user domain.User,
 ) *domain.Error {
 	// Update User PkID in Page Roles
-	if err := buildQueryPageRoles(r.store.DB(), queryPageRolesParams{
+	if err := buildQueryPageRoles(r.DB.DB(), queryPageRolesParams{
 		Emails: []string{user.Email},
 	}).Model(&model.PageRole{}).Update("user_pkid", user.PkID).Error; err != nil {
 		return domain.ErrDatabaseMutation
@@ -388,7 +388,7 @@ func (r *PageRepository) CreatePageAccessRequest(ctx context.Context, input doma
 	var UserPkID *int64
 	user := &model.User{}
 
-	if err := r.store.DB().Where("email = ?", input.Email).First(user).Error; err == nil {
+	if err := r.DB.DB().Where("email = ?", input.Email).First(user).Error; err == nil {
 		UserPkID = &user.Pkid
 	}
 
@@ -399,7 +399,7 @@ func (r *PageRepository) CreatePageAccessRequest(ctx context.Context, input doma
 		UserPkid: UserPkID,
 	}
 
-	if err := r.store.DB().Create(&pageRoleRequest).Error; err != nil {
+	if err := r.DB.DB().Create(&pageRoleRequest).Error; err != nil {
 		return nil, domain.NewErr(err.Error(), domain.InternalServerErrCode)
 	}
 
@@ -417,7 +417,7 @@ func (r *PageRepository) ListPageAccessRequestByPagePkID(ctx context.Context, q 
 	// Write build query + preload utils for this
 	requests := []PageRoleRequestLogResults{}
 
-	query := buildPageAccessRequestQuery(r.store.DB().Preload("User"), q)
+	query := buildPageAccessRequestQuery(r.DB.DB().Preload("User"), q)
 
 	if err := query.Order("created_at desc").Find(&requests).Error; err != nil {
 		return nil, domain.ErrDatabaseQuery
@@ -443,7 +443,7 @@ func (r *PageRepository) ListPageAccessRequestByPagePkID(ctx context.Context, q 
 }
 
 func (r *PageRepository) UpdatePageAccessRequestStatus(ctx context.Context, q domain.PageRoleRequestLogQuery, status domain.PageRoleRequestLogStatus) *domain.Error {
-	query := buildPageAccessRequestQuery(r.store.DB().Model(&PageRoleRequestLogResults{}), q)
+	query := buildPageAccessRequestQuery(r.DB.DB().Model(&PageRoleRequestLogResults{}), q)
 	if err := query.Update("status", status.String()).Error; err != nil {
 		return domain.ErrDatabaseMutation
 	}

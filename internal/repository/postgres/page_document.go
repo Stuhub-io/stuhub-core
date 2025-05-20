@@ -13,7 +13,7 @@ func (r *PageRepository) CreateDocumentPage(
 	ctx context.Context,
 	pageInput domain.DocumentPageInput,
 ) (*domain.Page, *domain.Error) {
-	result, iErr := r.initPageModel(preloadPageResult(r.store.DB(), PreloadPageResultParams{
+	result, iErr := r.initPageModel(preloadPageResult(r.DB.DB(), PreloadPageResultParams{
 		Author: true, // Init Page with Parent Page Preload
 	}), pageInput.PageInput)
 	newPage := result.Page
@@ -27,14 +27,14 @@ func (r *PageRepository) CreateDocumentPage(
 	}
 
 	author := &model.User{}
-	if err := r.store.DB().Where("pkid = ?", newPage.AuthorPkid).First(author).Error; err != nil {
+	if err := r.DB.DB().Where("pkid = ?", newPage.AuthorPkid).First(author).Error; err != nil {
 		return nil, domain.ErrBadRequest
 	}
 
 	// Begin Tx
-	tx, doneTx := r.store.NewTransaction()
+	tx, doneTx := r.DB.NewTransaction()
 
-	err := preloadPageResult(r.store.DB(), PreloadPageResultParams{
+	err := preloadPageResult(r.DB.DB(), PreloadPageResultParams{
 		Author: true,
 	}).Create(&newPage).Error
 
@@ -88,19 +88,19 @@ func (r *PageRepository) UpdateContent(
 	content domain.DocumentInput,
 ) (*domain.Page, *domain.Error) {
 	var page = model.Page{}
-	if dbErr := r.store.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
+	if dbErr := r.DB.DB().Where("pkid = ?", pagePkID).First(&page).Error; dbErr != nil {
 		return nil, domain.NewErr(dbErr.Error(), domain.BadRequestCode)
 	}
 
 	var doc model.Document
-	if dbErr := r.store.DB().Where("page_pkid = ?", pagePkID).First(&doc).Error; dbErr != nil {
+	if dbErr := r.DB.DB().Where("page_pkid = ?", pagePkID).First(&doc).Error; dbErr != nil {
 		return nil, domain.NewErr(dbErr.Error(), domain.BadRequestCode)
 	}
 	if content.JsonContent == "" {
 		content.JsonContent = "{}"
 	}
 	doc.JSONContent = &content.JsonContent
-	if dbErr := r.store.DB().Clauses(clause.Returning{}).Select("*").Save(&doc).Error; dbErr != nil {
+	if dbErr := r.DB.DB().Clauses(clause.Returning{}).Select("*").Save(&doc).Error; dbErr != nil {
 		return nil, domain.ErrDatabaseMutation
 	}
 
