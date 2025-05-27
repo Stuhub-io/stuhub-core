@@ -34,4 +34,5 @@ type ActivityV2Input struct {
 	UserPkID         int64      `json:"user_pkid"`
 	RelatedPagePkIDs []int64    `json:"related_page_pkids"` // Important for query activity
 	Snapshot         string     `json:"snapshot"`
+	WithTransaction  bool       `json:"with_transaction"`
 }

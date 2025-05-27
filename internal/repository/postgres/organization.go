@@ -157,7 +157,7 @@ func (r *OrganizationRepository) CreateOrg(ctx context.Context, ownerPkID int64,
 	var ownerMember model.OrganizationMember
 
 	// -- Transaction
-	tx, doneTx := r.DB.NewTransaction()
+	tx, doneTx := r.DB.WithOptionalTransaction(true)
 	newOrg = model.Organization{
 		OwnerID:     ownerPkID,
 		Name:        name,

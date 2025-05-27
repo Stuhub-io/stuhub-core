@@ -93,6 +93,9 @@ func (r *ActivityV2Repository) One(ctx context.Context, q domain.ActivityV2ListQ
 
 // NOTE: Cannot remove related related Activity
 func (r *ActivityV2Repository) Update(ctx context.Context, activityPkID int64, input domain.ActivityV2Input) (*domain.ActivityV2, *domain.Error) {
+
+	tx, doneFn := r.DB.WithOptionalTransaction(input.WithTransaction)
+
 	activity := &model.Activity{
 		Pkid:       activityPkID,
 		UserPkid:   input.UserPkID,
@@ -100,8 +103,8 @@ func (r *ActivityV2Repository) Update(ctx context.Context, activityPkID int64, i
 		Snapshot:   input.Snapshot,
 	}
 
-	if err := r.DB.DB().Updates(activity).Error; err != nil {
-		return nil, domain.NewErr(err.Error(), domain.InternalServerErrCode)
+	if err := tx.DB().Updates(activity).Error; err != nil {
+		return nil, doneFn(err)
 	}
 
 	// Add related page activity
@@ -113,10 +116,10 @@ func (r *ActivityV2Repository) Update(ctx context.Context, activityPkID int64, i
 		})
 	}
 
-	if err := r.DB.DB().Clauses(clause.OnConflict{
+	if err := tx.DB().Clauses(clause.OnConflict{
 		DoNothing: true,
 	}).Create(&RelatedPageActivityList).Error; err != nil {
-		return nil, domain.NewErr(err.Error(), domain.InternalServerErrCode)
+		return nil, doneFn(err)
 	}
 
 	return activityutils.TransformActivityV2ModelToDomain(activityutils.ActivityV2ModelToDomainParams{

@@ -18,7 +18,6 @@ func open(dsn string, isDebug bool, logger logger.Logger) (*gorm.DB, error) {
 
 	if err != nil {
 		logger.Fatalf(err, "failed to open database connection")
-
 		return nil, err
 	}
 
@@ -82,4 +81,19 @@ func (d *DB) NewTransaction() (*DB, TxEndFunc) {
 
 func (d *DB) SetNewDB(db *gorm.DB) {
 	d.Database = db
+}
+
+func (d *DB) WithOptionalTransaction(enableTx bool) (*DB, TxEndFunc) {
+	doneFn := func(e error) *domain.Error {
+		if e != nil {
+			return domain.NewErr(e.Error(), domain.ErrInternalServerError.Code)
+		}
+		return nil
+	}
+	tx := d
+	if enableTx {
+		tx, doneFn = d.NewTransaction()
+	}
+
+	return tx, doneFn
 }
